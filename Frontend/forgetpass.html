@@ -1,0 +1,52 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forget Password Page</title>
+    <link rel="stylesheet" href="./styles/forgetpass.css">
+    <script src="https://kit.fontawesome.com/3af5a307c6.js" crossorigin="anonymous"></script>
+    <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+    <!-- sweet alert -->
+ 
+</head>
+<body>
+    <!-- <img src="./assets/bg2.jpg" alt="error"> -->
+    
+    <div class="row">
+        <!-- logo -->
+
+        <div id="logo" style="margin-top: 5px;">
+            <i class="fa-solid fa-chess fa-beat" style="color: #ffffff; font-size: 1.5rem;"></i> <h1 style="margin-left: 10px; ">CHESSMATE FORGOT PASSWORD</h1>
+        </div>
+		
+
+		<form class="form-group" id="getotp">
+            <p><label for="username">Email</label></p>
+			<input type="email" name="user_email" id="user_email" placeholder="Enter your email">
+			<input type="submit"  id="submitOTP" value="Send OTP" >
+        </form>
+
+		<div class="footer">
+			<h5>New here? <a href="/register.html">Sign-up</a></h5>
+
+			<h5>Already have an account? <a href="/login.html">Login</a></h5>
+
+			<div id="otp-block" class="hidden">
+				<h6 class="information-text">Enter the OTP sent to your email:</h6>
+
+				<form class="form-group" id="verifyOTP">
+                    <p><label for="otp">OTP</label></p>
+					<input type="text" name="otp" id="otp" placeholder="Enter your OTP">
+                    <input type="submit"id="submit" value="Verify OTP">
+                </form>
+			</div>
+		</div>
+	</div>
+
+	<script src="/scripts/forgetpass.js"></script>
+	</body>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</html>
