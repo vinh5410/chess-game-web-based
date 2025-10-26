@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login page here</title>
+    <link rel="stylesheet" href="./styles/login.css">
+
+    <!-- fontawesome cd -->
+  <script src="https://kit.fontawesome.com/3af5a307c6.js" crossorigin="anonymous"></script>
+
+  <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+
+</head>
+
+<body>
+    <!-- <img src="./assets/bg2.jpg" alt="error"> -->
+
+    <!-- <section>
+        <div class="pattern">
+            <div class="face face1"></div>
+            <div class="face face2"></div>
+        </div>
+    </section> -->
+
+    <div id="container">
+
+
+        <div id="left">
+
+            <div id="leftmaincont">  
+
+                <div id="logo" style="margin-top: 5px;">
+                    <i class="fa-solid fa-chess fa-beat" style="color: #ffffff; font-size: 1.5rem;"></i> <h3 style="margin-left: 10px;">CHESSMATE  LOGIN</h3>
+                </div>
+
+
+                <!-- <h2>Login</h2> -->
+
+
+                <form id="formcontainer">
+                    <p>Email</p>
+                    <input type="email" id="email" class="rcheck" placeholder=" Enter your Email">
+
+
+
+                    <p>Password</p>
+                    <input type="password" id="password" class="rcheck" placeholder=" Enter your password">
+
+<!-- forget password -->
+
+                   <a href="./forgetpass.html"> <p id="forgot">Forgot your password?</p></a>
+                    <input type="submit" id="continue" value="Continue">
+
+
+                </form>
+
+
+
+
+                <p>New user? Create account <a href="./register.html" id="spanid">Register/Signup</a> </p>
+
+
+                <p id="or"> ----- Or Sign in with ----- </p>
+
+                <a href="http://localhost:4500/user/auth/google/callback"><button class="echeck" id="gbtn"> <img src="./assets/google-icon.png" alt="err"> Continue with Google</button></a>
+                <!-- <button class="echeck" id="gbtn"> <img src="./assets/google-icon.png" alt="err"> Continue with Google</button> -->
+
+
+            </div>
+        </div>
+    </div>
+
+
+        <!-- https://github.com/login/oauth/authorize?client_id=cd1f1e835763f964e4eb&scope=user -->
+
+
+</body>  
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+</html>
+
+<script src="./scripts/login.js"></script>
