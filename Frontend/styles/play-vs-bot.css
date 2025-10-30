@@ -1,0 +1,376 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+.app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+}
+
+/* Header Styles */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.game-info h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.game-info p {
+    margin: 5px 0;
+    font-size: 16px;
+}
+
+/* Menu Styles */
+.menu, .difficulty-menu {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    text-align: center;
+    color: #333;
+}
+
+.menu h2, .difficulty-menu h2 {
+    font-size: 32px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.difficulty-subtitle {
+    margin-bottom: 30px;
+    color: #666;
+    font-size: 18px;
+}
+
+.menu-buttons {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.mode-btn {
+    padding: 20px 40px;
+    font-size: 20px;
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px;
+    font-weight: bold;
+}
+
+.mode-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+/* Difficulty Menu Styles */
+.difficulty-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+    max-width: 800px;
+}
+
+.difficulty-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.difficulty-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.difficulty-btn {
+    width: 100%;
+    padding: 20px 15px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.difficulty-btn:hover {
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.difficulty-level {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.level-emoji {
+    font-size: 28px;
+}
+
+.level-number {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+.difficulty-desc {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* Game Controls Styles */
+.game-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: rgba(255,255,255,0.15);
+    border-radius: 12px;
+}
+
+.back-btn {
+    padding: 10px 20px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background-color: #da190b;
+    transform: translateY(-2px);
+}
+
+.bot-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: white;
+}
+
+.bot-info {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.restart-btn {
+    padding: 10px 20px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.restart-btn:hover {
+    background-color: #1976D2;
+    transform: translateY(-2px);
+}
+
+/* Chessboard Styles */
+.chessboard-container {
+    position: relative;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+#board {
+    width: 600px;
+    height: 600px;
+}
+
+.game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    color: white;
+    min-width: 300px;
+    z-index: 1000;
+}
+
+.game-over p {
+    margin: 10px 0;
+    font-size: 20px;
+}
+
+.game-over p:first-child {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .difficulty-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .game-info h1 {
+        font-size: 28px;
+    }
+    
+    #board {
+        width: 400px !important;
+        height: 400px !important;
+    }
+    
+    .menu, .difficulty-menu {
+        padding: 20px;
+    }
+    
+    .mode-btn {
+        padding: 15px 25px;
+        font-size: 18px;
+        min-width: 180px;
+    }
+    
+    .game-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .bot-controls {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .difficulty-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    #board {
+        width: 320px !important;
+        height: 320px !important;
+    }
+    
+    .app {
+        padding: 10px;
+    }
+    
+    .menu, .difficulty-menu {
+        padding: 15px;
+        margin: 10px;
+    }
+    
+    .game-info h1 {
+        font-size: 24px;
+    }
+    
+    .mode-btn {
+        padding: 12px 20px;
+        font-size: 16px;
+        min-width: 150px;
+    }
+    
+    .chessboard-container {
+        padding: 10px;
+    }
+}
+
+/* Animation Effects */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menu, .difficulty-menu, .chessboard-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Focus and Active States */
+.difficulty-btn:focus,
+.mode-btn:focus,
+.back-btn:focus,
+.restart-btn:focus {
+    outline: 2px solid #4CAF50;
+    outline-offset: 2px;
+}
+
+.difficulty-btn:active,
+.mode-btn:active {
+    transform: scale(0.98);
+}
+
+.back-btn:active,
+.restart-btn:active {
+    transform: translateY(0);
+}
+
+/* Loading States */
+.thinking {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.thinking .bot-info::after {
+    content: '...';
+    animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '...'; }
+    40% { content: '..'; }
+    60% { content: '.'; }
+    80%, 100% { content: ''; }
+}
