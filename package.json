@@ -1,0 +1,21 @@
+{
+  "name": "chess-game-web-based",
+  "version": "1.0.0",
+  "description": "Complete Chess Game Application",
+  "scripts": {
+    "start": "npm run server",
+    "server": "cd Backend && npm start",
+    "client": "cd Frontend && npm start",
+    "dev": "npm run server",
+    "both": "concurrently \"npm run server\" \"npm run client\"",
+    "install:all": "npm install && cd Frontend && npm install && cd ../Backend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}

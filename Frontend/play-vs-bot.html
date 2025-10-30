@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play vs Bot - CHESSMATE</title>
+    <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+    <!-- SỬA: Đảm bảo CSS load đúng -->
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <link rel="stylesheet" href="./styles/play-vs-bot.css">
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="game-info">
+                <h1>♟️ Chess Game</h1>
+                <p id="gameStatus">Choose game mode to start</p>
+            </div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="mainMenu" class="menu">
+            <h2>Choose Game Mode</h2>
+            <div class="menu-buttons">
+                <button onclick="showDifficultyMenu()" class="mode-btn">
+                    🤖 Play vs AI Bot
+                </button>
+            </div>
+        </div>
+
+        <!-- Difficulty Selection Menu -->
+        <div id="difficultyMenu" class="difficulty-menu hidden">
+            <h2>Choose Bot Difficulty</h2>
+            <p class="difficulty-subtitle">Select your challenge level:</p>
+            <div class="difficulty-grid">
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(1)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">😊</span>
+                            <span class="level-number">Level 1</span>
+                        </div>
+                        <div class="difficulty-desc">Beginner - Depth 1</div>
+                    </button>
+                </div>
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(3)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">🙂</span>
+                            <span class="level-number">Level 3</span>
+                        </div>
+                        <div class="difficulty-desc">Easy - Depth 3</div>
+                    </button>
+                </div>
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(5)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">🤔</span>
+                            <span class="level-number">Level 5</span>
+                        </div>
+                        <div class="difficulty-desc">Medium - Depth 5</div>
+                    </button>
+                </div>
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(8)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">😤</span>
+                            <span class="level-number">Level 8</span>
+                        </div>
+                        <div class="difficulty-desc">Hard - Depth 8</div>
+                    </button>
+                </div>
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(10)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">🔥</span>
+                            <span class="level-number">Level 10</span>
+                        </div>
+                        <div class="difficulty-desc">Expert - Depth 10</div>
+                    </button>
+                </div>
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(15)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">🔥</span>
+                            <span class="level-number">Level 15</span>
+                        </div>
+                        <div class="difficulty-desc">Master - Depth 15</div>
+                    </button>
+                </div>
+            </div>
+            <button onclick="backToMenu()" class="back-btn">← Back to Menu</button>
+        </div>
+
+        <!-- Game Controls (shown during game) -->
+        <div id="gameControls" class="game-controls hidden">
+            <button onclick="backToMenu()" class="back-btn">Back to Menu</button>
+            <div class="bot-controls">
+                <span class="bot-info" id="botLevelInfo">Playing vs Bot Level 5 🤔</span>
+                <button onclick="restartGame()" class="restart-btn">🔄 New Game</button>
+            </div>
+        </div>
+
+        <!-- Chessboard -->
+        <div id="chessboardContainer" class="chessboard-container hidden">
+            <div id="board" style="width: 400px"></div>
+            <div id="gameOverOverlay" class="game-over hidden">
+                <p>Game Over</p>
+                <p id="winnerText">Winner: White</p>
+                <p>Press Enter to restart</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load libraries theo thứ tự đúng -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    
+    <!-- LOAD CHESS.JS TỪ LOCAL FILE -->
+    <script src="./libs/chess.js/dist/cjs/chess.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Loading local Chess.js...');
+            
+            // Kiểm tra tất cả libraries
+            console.log('jQuery loaded:', typeof $ !== 'undefined');
+            console.log('Chessboard.js loaded:', typeof Chessboard !== 'undefined');
+            console.log('Chess.js loaded:', typeof Chess !== 'undefined');
+            
+            // Kiểm tra Chess constructor
+            if (typeof Chess !== 'undefined') {
+                // Đặt Chess vào window object
+                window.Chess = Chess;
+                
+                // Test Chess functionality
+                try {
+                    const testGame = new Chess();
+                    console.log('✅ Local Chess.js working:', testGame.fen());
+                    console.log('✅ Available moves:', testGame.moves().length);
+                    
+                    document.getElementById('gameStatus').textContent = 'Choose game mode to start';
+                } catch (error) {
+                    console.error('❌ Chess.js test failed:', error);
+                    document.getElementById('gameStatus').textContent = '❌ Chess library error';
+                }
+            } else {
+                console.error('❌ Chess.js not found');
+                document.getElementById('gameStatus').textContent = '❌ Chess library not found';
+            }
+            
+            // Test tạo board ngay để debug
+            setTimeout(() => {
+                if (typeof Chessboard !== 'undefined') {
+                    console.log('Testing board creation...');
+                    
+                    // Test config
+                    const config = {
+                        draggable: true,
+                        position: 'start',
+                        pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+                    };
+                    
+                    try {
+                        const testBoard = Chessboard('board', config);
+                        console.log('✅ Test board created successfully');
+                    } catch (error) {
+                        console.error('❌ Board creation failed:', error);
+                    }
+                } else {
+                    console.error('❌ Chessboard.js not available');
+                }
+            }, 1000);
+        });
+    </script>
+    
+    <script src="./js/play-vs-bot.js"></script>
+</body>
+</html>
