@@ -5,15 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Play vs Bot - CHESSMATE</title>
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
-    <!-- SỬA: Đảm bảo CSS load đúng -->
-    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <link rel="stylesheet" href="./styles/play-vs-bot.css">
 </head>
 <body>
     <div class="app">
         <div class="header">
             <div class="game-info">
-                <h1>♟️ Chess Game</h1>
+                <h1>♟️ Chess Game (Canvas)</h1>
                 <p id="gameStatus">Choose game mode to start</p>
             </div>
         </div>
@@ -28,6 +26,36 @@
             </div>
         </div>
 
+        <!-- Color Selection Menu (NEW) -->
+        <div id="colorMenu" class="difficulty-menu hidden">
+            <h2>Choose Your Color</h2>
+            <p class="difficulty-subtitle">Select which side you want to play:</p>
+            <div class="color-grid">
+                <div class="color-card">
+                    <button onclick="selectColor('white')" class="color-btn">
+                        <div class="color-icon">♔</div>
+                        <div class="color-name">White</div>
+                        <div class="color-desc">You play first</div>
+                    </button>
+                </div>
+                <div class="color-card">
+                    <button onclick="selectColor('black')" class="color-btn">
+                        <div class="color-icon">♚</div>
+                        <div class="color-name">Black</div>
+                        <div class="color-desc">Bot plays first</div>
+                    </button>
+                </div>
+                <div class="color-card">
+                    <button onclick="selectColor('random')" class="color-btn">
+                        <div class="color-icon">🎲</div>
+                        <div class="color-name">Random</div>
+                        <div class="color-desc">50/50 chance</div>
+                    </button>
+                </div>
+            </div>
+            <button onclick="backToMenu()" class="back-btn">← Back to Menu</button>
+        </div>
+
         <!-- Difficulty Selection Menu -->
         <div id="difficultyMenu" class="difficulty-menu hidden">
             <h2>Choose Bot Difficulty</h2>
@@ -39,7 +67,7 @@
                             <span class="level-emoji">😊</span>
                             <span class="level-number">Level 1</span>
                         </div>
-                        <div class="difficulty-desc">Beginner - Depth 1</div>
+                        <div class="difficulty-desc">Beginner - Random</div>
                     </button>
                 </div>
                 <div class="difficulty-card">
@@ -48,7 +76,7 @@
                             <span class="level-emoji">🙂</span>
                             <span class="level-number">Level 3</span>
                         </div>
-                        <div class="difficulty-desc">Easy - Depth 3</div>
+                        <div class="difficulty-desc">Easy - Rule-based</div>
                     </button>
                 </div>
                 <div class="difficulty-card">
@@ -57,7 +85,7 @@
                             <span class="level-emoji">🤔</span>
                             <span class="level-number">Level 5</span>
                         </div>
-                        <div class="difficulty-desc">Medium - Depth 5</div>
+                        <div class="difficulty-desc">Medium - Lichess API</div>
                     </button>
                 </div>
                 <div class="difficulty-card">
@@ -66,7 +94,7 @@
                             <span class="level-emoji">😤</span>
                             <span class="level-number">Level 8</span>
                         </div>
-                        <div class="difficulty-desc">Hard - Depth 8</div>
+                        <div class="difficulty-desc">Hard - Lichess API</div>
                     </button>
                 </div>
                 <div class="difficulty-card">
@@ -75,7 +103,7 @@
                             <span class="level-emoji">🔥</span>
                             <span class="level-number">Level 10</span>
                         </div>
-                        <div class="difficulty-desc">Expert - Depth 10</div>
+                        <div class="difficulty-desc">Expert - Lichess API</div>
                     </button>
                 </div>
                 <div class="difficulty-card">
@@ -84,25 +112,27 @@
                             <span class="level-emoji">🔥</span>
                             <span class="level-number">Level 15</span>
                         </div>
-                        <div class="difficulty-desc">Master - Depth 15</div>
+                        <div class="difficulty-desc">Master - Lichess API</div>
                     </button>
                 </div>
             </div>
-            <button onclick="backToMenu()" class="back-btn">← Back to Menu</button>
+            <button onclick="backToDifficultyMenu()" class="back-btn">← Back</button>
         </div>
 
-        <!-- Game Controls (shown during game) -->
+        <!-- Game Controls -->
         <div id="gameControls" class="game-controls hidden">
             <button onclick="backToMenu()" class="back-btn">Back to Menu</button>
             <div class="bot-controls">
                 <span class="bot-info" id="botLevelInfo">Playing vs Bot Level 5 🤔</span>
+                <span class="color-info" id="playerColorInfo">You are White ♔</span>
                 <button onclick="restartGame()" class="restart-btn">🔄 New Game</button>
+                <button onclick="flipBoard()" class="flip-btn">🔄 Flip Board</button>
             </div>
         </div>
 
-        <!-- Chessboard -->
+        <!-- Canvas Chessboard -->
         <div id="chessboardContainer" class="chessboard-container hidden">
-            <div id="board" style="width: 400px"></div>
+            <canvas id="chessCanvas" width="640" height="640"></canvas>
             <div id="gameOverOverlay" class="game-over hidden">
                 <p>Game Over</p>
                 <p id="winnerText">Winner: White</p>
@@ -111,32 +141,18 @@
         </div>
     </div>
 
-    <!-- Load libraries theo thứ tự đúng -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-    
-    <!-- LOAD CHESS.JS TỪ LOCAL FILE -->
+    <!-- Load Chess.js only -->
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Loading local Chess.js...');
+            console.log('🚀 Loading Canvas Chess Game...');
             
-            // Kiểm tra tất cả libraries
-            console.log('jQuery loaded:', typeof $ !== 'undefined');
-            console.log('Chessboard.js loaded:', typeof Chessboard !== 'undefined');
-            console.log('Chess.js loaded:', typeof Chess !== 'undefined');
-            
-            // Kiểm tra Chess constructor
             if (typeof Chess !== 'undefined') {
-                // Đặt Chess vào window object
                 window.Chess = Chess;
                 
-                // Test Chess functionality
                 try {
                     const testGame = new Chess();
-                    console.log('✅ Local Chess.js working:', testGame.fen());
-                    console.log('✅ Available moves:', testGame.moves().length);
-                    
+                    console.log('✅ Chess.js working:', testGame.fen());
                     document.getElementById('gameStatus').textContent = 'Choose game mode to start';
                 } catch (error) {
                     console.error('❌ Chess.js test failed:', error);
@@ -146,29 +162,6 @@
                 console.error('❌ Chess.js not found');
                 document.getElementById('gameStatus').textContent = '❌ Chess library not found';
             }
-            
-            // Test tạo board ngay để debug
-            setTimeout(() => {
-                if (typeof Chessboard !== 'undefined') {
-                    console.log('Testing board creation...');
-                    
-                    // Test config
-                    const config = {
-                        draggable: true,
-                        position: 'start',
-                        pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
-                    };
-                    
-                    try {
-                        const testBoard = Chessboard('board', config);
-                        console.log('✅ Test board created successfully');
-                    } catch (error) {
-                        console.error('❌ Board creation failed:', error);
-                    }
-                } else {
-                    console.error('❌ Chessboard.js not available');
-                }
-            }, 1000);
         });
     </script>
     
