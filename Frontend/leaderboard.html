@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chessmate | Leaderboard</title>
+  </head>
+  <link rel="stylesheet" type="text/css" href="/styles/leaderboard.css" />
+ 
+  <!-- fontawesome cd -->
+  <script src="https://kit.fontawesome.com/3af5a307c6.js" crossorigin="anonymous"></script>
+
+  <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+
+  <body>
+    <div class="confetti" id="confetti">
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+      <div class="confetti-piece"></div>
+  </div>
+    <section>
+      <div class="pattern">
+        <div class="face face1"></div>
+        <div class="face face2"></div>
+      </div>
+    </section>
+    <div class="container">
+      <div class="logo" id="logo-div"><a href="index.html"><img src="/assets/logo.png" alt="" id="logo" /></a></div>
+      
+      <h1>
+        <i class="fa-solid fa-crown fa-beat"></i>
+        Leader Board
+      </h1>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Wins</th>
+            <th>Losses</th>
+            <th>Draws</th>
+            <th>Level</th>
+          </tr>
+        </thead>
+        <tbody>
+         <!-- Code injected via script file -->
+        </tbody>
+      </table>
+    </div>
+  </body>
+  <script>
+    document.getElementById("logo-div").addEventListener("click", () => {
+      window.location.href = "/index.html";
+    });
+    setTimeout(() => {
+      document.getElementById("confetti").style.display="none"
+    }, 3000);
+  </script>
+  <script src="/scripts/leaderboard.js"></script>
+</html>
