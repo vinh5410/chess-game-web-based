@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer - CHESSMATE</title>
+    <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="stylesheet" href="./styles/play-multiplayer.css">
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="game-info">
+                <h1>♟️ Multiplayer Chess</h1>
+                <p id="gameStatus">Connecting to server...</p>
+                <p id="onlineUsers" class="online-users">👥 Online: 0</p>
+            </div>
+        </div>
+
+        <!-- Login Screen -->
+        <div id="loginScreen" class="menu">
+            <h2>Enter Your Name</h2>
+            <div class="login-form">
+                <input type="text" id="usernameInput" placeholder="Your name" maxlength="20" />
+                <button onclick="login()" class="mode-btn">Join Game</button>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobbyScreen" class="menu hidden">
+            <h2>Choose Game Mode</h2>
+            <div class="menu-buttons">
+                <button onclick="showRandomMatch()" class="mode-btn">
+                    🎲 Random Match
+                    <span class="btn-desc">Find random opponent</span>
+                </button>
+                <button onclick="showInviteFriend()" class="mode-btn">
+                    👥 Invite Friend
+                    <span class="btn-desc">Create private room</span>
+                </button>
+                <button onclick="showJoinRoom()" class="mode-btn">
+                    🔗 Join Room
+                    <span class="btn-desc">Enter room code</span>
+                </button>
+            </div>
+            <button onclick="logout()" class="back-btn">Logout</button>
+        </div>
+
+        <!-- Random Match Screen -->
+        <div id="randomMatchScreen" class="menu hidden">
+            <h2>🎲 Random Match</h2>
+            <p class="subtitle">Searching for opponent...</p>
+            <div class="loading-animation">
+                <div class="spinner"></div>
+                <p id="searchStatus">Looking for players...</p>
+            </div>
+            <button onclick="cancelSearch()" class="back-btn">Cancel</button>
+        </div>
+
+        <!-- Invite Friend Screen -->
+        <div id="inviteFriendScreen" class="menu hidden">
+            <h2>👥 Invite Friend</h2>
+            <p class="subtitle">Share this code with your friend:</p>
+            <div class="room-code-display">
+                <input type="text" id="roomCodeDisplay" readonly />
+                <button onclick="copyRoomCode()" class="copy-btn">📋 Copy</button>
+            </div>
+            <p class="waiting-text">Waiting for opponent to join...</p>
+            <button onclick="cancelInvite()" class="back-btn">Cancel</button>
+        </div>
+
+        <!-- Join Room Screen -->
+        <div id="joinRoomScreen" class="menu hidden">
+            <h2>🔗 Join Room</h2>
+            <div class="join-form">
+                <input type="text" id="roomCodeInput" placeholder="Enter room code" maxlength="6" />
+                <button onclick="joinRoom()" class="mode-btn">Join</button>
+            </div>
+            <button onclick="backToLobby()" class="back-btn">← Back</button>
+        </div>
+
+        <!-- Online Users List -->
+        <div id="onlineUsersList" class="online-list hidden">
+            <h3>Online Players</h3>
+            <div id="usersContainer" class="users-container"></div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="game-screen hidden">
+            <div class="game-header">
+                <div class="player-info opponent-info">
+                    <span class="player-avatar">👤</span>
+                    <div class="player-details">
+                        <span class="player-name" id="opponentName">Opponent</span>
+                        <span class="player-color" id="opponentColor">⚫</span>
+                    </div>
+                    <div class="player-timer" id="opponentTimer">5:00</div>
+                </div>
+            </div>
+
+            <div class="chessboard-container">
+                <canvas id="chessCanvas" width="640" height="640"></canvas>
+                <div id="gameOverOverlay" class="game-over hidden">
+                    <p>Game Over</p>
+                    <p id="winnerText">Winner: White</p>
+                    <button onclick="backToLobby()" class="restart-btn">Back to Lobby</button>
+                </div>
+            </div>
+
+            <div class="game-footer">
+                <div class="player-info current-player-info">
+                    <div class="player-timer" id="playerTimer">5:00</div>
+                    <div class="player-details">
+                        <span class="player-name" id="playerName">You</span>
+                        <span class="player-color" id="playerColor">⚪</span>
+                    </div>
+                    <span class="player-avatar">👤</span>
+                </div>
+            </div>
+
+            <div class="game-controls">
+                <button onclick="offerDraw()" class="control-btn" id="drawBtn">
+                    🤝 Offer Draw
+                </button>
+                <button onclick="resign()" class="control-btn resign-btn">
+                    🏳️ Resign
+                </button>
+                <button onclick="flipBoard()" class="control-btn">
+                    🔄 Flip
+                </button>
+            </div>
+
+            <!-- Chat Box -->
+            <div class="chat-box">
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-container">
+                    <input type="text" id="chatInput" placeholder="Type a message..." maxlength="200" />
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Libraries -->
+    <script src="./libs/chess.js/dist/cjs/chess.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
+    <script>
+        // Initialize Chess.js
+        if (typeof Chess !== 'undefined') {
+            window.Chess = Chess;
+            console.log('✅ Chess.js loaded');
+        }
+        
+        // Initialize Socket.IO
+        if (typeof io !== 'undefined') {
+            console.log('✅ Socket.IO loaded');
+        }
+    </script>
+    
+    <script src="./js/socket-client.js"></script>
+    <script src="./js/play-multiplayer.js"></script>
+</body>
+</html>
