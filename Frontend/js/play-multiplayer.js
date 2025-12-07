@@ -1,3 +1,15 @@
+// Auto-fill username if logged in
+document.addEventListener('DOMContentLoaded', () => {
+    const user = getCurrentUser();
+    if (user) {
+        const usernameInput = document.getElementById('usernameInput');
+        if (usernameInput) {
+            usernameInput.value = user.username;
+            usernameInput.disabled = true;
+        }
+    }
+});
+
 class MultiplayerChess {
     constructor() {
         this.canvas = null;
@@ -18,7 +30,7 @@ class MultiplayerChess {
         this.lastMoveColor = 'rgba(255, 255, 0, 0.3)';
         
         // Game state
-        this.playerColor = null; // 'white' or 'black'
+        this.playerColor = null;
         this.opponentName = '';
         this.isMyTurn = false;
         this.gameStarted = false;
@@ -39,7 +51,7 @@ class MultiplayerChess {
         this.imagesLoaded = false;
         
         // Timer
-        this.playerTime = 300; // 5 minutes in seconds
+        this.playerTime = 300;
         this.opponentTime = 300;
         this.timerInterval = null;
         
@@ -52,13 +64,11 @@ class MultiplayerChess {
     async init() {
         console.log('🎮 Initializing Multiplayer Chess...');
         
-        // Check Chess.js
         if (typeof window.Chess !== 'function') {
             console.error('❌ Chess.js not available');
             return false;
         }
         
-        // Initialize canvas
         this.canvas = document.getElementById('chessCanvas');
         if (!this.canvas) {
             console.error('❌ Canvas element not found');
@@ -68,14 +78,9 @@ class MultiplayerChess {
         this.ctx = this.canvas.getContext('2d');
         this.game = new window.Chess();
         
-        // Load piece images
         await this.loadPieceImages();
-        
-        // Setup event listeners
         this.setupEventListeners();
         this.setupSocketListeners();
-        
-        // Connect to server
         this.socket.connect();
         
         console.log('✅ Multiplayer Chess initialized');
@@ -93,11 +98,10 @@ class MultiplayerChess {
                 img.onload = () => resolve();
                 img.onerror = () => {
                     console.warn(`⚠️ Failed to load ${piece}.png, using fallback`);
-                    // Fallback to Wikipedia CDN
                     const cdnUrl = `https://upload.wikimedia.org/wikipedia/commons/${this.getWikipediaPath(piece)}`;
                     img.src = cdnUrl;
                     img.onload = () => resolve();
-                    img.onerror = () => resolve(); // Continue anyway
+                    img.onerror = () => resolve();
                 };
             });
             
@@ -130,23 +134,17 @@ class MultiplayerChess {
         this.canvas.addEventListener('click', this.onClick.bind(this));
         this.canvas.addEventListener('contextmenu', e => e.preventDefault());
         
-        // Enter key for chat
         const chatInput = document.getElementById('chatInput');
         if (chatInput) {
             chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
+                if (e.key === 'Enter') sendMessage();
             });
         }
         
-        // Username input enter
         const usernameInput = document.getElementById('usernameInput');
         if (usernameInput) {
             usernameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    login();
-                }
+                if (e.key === 'Enter') login();
             });
         }
     }
@@ -154,7 +152,6 @@ class MultiplayerChess {
     setupSocketListeners() {
         console.log('🔌 Setting up socket listeners...');
         
-        // Connection events
         this.socket.on('connection_success', () => {
             console.log('✅ Socket connected');
             updateGameStatus('Connected! Please login.');
@@ -170,7 +167,6 @@ class MultiplayerChess {
             updateGameStatus('⚠️ Disconnected from server.');
         });
         
-        // User events
         this.socket.on('user:login_success', (data) => {
             console.log('✅ Login success:', data);
             this.onLoginSuccess(data);
@@ -186,7 +182,6 @@ class MultiplayerChess {
             this.updateOnlineUsers(data.users);
         });
         
-        // Matchmaking events
         this.socket.on('matchmaking:match_found', (data) => {
             console.log('🎉 Match found!', data);
             this.onMatchFound(data);
@@ -197,7 +192,6 @@ class MultiplayerChess {
             document.getElementById('searchStatus').textContent = `Searching... (${data.queue} players in queue)`;
         });
         
-        // Room events
         this.socket.on('room:created', (data) => {
             console.log('🔐 Room created:', data);
             this.onRoomCreated(data);
@@ -223,7 +217,6 @@ class MultiplayerChess {
             this.onOpponentLeft(data);
         });
         
-        // Game events
         this.socket.on('game:start', (data) => {
             console.log('🎮 Game starting:', data);
             this.onGameStart(data);
@@ -259,14 +252,12 @@ class MultiplayerChess {
             alert('Draw offer declined');
         });
         
-        // Chat events
         this.socket.on('chat:message', (data) => {
             console.log('💬 Chat message:', data);
             this.onChatMessage(data);
         });
     }
     
-    // Socket event handlers
     onLoginSuccess(data) {
         hideAllScreens();
         document.getElementById('lobbyScreen').classList.remove('hidden');
@@ -335,17 +326,13 @@ class MultiplayerChess {
     onGameStart(data) {
         console.log('🎮 Game started!', data);
         
-        // Set player color
         this.playerColor = data.color;
         this.opponentName = data.opponent.username;
         this.isMyTurn = (data.color === 'white');
         this.gameStarted = true;
         this.gameOver = false;
-        
-        // Auto flip board if playing as black
         this.isFlipped = (this.playerColor === 'black');
         
-        // Update UI
         document.getElementById('playerName').textContent = this.socket.getUsername() || 'You';
         document.getElementById('opponentName').textContent = this.opponentName;
         
@@ -354,16 +341,12 @@ class MultiplayerChess {
         document.getElementById('playerColor').textContent = playerColorIcon;
         document.getElementById('opponentColor').textContent = opponentColorIcon;
         
-        // Reset game
         this.game = new window.Chess();
         this.selectedSquare = null;
         this.legalMoves = [];
         this.lastMove = null;
         
-        // Start timer
         this.startTimer();
-        
-        // Draw board
         this.draw();
         
         updateGameStatus(this.isMyTurn ? 'Your turn!' : 'Opponent\'s turn');
@@ -444,7 +427,6 @@ class MultiplayerChess {
         return div.innerHTML;
     }
     
-    // Mouse handlers
     onMouseDown(e) {
         if (!this.gameStarted || this.gameOver || !this.isMyTurn) return;
         
@@ -544,13 +526,11 @@ class MultiplayerChess {
                 this.lastMove = { from: moveObj.from, to: moveObj.to };
                 this.isMyTurn = false;
                 
-                // Send move to server
                 this.socket.makeMove(moveObj.san);
                 
                 this.draw();
                 updateGameStatus('Opponent\'s turn');
                 
-                // Check for game over locally
                 if (this.checkGameOver()) {
                     return true;
                 }
@@ -570,7 +550,6 @@ class MultiplayerChess {
         return false;
     }
     
-    // Coordinate conversion
     canvasToSquare(x, y) {
         const file = Math.floor(x / this.squareSize);
         const rank = this.isFlipped ? Math.floor(y / this.squareSize) : 7 - Math.floor(y / this.squareSize);
@@ -590,7 +569,6 @@ class MultiplayerChess {
         return { x, y };
     }
     
-    // Drawing methods
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
@@ -768,7 +746,6 @@ class MultiplayerChess {
         this.drawPiece(this.dragPiece, x, y);
     }
     
-    // Timer
     startTimer() {
         this.stopTimer();
         
@@ -778,7 +755,6 @@ class MultiplayerChess {
                 if (this.playerTime <= 0) {
                     this.playerTime = 0;
                     this.stopTimer();
-                    // Time out - will be handled by server
                 }
                 this.updateTimerDisplay();
             } else {
@@ -840,16 +816,22 @@ function hideAllScreens() {
 }
 
 function login() {
-    const usernameInput = document.getElementById('usernameInput');
-    const username = usernameInput.value.trim();
+    const user = getCurrentUser();
+    let username;
+    
+    if (user) {
+        username = user.username;
+    } else {
+        username = document.getElementById('usernameInput').value.trim();
+    }
     
     if (!username) {
         alert('Please enter your name');
         return;
     }
     
-    if (username.length < 2) {
-        alert('Name must be at least 2 characters');
+    if (username.length < 3) {
+        alert('Username must be at least 3 characters');
         return;
     }
     
@@ -959,7 +941,6 @@ function sendMessage() {
 }
 
 function inviteUser(userId) {
-    // TODO: Implement direct invitation
     alert('Direct invitation feature coming soon!');
 }
 

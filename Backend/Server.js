@@ -4,15 +4,40 @@ const path = require('path');
 const { Chess } = require('chess.js');
 const http = require('http');
 const socketIO = require('socket.io');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const cookieParser = require('cookie-parser');
+
+// Load env vars
+dotenv.config();
+
+// Validate required environment variables
+const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET', 'SESSION_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+    console.error('❌ Missing required environment variables:');
+    missingEnvVars.forEach(envVar => console.error(`   - ${envVar}`));
+    console.error('\n💡 Please create .env file in Backend folder with:');
+    console.error('   MONGODB_URI=your_mongodb_uri');
+    console.error('   JWT_SECRET=your_jwt_secret');
+    console.error('   SESSION_SECRET=your_session_secret\n');
+    process.exit(1);
+}
+
+console.log('✅ Environment variables loaded');
 
 const UserManager = require('./user-manager');
 const GameManager = require('./game-manager');
-
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
+const puzzleRoutes = require('./routes/puzzle');
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server, {
     cors: {
-        origin: '*',
+        origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        credentials: true,
         methods: ['GET', 'POST']
     }
 });
@@ -24,10 +49,62 @@ const userManager = new UserManager();
 const gameManager = new GameManager(io, userManager);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
+app.use(cookieParser());
 
-// Serve static files từ Frontend với proper headers
+// Connect to MongoDB with better error handling
+const connectDB = async () => {
+    try {
+        // Mongoose 6+ không cần useNewUrlParser và useUnifiedTopology
+        const options = {
+            serverSelectionTimeoutMS: 10000, // 10 seconds timeout
+            socketTimeoutMS: 45000, // 45 seconds socket timeout
+        };
+
+        console.log('🔌 Connecting to MongoDB Atlas...');
+        console.log('📄 Using database:', process.env.MONGODB_URI ? 
+            process.env.MONGODB_URI.split('@')[1]?.split('/')[1]?.split('?')[0] : 'NOT FOUND');
+        
+        const conn = await mongoose.connect(process.env.MONGODB_URI, options);
+        
+        console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+        console.log(`📁 Database: ${conn.connection.name}`);
+        
+    } catch (error) {
+        console.error('❌ MongoDB connection failed:', error.message);
+        console.log('\n⚠️  Possible issues:');
+        console.log('   1. Check MONGODB_URI in .env file');
+        console.log('   2. Ensure IP is whitelisted in MongoDB Atlas (0.0.0.0/0)');
+        console.log('   3. Verify username/password are correct');
+        console.log('   4. Check internet connection');
+        console.log('\n⚠️  Server will continue WITHOUT database');
+        console.log('⚠️  Auth features (login/register) will NOT work\n');
+    }
+};
+
+// MongoDB connection events
+mongoose.connection.on('connected', () => {
+    console.log('✅ Mongoose connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('❌ Mongoose connection error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('⚠️  Mongoose disconnected from MongoDB');
+});
+
+// Connect to database
+connectDB();
+
+// Serve static files
 app.use(express.static(path.join(__dirname, '../Frontend'), {
     setHeaders: (res, path) => {
         if (path.endsWith('.css')) {
@@ -44,12 +121,17 @@ app.get('/api/health', (req, res) => {
     res.json({ 
         status: 'OK', 
         message: 'Chess API is running',
+        database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
         users: userManager.getOnlineCount(),
         games: gameManager.getActiveGamesCount()
     });
 });
 
-// Stockfish API endpoint (existing)
+// Auth routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/puzzles', puzzleRoutes);
+// Stockfish API endpoint
 app.post('/api/stockfish/move', async (req, res) => {
     try {
         const { fen, depth = 5 } = req.body;
@@ -63,7 +145,6 @@ app.post('/api/stockfish/move', async (req, res) => {
             return res.json({ error: 'No legal moves' });
         }
         
-        // AI logic based on difficulty
         let bestMove;
         
         if (depth <= 2) {
@@ -116,6 +197,15 @@ io.on('connection', (socket) => {
     socket.on('user:login', ({ username }) => {
         console.log(`👤 User login attempt: ${username} (${socket.id})`);
         
+        const existingUser = userManager.getUser(socket.id);
+        if (existingUser) {
+            console.log(`⚠️ Socket ${socket.id} already logged in as ${existingUser.username}`);
+            socket.emit('user:login_error', {
+                message: 'Already logged in'
+            });
+            return;
+        }
+        
         const result = userManager.addUser(socket.id, username);
         
         if (result.success) {
@@ -124,16 +214,16 @@ io.on('connection', (socket) => {
                 username: result.user.username
             });
             
-            // Broadcast updated user list
             io.emit('users:update', {
                 users: userManager.getAllUsers()
             });
             
-            console.log(`✅ User logged in: ${username}`);
+            console.log(`✅ User logged in: ${username} (${socket.id})`);
         } else {
             socket.emit('user:login_error', {
                 message: result.message
             });
+            console.log(`❌ Login failed: ${username} - ${result.message}`);
         }
     });
     
@@ -143,7 +233,6 @@ io.on('connection', (socket) => {
             console.log(`👋 User logout: ${user.username}`);
             userManager.removeUser(socket.id);
             
-            // Broadcast updated user list
             io.emit('users:update', {
                 users: userManager.getAllUsers()
             });
@@ -164,7 +253,6 @@ io.on('connection', (socket) => {
         
         if (result.matched) {
             console.log(`🎉 Match found: ${result.player1.username} vs ${result.player2.username}`);
-            // Match notifications sent by gameManager
         } else {
             socket.emit('matchmaking:waiting', {
                 queue: gameManager.getMatchmakingQueueSize()
@@ -215,7 +303,6 @@ io.on('connection', (socket) => {
             
             console.log(`✅ ${user.username} joined room: ${roomCode}`);
             
-            // Notify room creator
             const creatorSocket = io.sockets.sockets.get(result.room.players[0]);
             if (creatorSocket) {
                 creatorSocket.emit('room:opponent_joined', {
@@ -223,7 +310,6 @@ io.on('connection', (socket) => {
                 });
             }
             
-            // Start game
             gameManager.startGame(result.room.id);
         } else {
             socket.emit('room:error', { message: result.message });
@@ -235,7 +321,6 @@ io.on('connection', (socket) => {
         if (room) {
             socket.leave(roomId);
             
-            // Notify opponent
             socket.to(roomId).emit('room:opponent_left', {
                 reason: 'Player left'
             });
@@ -253,13 +338,11 @@ io.on('connection', (socket) => {
         if (result.success) {
             console.log(`♟️ Move in ${roomId}: ${move} by ${user?.username}`);
             
-            // Notify opponent
             socket.to(roomId).emit('game:move', {
                 move: move,
                 fen: result.fen
             });
             
-            // Check game over
             if (result.gameOver) {
                 io.to(roomId).emit('game:over', {
                     winner: result.winner,
@@ -336,7 +419,6 @@ io.on('connection', (socket) => {
         if (user) {
             console.log(`❌ User disconnected: ${user.username} (${socket.id})`);
             
-            // Handle active games
             const activeRooms = gameManager.getUserRooms(socket.id);
             activeRooms.forEach(roomId => {
                 socket.to(roomId).emit('room:opponent_left', {
@@ -345,13 +427,9 @@ io.on('connection', (socket) => {
                 gameManager.removeRoom(roomId);
             });
             
-            // Remove from matchmaking
             gameManager.removeFromMatchmaking(socket.id);
-            
-            // Remove user
             userManager.removeUser(socket.id);
             
-            // Broadcast updated user list
             io.emit('users:update', {
                 users: userManager.getAllUsers()
             });
@@ -361,13 +439,29 @@ io.on('connection', (socket) => {
     });
 });
 
-// Handle missing assets gracefully
+// Handle missing assets
 app.get('/assets/*', (req, res) => {
     console.log(`⚠️ Missing asset: ${req.path}`);
     res.status(404).send('Asset not found');
 });
 
-// Specific routes
+// Specific routes (BEFORE catch-all)
+app.get('/register', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'register.html'));
+});
+
+app.get('/register.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'register.html'));
+});
+
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'login.html'));
+});
+
+app.get('/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'login.html'));
+});
+
 app.get('/play-vs-bot', (req, res) => {
     res.sendFile(path.join(__dirname, '../Frontend', 'play-vs-bot.html'));
 });
@@ -382,6 +476,20 @@ app.get('/play-multiplayer', (req, res) => {
 
 app.get('/play-multiplayer.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../Frontend', 'play-multiplayer.html'));
+});
+app.get('/puzzles', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'puzzles.html'));
+});
+
+app.get('/puzzles.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'puzzles.html'));
+});
+app.get('/profile', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'profile.html'));
+});
+
+app.get('/profile.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'profile.html'));
 });
 
 // Serve frontend for all other routes
@@ -399,6 +507,8 @@ server.listen(PORT, () => {
 ║                                                          ║
 ║  🏠 Routes:                                              ║
 ║     • Home:           http://localhost:${PORT}/           ║
+║     • Register:       http://localhost:${PORT}/register.html
+║     • Login:          http://localhost:${PORT}/login.html 
 ║     • Play vs Bot:    http://localhost:${PORT}/play-vs-bot.html
 ║     • Multiplayer:    http://localhost:${PORT}/play-multiplayer.html
 ║     • Health Check:   http://localhost:${PORT}/api/health ║
@@ -406,4 +516,10 @@ server.listen(PORT, () => {
 ║  🔌 WebSocket: Socket.IO enabled for multiplayer        ║
 ╚══════════════════════════════════════════════════════════╝
     `);
+});
+
+// Handle unhandled rejections
+process.on('unhandledRejection', (err) => {
+    console.error('❌ Unhandled Promise Rejection:', err);
+    server.close(() => process.exit(1));
 });

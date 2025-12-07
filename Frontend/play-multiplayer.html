@@ -15,6 +15,11 @@
                 <p id="gameStatus">Connecting to server...</p>
                 <p id="onlineUsers" class="online-users">👥 Online: 0</p>
             </div>
+            
+            <!-- ADD BACK TO HOME BUTTON -->
+            <button onclick="backToHome()" class="back-home-btn" style="position: absolute; right: 20px; top: 20px; padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                🏠 Home
+            </button>
         </div>
 
         <!-- Login Screen -->
@@ -145,7 +150,15 @@
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
+    <!-- ADD AUTH CHECK BEFORE OTHER SCRIPTS -->
+    <script src="./js/auth-check.js"></script>
+    
     <script>
+        // CHECK AUTH FIRST
+        if (!requireAuth()) {
+            // Will redirect to login if not authenticated
+        }
+        
         // Initialize Chess.js
         if (typeof Chess !== 'undefined') {
             window.Chess = Chess;
@@ -155,6 +168,13 @@
         // Initialize Socket.IO
         if (typeof io !== 'undefined') {
             console.log('✅ Socket.IO loaded');
+        }
+        
+        // ADD BACK TO HOME FUNCTION
+        function backToHome() {
+            if (confirm('Are you sure you want to leave the game?')) {
+                window.location.href = '/index.html';
+            }
         }
     </script>
     
