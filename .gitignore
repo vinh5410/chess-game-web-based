@@ -1,1 +1,4 @@
 Backend/.env
+*.csv
+node_modules/
+
