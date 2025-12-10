@@ -380,3 +380,21 @@ exports.getHint = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+exports.solution = async (req, res) => {
+    try {
+        const puzzle = await Puzzle.findOne({ puzzleId: req.params.puzzleId });
+        
+        if (!puzzle) {
+            return res.status(404).json({ success: false, message: 'Puzzle not found' });
+        }
+
+        // THAY ĐỔI: Trả về moves thay vì solution (vì model không có field solution)
+        res.json({
+            success: true,
+            solution: puzzle.moves // Trả về toàn bộ mảng moves
+        });
+    } catch (error) {
+        console.error('Get solution error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
