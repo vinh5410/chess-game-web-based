@@ -24,6 +24,7 @@ class ChessPuzzleGame {
         this.isSolving = false;
         this.isUserTurn = false;
         this.isFlipped = false; // Lật bàn cờ nếu người chơi cầm quân Đen
+        this.hasSubmittedResult = false; // Ngăn submit nhiều lần
 
         // --- TƯƠNG TÁC CHUỘT ---
         this.isDragging = false;
@@ -33,6 +34,8 @@ class ChessPuzzleGame {
         this.mousePos = { x: 0, y: 0 };
         this.legalMoves = [];
         this.hintSquares = null;
+        // Audio Manager
+        this.audioManager = null;
         // --- HÌNH ẢNH ---
         this.pieceImages = {};
         this.imagesLoaded = false;
@@ -56,7 +59,10 @@ class ChessPuzzleGame {
         
         // 2. Gắn sự kiện chuột
         this.setupEventListeners();
-        
+        // Initialize Audio Manager
+        if (window.audioManager) {
+            this.audioManager = window.audioManager;
+        }        
         // 3. Load thông tin người dùng và Puzzle đầu tiên
         this.handleResize();
         await this.loadUserStats();
@@ -149,6 +155,7 @@ class ChessPuzzleGame {
             this.ctx.arc(pos.x + this.squareSize/2, pos.y + this.squareSize/2, 12, 0, 2*Math.PI);
             this.ctx.fill();
         });
+        
         if (this.hintSquares) {
             const fromPos = this.squareToCanvas(this.hintSquares.from);
             const toPos = this.squareToCanvas(this.hintSquares.to);
@@ -177,8 +184,6 @@ class ChessPuzzleGame {
                 if (!piece) continue;
 
                 // Tính toán tọa độ vẽ
-                // Lưu ý: Canvas vẽ từ trên xuống (rank 0 visual là rank 8 chess nếu không flip)
-                // Ta vẽ theo grid r, c của vòng lặp
                 const squareStr = this.canvasToSquare(c * this.squareSize, r * this.squareSize);
 
                 // Không vẽ quân đang bị kéo (để vẽ nó ở vị trí chuột)
@@ -204,16 +209,15 @@ class ChessPuzzleGame {
     }
 
     // ============================================================
-    // 2. LOGIC PUZZLE & API (Phần code cũ được tích hợp lại)
+    // 2. LOGIC PUZZLE & API (Cải thiện theo yêu cầu)
     // ============================================================
-
-// ... code cũ ...
 
     async loadNewPuzzle() {
         try {
             this.stopTimer();
             this.hideFeedback();
             this.hintSquares = null;
+            this.hasSubmittedResult = false;
             document.getElementById('moves-container').innerHTML = '';
 
             const rating = document.getElementById('puzzle-rating').innerText || 1200;
@@ -227,55 +231,59 @@ class ChessPuzzleGame {
             if (data.success) {
                 this.currentPuzzle = data.puzzle;
                 
-                // 1. Load FEN gốc
+                // 1. Load FEN GỐC (Trước khi đối thủ đi)
                 this.game.load(this.currentPuzzle.fen);
                 this.isSolving = true;
-
-                // --- SỬA LẠI LOGIC NÀY ---
-                // Kiểm tra xem Server có gửi initialMove không
-                if (this.currentPuzzle.initialMove) {
-                    console.log("Opponent blunder:", this.currentPuzzle.initialMove);
-                    
-                    // Thực hiện nước đi của đối thủ
-                    const move = this.makeMoveInternal(this.currentPuzzle.initialMove);
-                    
-                    if (move) {
-                        this.addMoveToHistory(move.san);
-                        // QUAN TRỌNG: User bắt đầu giải từ index 1
-                        this.moveIndex = 1; 
-                    } else {
-                        // Phòng trường hợp FEN đã bao gồm nước đi này rồi (dữ liệu không đồng nhất)
-                        this.moveIndex = 0;
-                    }
-                } else {
-                    // Fallback cho dữ liệu cũ
-                    this.moveIndex = 0;
-                }
-                // --------------------------
-
-                this.isUserTurn = true;
+                this.isUserTurn = false; // Chưa cho user đi
+                this.moveIndex = 0;
 
                 // Update UI Info
                 document.getElementById('puzzle-difficulty').textContent = (this.currentPuzzle.difficulty || 'Normal').toUpperCase();
                 document.getElementById('puzzle-puzzle-rating').textContent = this.currentPuzzle.rating;
                 
-                // Hiển thị lượt đi
-                const turn = this.game.turn() === 'w' ? 'White' : 'Black';
-                document.getElementById('to-move').textContent = `${turn === 'White' ? '⚪' : '⚫'} ${turn} to move`;
+                // 2. Vẽ bàn cờ ban đầu
+                this.isFlipped = false; // Tạm thời chưa lật
+                this.draw();
 
-                // Lật bàn cờ theo phe User (người chơi luôn cầm quân vừa đến lượt)
+                // Hiển thị turn hiện tại
+                this.updateTurnIndicator();
+
+                // 3. Delay 1 giây rồi máy đi nước đầu tiên
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                if (this.currentPuzzle.initialMove) {
+                    console.log("Opponent plays:", this.currentPuzzle.initialMove);
+                    
+                    const move = this.makeMoveInternal(this.currentPuzzle.initialMove);
+                    
+                    if (move) {
+                        this.addMoveToHistory(move.san);
+                        this.moveIndex = 1; // Bắt đầu từ index 1
+                        this.draw();
+                    }
+                }
+
+                // 4. Giờ đến lượt USER
+                this.isUserTurn = true;
+
+                // Lật bàn cờ theo phe User (người chơi luôn ở dưới)
                 this.isFlipped = (this.game.turn() === 'b');
+                this.draw();
+
+                // Update turn indicator
+                this.updateTurnIndicator();
 
                 this.startTimer();
-                this.draw();
             }
         } catch (e) {
             console.error("Error loading puzzle:", e);
         }
     }
 
-
-    // ... code cũ ...
+    updateTurnIndicator() {
+        const turn = this.game.turn() === 'w' ? 'White' : 'Black';
+        document.getElementById('to-move').textContent = `${turn === 'White' ? '⚪' : '⚫'} ${turn} to move`;
+    }
 
     // Hàm thực hiện nước đi nội bộ (dùng cho nước đi đầu tiên của máy)
     makeMoveInternal(uci) {
@@ -283,7 +291,14 @@ class ChessPuzzleGame {
         const from = uci.substring(0, 2);
         const to = uci.substring(2, 4);
         const promotion = uci.length > 4 ? uci.substring(4, 5) : undefined;
-        return this.game.move({ from, to, promotion });
+        const move = this.game.move({ from, to, promotion });
+        
+        // Phát âm thanh
+        if (move && this.audioManager) {
+            this.audioManager.playMove(move, this.game);
+        }
+        
+        return move;
     }
 
     async getHint() {
@@ -291,24 +306,19 @@ class ChessPuzzleGame {
 
         const token = localStorage.getItem('token');
         try {
-            // Gọi API lấy gợi ý (Backend đã có route này)
             const res = await fetch(`/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
 
             if (data.success && data.hint) {
-                // Lưu tọa độ gợi ý vào biến state
                 this.hintSquares = {
                     from: data.hint.from,
                     to: data.hint.to
                 };
                 
-                // Vẽ lại bàn cờ để hiện highlight
                 this.draw();
-                
-                // Trừ điểm hoặc ghi nhận đã dùng hint (tuỳ logic game của bạn)
-                this.showFeedback('incorrect', 'Hint revealed! Try to move.'); // Dùng style incorrect để cảnh báo
+                this.showFeedback('incorrect', '💡 Hint revealed! Try to move.');
             }
         } catch (error) {
             console.error('Hint error:', error);
@@ -318,12 +328,12 @@ class ChessPuzzleGame {
     async showSolution() {
         if (!this.isSolving) return;
 
-        // 1. Xác nhận thua cuộc
-        this.submitResult(false); // Gửi kết quả thua lên server
-        this.isSolving = false;   // Dừng game
+        // 1. Đánh dấu thua cuộc
+        this.submitResult(false);
+        this.isSolving = false;
         this.stopTimer();
         
-        // 2. Lấy nước đi đúng (Hack: Gọi API hint để lấy nước đi tiếp theo)
+        // 2. Lấy nước đi đúng
         const token = localStorage.getItem('token');
         try {
             const res = await fetch(`/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`, {
@@ -332,7 +342,6 @@ class ChessPuzzleGame {
             const data = await res.json();
 
             if (data.success && data.hint) {
-                // 3. Thực hiện nước đi trên bàn cờ cho người xem
                 const move = this.game.move({
                     from: data.hint.from,
                     to: data.hint.to,
@@ -341,16 +350,17 @@ class ChessPuzzleGame {
 
                 if (move) {
                     this.addMoveToHistory(move.san);
-                    this.hintSquares = null; // Xóa hint cũ nếu có
+                    this.hintSquares = null;
                     this.draw();
                 }
                 
-                this.showFeedback('incorrect', 'Solution shown. You failed this puzzle.');
+                this.showFeedback('incorrect', '👁️ Solution shown. You failed this puzzle.');
             }
         } catch (error) {
             console.error('Show solution error:', error);
         }
     }
+
     async onDropPiece(from, to) {
         if (!this.isUserTurn || !this.isSolving) return;
 
@@ -360,7 +370,10 @@ class ChessPuzzleGame {
             this.draw(); // Reset vị trí nếu đi lỗi
             return; 
         }
-
+        // Phát âm thanh
+        if (this.audioManager) {
+            this.audioManager.playMove(move, this.game);
+        }
         // 2. Cập nhật UI ngay lập tức
         this.addMoveToHistory(move.san);
         this.draw();
@@ -385,31 +398,49 @@ class ChessPuzzleGame {
             if (data.success && data.isCorrect) {
                 // ĐÚNG
                 this.moveIndex++;
+                this.hintSquares = null; // Xóa hint nếu có
+                
                 if (data.isComplete) {
                     this.puzzleSolved();
                 } else if (data.nextMove) {
                     // Máy đi tiếp
-                    setTimeout(() => {
-                        this.makeMove(data.nextMove);
-                        this.moveIndex++;
-                        this.isUserTurn = true;
-                        this.draw();
-                    }, 500);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    this.makeMove(data.nextMove);
+                    this.moveIndex++;
+                    this.isUserTurn = true;
+                    this.updateTurnIndicator();
+                    this.draw();
                 }
             } else {
-                // SAI
-                this.showFeedback('incorrect', 'Wrong move! Try again.');
-                this.submitResult(false);
-                setTimeout(() => {
-                    this.game.undo(); // Undo nước đi sai
-                    this.removeLastHistory();
-                    this.isUserTurn = true;
-                    this.draw();
-                }, 1000);
+                // SAI - Hiển thị thông báo với 2 nút
+                this.showFeedbackWithActions(
+                    'incorrect', 
+                    '❌ Wrong move! Try again or skip to next puzzle.',
+                    [
+                        {
+                            text: '🔄 Try Again',
+                            onclick: () => {
+                                this.game.undo();
+                                this.removeLastHistory();
+                                this.isUserTurn = true;
+                                this.hideFeedback();
+                                this.draw();
+                            }
+                        },
+                        {
+                            text: '⏭️ Next Puzzle',
+                            onclick: () => {
+                                this.submitResult(false);
+                                this.loadNewPuzzle();
+                            }
+                        }
+                    ]
+                );
             }
         } catch (e) {
             console.error(e);
             this.game.undo();
+            this.removeLastHistory();
             this.isUserTurn = true;
             this.draw();
         }
@@ -420,20 +451,28 @@ class ChessPuzzleGame {
         const to = uci.substring(2, 4);
         const promotion = uci.length > 4 ? uci.substring(4, 5) : undefined;
         const move = this.game.move({ from, to, promotion });
-        if(move) this.addMoveToHistory(move.san);
+        
+        if (move) {
+            this.addMoveToHistory(move.san);
+            
+            // Phát âm thanh
+            if (this.audioManager) {
+                this.audioManager.playMove(move, this.game);
+            }
+        }
     }
 
     puzzleSolved() {
         this.isSolving = false;
         this.stopTimer();
-        this.showFeedback('correct', 'Puzzle Solved!');
+        this.showFeedback('correct', '✅ Puzzle Solved! Great job!');
         this.submitResult(true);
     }
 
     async submitResult(solved) {
         // Chỉ submit 1 lần
-        if (!solved && this.failed) return;
-        if (!solved) this.failed = true;
+        if (this.hasSubmittedResult) return;
+        this.hasSubmittedResult = true;
 
         const timeTaken = Math.floor((Date.now() - this.startTime) / 1000);
         const token = localStorage.getItem('token');
@@ -451,13 +490,13 @@ class ChessPuzzleGame {
         }).then(res => res.json()).then(data => {
             if (data.success) {
                 document.getElementById('puzzle-rating').innerText = data.newRating;
-                if(solved) this.loadUserStats(); // Reload stats đầy đủ
+                if(solved) this.loadUserStats();
             }
         });
     }
 
     // ============================================================
-    // 3. UTILS & EVENT HANDLING (Hỗ trợ Timer, Resize, Click)
+    // 3. UTILS & EVENT HANDLING
     // ============================================================
 
     startTimer() {
@@ -475,12 +514,10 @@ class ChessPuzzleGame {
         if (this.timerInterval) clearInterval(this.timerInterval);
     }
 
-    // Chuyển đổi tọa độ Canvas <-> Ô cờ (quan trọng cho Drag/Drop)
     canvasToSquare(x, y) {
         const c = Math.floor(x / this.squareSize);
         const r = Math.floor(y / this.squareSize);
         
-        // Nếu lật bàn cờ thì tính lại
         const file = this.isFlipped ? (7 - c) : c;
         const rank = this.isFlipped ? r : (7 - r);
 
@@ -499,16 +536,14 @@ class ChessPuzzleGame {
     }
 
     setupEventListeners() {
-        // Chuột
         this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
 
-        // Nút bấm
         document.getElementById('new-puzzle-btn').addEventListener('click', () => this.loadNewPuzzle());
         document.getElementById('hint-btn').addEventListener('click', () => this.getHint());
         document.getElementById('solution-btn').addEventListener('click', () => this.showSolution());        
-        // Resize
+        
         window.addEventListener('resize', () => this.handleResize());
     }
 
@@ -544,7 +579,6 @@ class ChessPuzzleGame {
             const rect = this.canvas.getBoundingClientRect();
             const sq = this.canvasToSquare(e.clientX - rect.left, e.clientY - rect.top);
             
-            // Nếu thả vào ô khác ô bắt đầu -> Di chuyển
             if (sq && sq !== this.dragStartSquare) {
                 this.onDropPiece(this.dragStartSquare, sq);
             }
@@ -552,7 +586,7 @@ class ChessPuzzleGame {
             this.isDragging = false;
             this.dragPiece = null;
             this.dragStartSquare = null;
-            this.legalMoves = []; // Xóa gợi ý sau khi thả
+            this.legalMoves = [];
             this.draw();
         }
     }
@@ -569,7 +603,6 @@ class ChessPuzzleGame {
         }
     }
 
-    // Helper UI
     addMoveToHistory(san) {
         const div = document.createElement('div');
         div.className = 'move-item';
@@ -588,6 +621,34 @@ class ChessPuzzleGame {
         fb.classList.remove('hidden', 'correct', 'incorrect');
         fb.classList.add(type);
         document.getElementById('feedback-message').innerText = msg;
+        
+        // Xóa các nút cũ nếu có
+        const existingActions = fb.querySelector('.feedback-actions');
+        if (existingActions) existingActions.remove();
+    }
+
+    showFeedbackWithActions(type, msg, actions) {
+        this.showFeedback(type, msg);
+        
+        const fb = document.getElementById('feedback');
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'feedback-actions';
+        actionsDiv.style.marginTop = '15px';
+        actionsDiv.style.display = 'flex';
+        actionsDiv.style.gap = '10px';
+        actionsDiv.style.justifyContent = 'center';
+        
+        actions.forEach(action => {
+            const btn = document.createElement('button');
+            btn.textContent = action.text;
+            btn.className = 'control-btn';
+            btn.style.fontSize = '14px';
+            btn.style.padding = '8px 16px';
+            btn.onclick = action.onclick;
+            actionsDiv.appendChild(btn);
+        });
+        
+        fb.appendChild(actionsDiv);
     }
 
     hideFeedback() {
@@ -595,7 +656,6 @@ class ChessPuzzleGame {
     }
 
     async loadUserStats() {
-        // Code cũ để lấy stats
         const token = localStorage.getItem('token');
         if(!token) return;
         const res = await fetch('/api/puzzles/stats', { headers: { 'Authorization': `Bearer ${token}` }});

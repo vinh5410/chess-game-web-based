@@ -43,6 +43,9 @@ class ChessCanvasVsBot {
         this.maxCacheSize = 100;
         
         this.initPromise = this.init();
+        // Audio Manager
+        this.audioManager = null;
+    
     }
     
     async init() {
@@ -66,7 +69,11 @@ class ChessCanvasVsBot {
         
         // Load piece images
         await this.loadPieceImages();
-        
+        // Initialize Audio Manager
+        if (window.audioManager) {
+            this.audioManager = window.audioManager;
+            console.log('🔊 Audio Manager connected');
+        }    
         // Setup event listeners
         this.setupEventListeners();
         
@@ -270,6 +277,12 @@ class ChessCanvasVsBot {
             
             if (move) {
                 console.log('✅ Player move:', move.san);
+                
+                // Phát âm thanh
+                if (this.audioManager) {
+                    this.audioManager.playMove(move, this.game);
+                }
+                
                 this.onMove(move);
                 return true;
             }
@@ -470,6 +483,11 @@ class ChessCanvasVsBot {
             
             const move = this.game.move(selectedMove);
             console.log('🤖 Bot move:', move.san);
+            
+            // Phát âm thanh
+            if (this.audioManager) {
+                this.audioManager.playMove(move, this.game);
+            }
             
             this.draw();
             this.updateGameStatus();
