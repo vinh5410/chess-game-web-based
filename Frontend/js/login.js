@@ -1,56 +1,55 @@
-let form = document.getElementById("formcontainer");
-
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  let payload = {
-    email: document.getElementById("email").value,
-    password: document.getElementById("password").value,
-  };
-  fetch(`http://localhost:4500/user/login`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  })
-    .then((res) => res.json())
-    .then((res) => {
-      if (res.msg == "Login success") {
-        localStorage.setItem("chessmate-email",payload.email);
-        console.log(document.cookie)
-        const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('JAA_access_token='))
-      .split('=')[1];
-      console.log(token);
-        Swal.fire({
-          position: "centre",
-          icon: "success",
-          title: "Login Success",
-          showConfirmButton: false,
-          timer: 2400,
-          position:"center"
+document.addEventListener('DOMContentLoaded', () => {
+    // Redirect if already logged in
+    redirectIfLoggedIn();
+});
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const messageEl = document.getElementById('message');
+    
+    // Clear previous message
+    messageEl.textContent = '';
+    messageEl.className = 'message';
+    
+    // Show loading
+    showMessage('Logging in...', 'success');
+    
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
         });
-        setTimeout(() => {
-          window.location.href = "lobby.html"
-        }, 2500)
-      }
-       else {
-        Swal.fire({
-          position: "centre",
-          icon: "error",
-          title: `${res.msg}`,
-          showConfirmButton: false,
-          timer: 1500,
-        });
-      }
-    })
-    .catch((err) => console.log(err));
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showMessage('Login successful! Redirecting...', 'success');
+            
+            // Save token and user data
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            
+            // Redirect to home page after 1 second
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+        } else {
+            showMessage(data.message || 'Login failed', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showMessage('Network error. Please try again.', 'error');
+    }
 });
 
-
-let googleBtn = document.getElementById("gbtn");
-
-googleBtn.addEventListener("click",()=>{
-  // window.location.href="leaderboard.html"
-})
+function showMessage(text, type) {
+    const messageEl = document.getElementById('message');
+    messageEl.textContent = text;
+    messageEl.className = `message ${type}`;
+}

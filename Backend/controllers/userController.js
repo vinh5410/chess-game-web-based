@@ -165,7 +165,7 @@ exports.getLeaderboard = async (req, res) => {
         });
         
     } catch (error) {
-        console.error(' Get leaderboard error:', error);
+        console.error('❌ Get leaderboard error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
