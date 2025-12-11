@@ -58,7 +58,6 @@ class MultiplayerChess {
         // Socket client
         this.socket = window.socketClient;
         
-        this.init();
     }
     
     async init() {
@@ -80,8 +79,27 @@ class MultiplayerChess {
         
         await this.loadPieceImages();
         this.setupEventListeners();
-        this.setupSocketListeners();
+        
+        // Connect socket
+        console.log('🔌 Connecting to socket...');
         this.socket.connect();
+        
+        // Đợi socket connect
+        await new Promise((resolve) => {
+            const checkConnection = () => {
+                if (this.socket.isConnected() && this.socket.socket) {
+                    console.log('✅ Socket connected:', this.socket.socket.id);
+                    resolve();
+                } else {
+                    setTimeout(checkConnection, 100);
+                }
+            };
+            checkConnection();
+        });
+        
+        // Setup socket listeners SAU KHI connect
+        console.log('🔌 Setting up socket listeners...');
+        this.setupSocketListeners();
         
         console.log('✅ Multiplayer Chess initialized');
         return true;
@@ -149,113 +167,118 @@ class MultiplayerChess {
         }
     }
     
+    
     setupSocketListeners() {
         console.log('🔌 Setting up socket listeners...');
         
-        this.socket.on('connection_success', () => {
-            console.log('✅ Socket connected');
-            updateGameStatus('Connected! Please login.');
-        });
+        // Get socket.io instance
+        const io = this.socket.socket;
         
-        this.socket.on('connection_error', (error) => {
-            console.error('❌ Connection error:', error);
-            updateGameStatus('⚠️ Connection error. Please refresh.');
-        });
+        if (!io) {
+            console.error('❌ Socket.IO instance not found! Connection may not be ready.');
+            return;
+        }
         
-        this.socket.on('disconnected', (reason) => {
-            console.log('❌ Disconnected:', reason);
-            updateGameStatus('⚠️ Disconnected from server.');
-        });
+        console.log('✅ Socket.IO instance found:', io.id);
         
-        this.socket.on('user:login_success', (data) => {
+        // Clear any existing listeners first
+        io.removeAllListeners();
+        
+        io.on('user:login_success', (data) => {
             console.log('✅ Login success:', data);
             this.onLoginSuccess(data);
         });
         
-        this.socket.on('user:login_error', (data) => {
+        io.on('user:login_error', (data) => {
             console.error('❌ Login error:', data);
             alert(data.message || 'Login failed');
         });
         
-        this.socket.on('users:update', (data) => {
-            console.log('👥 Users update:', data);
+        io.on('users:update', (data) => {
+            console.log('👥 Users update received:', data);
+            console.log('📊 Number of users:', data.users.length);
             this.updateOnlineUsers(data.users);
         });
         
-        this.socket.on('matchmaking:match_found', (data) => {
+        io.on('matchmaking:match_found', (data) => {
             console.log('🎉 Match found!', data);
             this.onMatchFound(data);
         });
         
-        this.socket.on('matchmaking:waiting', (data) => {
+        io.on('matchmaking:waiting', (data) => {
             console.log('⏳ Waiting for match...', data);
-            document.getElementById('searchStatus').textContent = `Searching... (${data.queue} players in queue)`;
+            const statusEl = document.getElementById('searchStatus');
+            if (statusEl) {
+                statusEl.textContent = `Searching... (${data.queue} players in queue)`;
+            }
         });
         
-        this.socket.on('room:created', (data) => {
+        io.on('room:created', (data) => {
             console.log('🔐 Room created:', data);
             this.onRoomCreated(data);
         });
         
-        this.socket.on('room:joined', (data) => {
+        io.on('room:joined', (data) => {
             console.log('🔗 Room joined:', data);
             this.onRoomJoined(data);
         });
         
-        this.socket.on('room:error', (data) => {
+        io.on('room:error', (data) => {
             console.error('❌ Room error:', data);
             alert(data.message || 'Room error');
         });
         
-        this.socket.on('room:opponent_joined', (data) => {
+        io.on('room:opponent_joined', (data) => {
             console.log('👥 Opponent joined:', data);
             this.onOpponentJoined(data);
         });
         
-        this.socket.on('room:opponent_left', (data) => {
+        io.on('room:opponent_left', (data) => {
             console.log('👋 Opponent left:', data);
             this.onOpponentLeft(data);
         });
         
-        this.socket.on('game:start', (data) => {
+        io.on('game:start', (data) => {
             console.log('🎮 Game starting:', data);
             this.onGameStart(data);
         });
         
-        this.socket.on('game:move', (data) => {
+        io.on('game:move', (data) => {
             console.log('♟️ Move received:', data);
             this.onOpponentMove(data);
         });
         
-        this.socket.on('game:invalid_move', (data) => {
+        io.on('game:invalid_move', (data) => {
             console.error('❌ Invalid move:', data);
             alert('Invalid move!');
         });
         
-        this.socket.on('game:over', (data) => {
+        io.on('game:over', (data) => {
             console.log('🏁 Game over:', data);
             this.onGameOver(data);
         });
         
-        this.socket.on('game:draw_offer', (data) => {
+        io.on('game:draw_offer', (data) => {
             console.log('🤝 Draw offer received');
             this.onDrawOffer(data);
         });
         
-        this.socket.on('game:draw_accepted', (data) => {
+        io.on('game:draw_accepted', (data) => {
             console.log('🤝 Draw accepted');
             this.onDrawAccepted(data);
         });
         
-        this.socket.on('game:draw_declined', (data) => {
+        io.on('game:draw_declined', (data) => {
             console.log('❌ Draw declined');
             alert('Draw offer declined');
         });
         
-        this.socket.on('chat:message', (data) => {
+        io.on('chat:message', (data) => {
             console.log('💬 Chat message:', data);
             this.onChatMessage(data);
         });
+        
+        console.log('✅ All socket listeners registered on:', io.id);
     }
     
     onLoginSuccess(data) {
@@ -265,9 +288,14 @@ class MultiplayerChess {
     }
     
     updateOnlineUsers(users) {
+        console.log('📊 Updating online users count:', users.length);
+        
         const onlineCount = document.getElementById('onlineUsers');
         if (onlineCount) {
             onlineCount.textContent = `👥 Online: ${users.length}`;
+            console.log('✅ Online count updated:', users.length);
+        } else {
+            console.error('❌ onlineUsers element not found!');
         }
         
         const usersContainer = document.getElementById('usersContainer');
@@ -290,17 +318,38 @@ class MultiplayerChess {
     onMatchFound(data) {
         console.log('🎉 Match found with:', data.opponent);
         this.socket.setCurrentRoom(data.roomId);
+        
+        // Hide game over overlay nếu còn
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        if (gameOverOverlay) {
+            gameOverOverlay.classList.add('hidden');
+        }
+        
         hideAllScreens();
         document.getElementById('gameScreen').classList.remove('hidden');
+        updateGameStatus('Match found! Starting game...');
     }
-    
     onRoomCreated(data) {
-        console.log('🔐 Private room created:', data.roomCode);
+        console.log('✅ Room created:', data);
         this.socket.setCurrentRoom(data.roomId);
+        
+        // Show invite friend screen if not visible
         hideAllScreens();
         document.getElementById('inviteFriendScreen').classList.remove('hidden');
-        document.getElementById('roomCodeDisplay').value = data.roomCode;
-        updateGameStatus('Waiting for opponent...');
+        
+        // Hide time selector
+        const timeSelectorContainer = document.getElementById('privateRoomTimeSelector');
+        if (timeSelectorContainer) {
+            timeSelectorContainer.style.display = 'none';
+        }
+        
+        // Show room code section
+        const roomCodeSection = document.getElementById('roomCodeSection');
+        if (roomCodeSection) {
+            roomCodeSection.classList.remove('hidden');
+            document.getElementById('roomCodeDisplay').value = data.roomCode;
+            updateGameStatus(`Room created! Share code: ${data.roomCode}`);
+        }
     }
     
     onRoomJoined(data) {
@@ -313,6 +362,17 @@ class MultiplayerChess {
     onOpponentJoined(data) {
         console.log('👥 Opponent joined:', data.opponent);
         this.opponentName = data.opponent.username;
+        
+        // Chuyển người tạo room sang game screen
+        hideAllScreens();
+        document.getElementById('gameScreen').classList.remove('hidden');
+        
+        // Hide game over overlay nếu còn
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        if (gameOverOverlay) {
+            gameOverOverlay.classList.add('hidden');
+        }
+        
         updateGameStatus('Opponent joined! Game starting...');
     }
     
@@ -333,6 +393,22 @@ class MultiplayerChess {
         this.gameOver = false;
         this.isFlipped = (this.playerColor === 'black');
         
+        // Reset timer từ timeControl
+        if (data.timeControl) {
+            this.playerTime = data.timeControl.initial;
+            this.opponentTime = data.timeControl.initial;
+            console.log(`⏱️ Timer set to: ${data.timeControl.initial}s`);
+        } else {
+            this.playerTime = 300;
+            this.opponentTime = 300;
+        }
+        
+        // Hide game over overlay
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        if (gameOverOverlay) {
+            gameOverOverlay.classList.add('hidden');
+        }
+        
         document.getElementById('playerName').textContent = this.socket.getUsername() || 'You';
         document.getElementById('opponentName').textContent = this.opponentName;
         
@@ -346,6 +422,7 @@ class MultiplayerChess {
         this.legalMoves = [];
         this.lastMove = null;
         
+        this.updateTimerDisplay();
         this.startTimer();
         this.draw();
         
@@ -848,7 +925,17 @@ function logout() {
 function showRandomMatch() {
     hideAllScreens();
     document.getElementById('randomMatchScreen').classList.remove('hidden');
-    window.socketClient.findRandomMatch();
+    
+    // Render time selector
+    renderTimeSelector('randomMatchTimeSelector');
+    
+    updateGameStatus('Select time control and click Find Match');
+}
+
+function startRandomSearch() {
+    const timeControl = getSelectedTimeControl();
+    document.getElementById('searchStatus').textContent = 'Searching for opponent...';
+    window.socketClient.findRandomMatch(timeControl);
 }
 
 function cancelSearch() {
@@ -857,11 +944,42 @@ function cancelSearch() {
 }
 
 function showInviteFriend() {
-    window.socketClient.createPrivateRoom();
+    hideAllScreens();
+    document.getElementById('inviteFriendScreen').classList.remove('hidden');
+    
+    // Reset UI: Hide room code section
+    const roomCodeSection = document.getElementById('roomCodeSection');
+    if (roomCodeSection) {
+        roomCodeSection.classList.add('hidden');
+    }
+    
+    // Show and render time selector
+    const timeSelectorContainer = document.getElementById('privateRoomTimeSelector');
+    if (timeSelectorContainer) {
+        timeSelectorContainer.style.display = 'block';
+        // Clear previous content before rendering
+        timeSelectorContainer.innerHTML = '';
+    }
+    
+    renderTimeSelector('privateRoomTimeSelector');
+    
+    updateGameStatus('Select time control to create room');
 }
-
 function cancelInvite() {
     window.socketClient.leaveRoom();
+    
+    // Reset UI state
+    const roomCodeSection = document.getElementById('roomCodeSection');
+    if (roomCodeSection) {
+        roomCodeSection.classList.add('hidden');
+    }
+    
+    const timeSelectorContainer = document.getElementById('privateRoomTimeSelector');
+    if (timeSelectorContainer) {
+        timeSelectorContainer.style.display = 'block';
+        timeSelectorContainer.innerHTML = '';
+    }
+    
     backToLobby();
 }
 
@@ -902,6 +1020,13 @@ function joinRoom() {
 
 function backToLobby() {
     window.socketClient.leaveRoom();
+    
+    // Reset search status
+    const searchStatus = document.getElementById('searchStatus');
+    if (searchStatus) {
+        searchStatus.textContent = 'Click button to start searching';
+    }
+    
     hideAllScreens();
     document.getElementById('lobbyScreen').classList.remove('hidden');
     updateGameStatus('Choose game mode');
@@ -948,7 +1073,37 @@ function inviteUser(userId) {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Initializing Multiplayer Chess...');
     
+    // Initialize game instance
     gameInstance = new MultiplayerChess();
+    
+    // Đợi init hoàn thành
+    console.log('⏳ Initializing game...');
+    await gameInstance.init();
+    console.log('✅ Game initialized');
+    
+    // AUTO-LOGIN nếu đã có user
+    const user = getCurrentUser();
+    if (user && user.username) {
+        console.log('✅ Auto-login as:', user.username);
+        
+        // Ẩn màn hình login và hiện lobby
+        hideAllScreens();
+        document.getElementById('lobbyScreen').classList.remove('hidden');
+        updateGameStatus(`Logging in as ${user.username}...`);
+        
+        // Gọi socket login
+        window.socketClient.login(user.username);
+        
+        // Đợi một chút cho backend xử lý
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        console.log('✅ Login request sent');
+    } else {
+        // Nếu chưa login, hiện màn hình login
+        hideAllScreens();
+        document.getElementById('loginScreen').classList.remove('hidden');
+        updateGameStatus('Please enter your name');
+    }
     
     console.log('✅ Client ready!');
 });

@@ -163,73 +163,124 @@ class GameManager {
     }
     
     // Matchmaking
-    addToMatchmaking(socketId) {
-        if (this.matchmakingQueue.includes(socketId)) {
+    addToMatchmaking(socketId, timeControl = 300) {
+        // Check if already in queue
+        const existingIndex = this.matchmakingQueue.findIndex(entry => 
+            (entry.socketId === socketId) || (entry === socketId)
+        );
+        if (existingIndex !== -1) {
+            console.log(`⚠️ Player ${socketId} already in queue`);
             return { matched: false };
         }
         
-        this.matchmakingQueue.push(socketId);
+        // Add to queue with timeControl
+        this.matchmakingQueue.push({ socketId, timeControl });
         
-        // Try to match
-        if (this.matchmakingQueue.length >= 2) {
-            const player1Id = this.matchmakingQueue.shift();
-            const player2Id = this.matchmakingQueue.shift();
+        console.log(`🎲 Added to queue: ${socketId} with ${timeControl}s. Queue size: ${this.matchmakingQueue.length}`);
+        
+        // Try to find match with SAME timeControl
+        for (let i = 0; i < this.matchmakingQueue.length; i++) {
+            const entry1 = this.matchmakingQueue[i];
             
-            const player1 = this.userManager.getUser(player1Id);
-            const player2 = this.userManager.getUser(player2Id);
+            // Skip if it's the same player we just added
+            if (entry1.socketId === socketId) continue;
             
-            if (!player1 || !player2) {
-                // One player disconnected, put the other back in queue
-                if (player1) this.matchmakingQueue.unshift(player1Id);
-                if (player2) this.matchmakingQueue.unshift(player2Id);
-                return { matched: false };
-            }
-            
-            // Create game room
-            const roomId = uuidv4();
-            const room = new GameRoom(roomId, 'matchmaking');
-            
-            room.addPlayer(player1Id);
-            room.addPlayer(player2Id);
-            
-            this.rooms.set(roomId, room);
-            
-            // Update user status
-            this.userManager.setUserInGame(player1Id, true, roomId);
-            this.userManager.setUserInGame(player2Id, true, roomId);
-            
-            // Notify both players
-            const player1Socket = this.io.sockets.sockets.get(player1Id);
-            const player2Socket = this.io.sockets.sockets.get(player2Id);
-            
-            if (player1Socket) {
-                player1Socket.join(roomId);
-                player1Socket.emit('matchmaking:match_found', {
-                    roomId: roomId,
-                    opponent: { id: player2Id, username: player2.username }
+            // Check if same time control
+            if (entry1.timeControl === timeControl) {
+                // Found a match!
+                const entry2 = this.matchmakingQueue[this.matchmakingQueue.length - 1]; // The player we just added
+                
+                const player1Id = entry1.socketId;
+                const player2Id = entry2.socketId;
+                
+                console.log(`🎉 Potential match: ${player1Id} vs ${player2Id} with ${timeControl}s`);
+                
+                // Remove both from queue
+                this.matchmakingQueue = this.matchmakingQueue.filter(e => 
+                    e.socketId !== player1Id && e.socketId !== player2Id
+                );
+                
+                const player1 = this.userManager.getUser(player1Id);
+                const player2 = this.userManager.getUser(player2Id);
+                
+                if (!player1 || !player2) {
+                    console.log(`❌ One player disconnected: player1=${!!player1}, player2=${!!player2}`);
+                    // One player disconnected, put the other back in queue
+                    if (player1) this.matchmakingQueue.push(entry1);
+                    if (player2) this.matchmakingQueue.push(entry2);
+                    return { matched: false };
+                }
+                
+                // Create game room with timeControl
+                const roomId = uuidv4();
+                const room = new GameRoom(roomId, 'matchmaking', {
+                    initial: timeControl,
+                    increment: 0
                 });
-            }
-            
-            if (player2Socket) {
-                player2Socket.join(roomId);
-                player2Socket.emit('matchmaking:match_found', {
+                
+                room.addPlayer(player1Id);
+                room.addPlayer(player2Id);
+                
+                this.rooms.set(roomId, room);
+                
+                // Update user status
+                this.userManager.setUserInGame(player1Id, true, roomId);
+                this.userManager.setUserInGame(player2Id, true, roomId);
+                
+                console.log(`✅ Match created! Room: ${roomId}`);
+                console.log(`   Player 1: ${player1.username} (${player1Id})`);
+                console.log(`   Player 2: ${player2.username} (${player2Id})`);
+                console.log(`   Time Control: ${timeControl}s`);
+                
+                // Notify both players
+                const player1Socket = this.io.sockets.sockets.get(player1Id);
+                const player2Socket = this.io.sockets.sockets.get(player2Id);
+                
+                if (player1Socket) {
+                    player1Socket.join(roomId);
+                    player1Socket.emit('matchmaking:match_found', {
+                        roomId: roomId,
+                        opponent: { id: player2Id, username: player2.username }
+                    });
+                    console.log(`   ✉️ Sent match_found to ${player1.username}`);
+                }
+                
+                if (player2Socket) {
+                    player2Socket.join(roomId);
+                    player2Socket.emit('matchmaking:match_found', {
+                        roomId: roomId,
+                        opponent: { id: player1Id, username: player1.username }
+                    });
+                    console.log(`   ✉️ Sent match_found to ${player2.username}`);
+                }
+                
+                // Start game after short delay
+                setTimeout(() => {
+                    console.log(`🎮 Starting game in room ${roomId}...`);
+                    this.startGame(roomId);
+                }, 200);
+                
+                return {
+                    matched: true,
                     roomId: roomId,
-                    opponent: { id: player1Id, username: player1.username }
-                });
+                    player1: player1,
+                    player2: player2
+                };
             }
-            
-            // Start game
-            this.startGame(roomId);
-            
-            return {
-                matched: true,
-                roomId: roomId,
-                player1: player1,
-                player2: player2
-            };
         }
         
+        console.log(`⏳ No match found yet. Waiting in queue...`);
         return { matched: false };
+    }
+    
+    removeFromMatchmaking(socketId) {
+        const index = this.matchmakingQueue.findIndex(entry => 
+            entry.socketId === socketId || entry === socketId
+        );
+        if (index > -1) {
+            this.matchmakingQueue.splice(index, 1);
+            console.log(`❌ Player ${socketId} left matchmaking queue`);
+        }
     }
     
     removeFromMatchmaking(socketId) {
@@ -299,15 +350,17 @@ class GameManager {
         };
     }
     
-    // Game management
     startGame(roomId) {
         const room = this.rooms.get(roomId);
         
         if (!room || !room.isFull()) {
+            console.log(`❌ Cannot start game: room=${!!room}, full=${room?.isFull()}`);
             return false;
         }
         
         room.start();
+        
+        console.log(`🎮 Starting game in room ${roomId} with timeControl:`, room.timeControl);
         
         // Notify both players
         room.players.forEach(playerId => {
@@ -324,12 +377,14 @@ class GameManager {
                         username: opponent.username,
                         color: room.getPlayerColor(opponent.id)
                     },
+                    timeControl: room.timeControl,  // ✅ THÊM DÒNG NÀY
                     fen: room.game.fen()
                 });
+                console.log(`   ✉️ Sent game:start to ${player.username} (${room.getPlayerColor(playerId)})`);
             }
         });
         
-        console.log(`🎮 Game started in room ${roomId}`);
+        console.log(`✅ Game started in room ${roomId}`);
         return true;
     }
     

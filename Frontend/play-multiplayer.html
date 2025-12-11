@@ -52,26 +52,39 @@
         </div>
 
         <!-- Random Match Screen -->
-        <div id="randomMatchScreen" class="menu hidden">
+        <!-- Random Match Screen -->
+        <div id="randomMatchScreen" class="screen hidden">
             <h2>🎲 Random Match</h2>
-            <p class="subtitle">Searching for opponent...</p>
-            <div class="loading-animation">
-                <div class="spinner"></div>
-                <p id="searchStatus">Looking for players...</p>
-            </div>
-            <button onclick="cancelSearch()" class="back-btn">Cancel</button>
+            
+            <!-- Time Selector -->
+            <div id="randomMatchTimeSelector"></div>
+            
+            <div id="searchStatus">Click button to start searching</div>
+            <button class="btn btn-primary" onclick="startRandomSearch()">
+                🔍 Find Match
+            </button>
+            <button class="btn btn-danger" onclick="cancelSearch()">Cancel</button>
         </div>
 
         <!-- Invite Friend Screen -->
-        <div id="inviteFriendScreen" class="menu hidden">
-            <h2>👥 Invite Friend</h2>
-            <p class="subtitle">Share this code with your friend:</p>
-            <div class="room-code-display">
+        <div id="inviteFriendScreen" class="screen hidden">
+            <h2>🔐 Private Room</h2>
+            
+            <!-- Time Selector (shown first) -->
+            <div id="privateRoomTimeSelector" class="time-selector-wrapper"></div>
+            
+            <!-- Room Code Display (shown after room created) -->
+            <div id="roomCodeSection" class="room-code-display hidden">
+                <h3>Room Code:</h3>
                 <input type="text" id="roomCodeDisplay" readonly />
-                <button onclick="copyRoomCode()" class="copy-btn">📋 Copy</button>
+                <button class="copy-btn" onclick="copyRoomCode()">📋 Copy</button>
+                <p>Share this code with your friend!</p>
             </div>
-            <p class="waiting-text">Waiting for opponent to join...</p>
-            <button onclick="cancelInvite()" class="back-btn">Cancel</button>
+            
+            <button class="btn btn-danger" onclick="cancelInvite()">Cancel</button>
+        </div>
+            
+            <button class="btn btn-danger" onclick="cancelInvite()">Cancel</button>
         </div>
 
         <!-- Join Room Screen -->
@@ -179,6 +192,8 @@
     </script>
     
     <script src="./js/socket-client.js"></script>
+    <script src="./js/time-controls-config.js"></script>
+    <script src="./js/time-selector.js"></script>
     <script src="./js/play-multiplayer.js"></script>
 </body>
 </html>

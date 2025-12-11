@@ -144,7 +144,43 @@ body {
     font-weight: normal;
     opacity: 0.9;
 }
+.btn {
+    padding: 12px 24px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 10px 5px;
+    transition: all 0.3s ease;
+}
 
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+}
+.time-selector-wrapper {
+    margin: 20px 0;
+}
+
+.loading-state {
+    text-align: center;
+    padding: 20px;
+    font-size: 18px;
+}
+.btn-danger {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+}
 .back-btn {
     padding: 12px 30px;
     background: #f44336;

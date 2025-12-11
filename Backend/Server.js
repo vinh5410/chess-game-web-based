@@ -240,16 +240,16 @@ io.on('connection', (socket) => {
     });
     
     // Matchmaking
-    socket.on('matchmaking:join', () => {
+    socket.on('matchmaking:join', ({ timeControl = 300 }) => {
         const user = userManager.getUser(socket.id);
         if (!user) {
             socket.emit('room:error', { message: 'Please login first' });
             return;
         }
         
-        console.log(`🎲 ${user.username} joining matchmaking...`);
+        console.log(`🎲 ${user.username} joining matchmaking with ${timeControl}s...`);
         
-        const result = gameManager.addToMatchmaking(socket.id);
+        const result = gameManager.addToMatchmaking(socket.id, timeControl);
         
         if (result.matched) {
             console.log(`🎉 Match found: ${result.player1.username} vs ${result.player2.username}`);
@@ -266,22 +266,26 @@ io.on('connection', (socket) => {
     });
     
     // Private rooms
-    socket.on('room:create', () => {
+    // Private rooms
+    socket.on('room:create', async ({ timeControl = 300 }) => {
         const user = userManager.getUser(socket.id);
         if (!user) {
             socket.emit('room:error', { message: 'Please login first' });
             return;
         }
         
-        const room = gameManager.createPrivateRoom(socket.id);
-        socket.join(room.id);
+        const room = gameManager.createPrivateRoom(socket.id, {
+            initial: timeControl,
+            increment: 0
+        });
+        await socket.join(room.id);
         
         socket.emit('room:created', {
             roomId: room.id,
             roomCode: room.code
         });
         
-        console.log(`🔐 Private room created: ${room.code} by ${user.username}`);
+        console.log(`🔐 Private room created: ${room.code} by ${user.username} with ${timeControl}s`);
     });
     
     socket.on('room:join', ({ roomCode }) => {

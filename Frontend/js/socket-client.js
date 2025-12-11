@@ -5,6 +5,7 @@ class SocketClient {
         this.userId = null;
         this.username = null;
         this.currentRoom = null;
+        this.isLoggedIn = false;
         this.eventHandlers = new Map();
         
         // Server URL - Change this to your server address
@@ -67,22 +68,32 @@ class SocketClient {
     
     // User authentication
     login(username) {
+        // NGĂN LOGIN NHIỀU LẦN
+        if (this.isLoggedIn && this.username === username) {
+            console.log('⚠️ Already logged in as:', this.username);
+            return;
+        }
+        
         console.log('👤 Logging in as:', username);
         this.username = username;
+        this.isLoggedIn = true;
         this.socket.emit('user:login', { username });
     }
     
     logout() {
         console.log('👋 Logging out');
-        this.socket.emit('user:logout');
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('user:logout');
+        }
         this.username = null;
         this.currentRoom = null;
+        this.isLoggedIn = false;
     }
     
     // Random matchmaking
-    findRandomMatch() {
-        console.log('🎲 Finding random match...');
-        this.socket.emit('matchmaking:join');
+    findRandomMatch(timeControl = 300) {
+        console.log('🎲 Finding random match with time control:', timeControl);
+        this.socket.emit('matchmaking:join', { timeControl });
     }
     
     cancelRandomMatch() {
@@ -91,9 +102,9 @@ class SocketClient {
     }
     
     // Private room
-    createPrivateRoom() {
-        console.log('🔐 Creating private room...');
-        this.socket.emit('room:create');
+    createPrivateRoom(timeControl = 300) {
+        console.log('🔐 Creating private room with time control:', timeControl);
+        this.socket.emit('room:create', { timeControl });
     }
     
     joinPrivateRoom(roomCode) {
@@ -152,44 +163,19 @@ class SocketClient {
         }
         this.eventHandlers.get(eventName).push(handler);
         
-        // Also register with socket.io
         if (this.socket) {
             this.socket.on(eventName, handler);
         }
     }
     
-    off(eventName, handler) {
-        if (this.eventHandlers.has(eventName)) {
-            const handlers = this.eventHandlers.get(eventName);
-            const index = handlers.indexOf(handler);
-            if (index > -1) {
-                handlers.splice(index, 1);
-            }
-        }
-        
-        if (this.socket) {
-            this.socket.off(eventName, handler);
-        }
-    }
-    
     emit(eventName, data) {
-        const handlers = this.eventHandlers.get(eventName) || [];
-        handlers.forEach(handler => handler(data));
-    }
-    
-    disconnect() {
-        if (this.socket) {
-            console.log('🔌 Disconnecting socket...');
-            this.socket.disconnect();
-            this.socket = null;
-            this.connected = false;
-            this.userId = null;
-            this.username = null;
-            this.currentRoom = null;
+        const handlers = this.eventHandlers.get(eventName);
+        if (handlers) {
+            handlers.forEach(handler => handler(data));
         }
     }
     
-    // Getters
+    // Helper methods
     isConnected() {
         return this.connected && this.socket && this.socket.connected;
     }
@@ -202,14 +188,20 @@ class SocketClient {
         return this.username;
     }
     
-    getCurrentRoom() {
-        return this.currentRoom;
-    }
-    
     setCurrentRoom(roomId) {
         this.currentRoom = roomId;
+    }
+    
+    disconnect() {
+        if (this.socket) {
+            this.socket.disconnect();
+            this.socket = null;
+        }
+        this.connected = false;
+        this.userId = null;
     }
 }
 
 // Create global instance
 window.socketClient = new SocketClient();
+console.log('✅ Socket client created');
