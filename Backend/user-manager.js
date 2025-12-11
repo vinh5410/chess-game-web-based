@@ -2,7 +2,6 @@ const { Chess } = require('chess.js');
 const { v4: uuidv4 } = require('uuid');
 const GameHistory = require('./models/GameHistory');
 const User = require('./models/User');
-const { getExpectedScore, calculateNewRating } = require('./utils/eloRating');
 class GameRoom {
     constructor(id, type = 'private') {
         this.id = id;
@@ -495,9 +494,7 @@ class GameManager {
         }
         
         room.end(winner, reason);
-        // Calculate ELO updates
-        const ratingUpdates = await this.calculateElo(room, winner, reason);
-
+        
         // Save game history
         await room.saveGameHistory(this.userManager);
         
@@ -507,9 +504,7 @@ class GameManager {
             if (socket) {
                 socket.emit('game:over', {
                     reason: reason,
-                    winner: winner ? room.playerColors[winner] : null,
-                    // ELO rating updates for both players
-                    ratingUpdates: ratingUpdates
+                    winner: winner ? room.playerColors[winner] : null
                 });
             }
         });
@@ -569,73 +564,6 @@ class GameManager {
             }
         }
         return count;
-    }
-    // --- [MỚI] HÀM TÍNH ELO RIÊNG BIỆT ---
-    async calculateElo(room, winnerId, reason) {
-        // Chỉ tính điểm khi: Đủ 2 người & Game kết thúc có kết quả (không phải hủy phòng)
-        if (!room || room.players.length !== 2) return null;
-
-        try {
-            const p1Id = room.players[0];
-            const p2Id = room.players[1];
-
-            // 1. Lấy user từ DB
-            const u1Local = this.userManager.getUser(p1Id);
-            const u2Local = this.userManager.getUser(p2Id);
-            if (!u1Local || !u2Local) return null;
-
-            const p1DB = await User.findOne({ username: u1Local.username });
-            const p2DB = await User.findOne({ username: u2Local.username });
-            if (!p1DB || !p2DB) return null;
-
-            // 2. Lấy điểm hiện tại
-            const r1 = p1DB.rating || 1200;
-            const r2 = p2DB.rating || 1200;
-
-            // 3. Tính toán
-            const expected1 = getExpectedScore(r1, r2);
-            const expected2 = getExpectedScore(r2, r1);
-
-            // Xác định điểm thực tế (1: Thắng, 0: Thua, 0.5: Hòa)
-            let score1;
-            const p1Color = room.getPlayerColor(p1Id);
-            const isDraw = ['draw', 'stalemate', 'threefold-repetition', 'insufficient-material'].includes(reason);
-
-            if (isDraw) {
-                score1 = 0.5;
-            } else if (winnerId) {
-                score1 = (winnerId === p1Id) ? 1 : 0;
-            } else {
-                score1 = 0.5; // Fallback
-            }
-            const score2 = 1 - score1;
-
-            // Điểm mới
-            const newR1 = calculateNewRating(r1, score1, expected1);
-            const newR2 = calculateNewRating(r2, score2, expected2);
-
-            // 4. Lưu vào DB (Giữ nguyên các trường thống kê cũ của bạn)
-            p1DB.rating = newR1;
-            p1DB.gamesPlayed++;
-            if (score1 === 1) p1DB.gamesWon++; else if (score1 === 0) p1DB.gamesLost++; else p1DB.gamesDraw++;
-
-            p2DB.rating = newR2;
-            p2DB.gamesPlayed++;
-            if (score2 === 1) p2DB.gamesWon++; else if (score2 === 0) p2DB.gamesLost++; else p2DB.gamesDraw++;
-
-            await p1DB.save();
-            await p2DB.save();
-
-            console.log(`📈 ELO Update: ${p1DB.username} (${newR1}) vs ${p2DB.username} (${newR2})`);
-
-            return {
-                player1: { id: p1Id, newRating: newR1, diff: newR1 - r1 },
-                player2: { id: p2Id, newRating: newR2, diff: newR2 - r2 }
-            };
-        } catch (e) {
-            console.error("❌ Elo Calc Error:", e);
-            return null;
-        }
     }
 }
 
