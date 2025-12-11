@@ -1,0 +1,61 @@
+<!-- Frontend/game-history.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game History - Chess Game</title>
+    <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="stylesheet" href="./styles/game-history.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+    
+    <main class="container">
+        <h1>📜 Game History</h1>
+        
+        <!-- Filters -->
+        <div class="filters">
+            <button class="filter-btn active" data-type="all">All Games</button>
+            <button class="filter-btn" data-type="pvp">PvP</button>
+            <button class="filter-btn" data-type="vs-bot">vs Bot</button>
+        </div>
+        
+        <!-- Stats Summary -->
+        <div class="stats-summary" id="statsSummary">
+            <div class="stat-card">
+                <div class="stat-value" id="totalGames">0</div>
+                <div class="stat-label">Total Games</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="wins">0</div>
+                <div class="stat-label">Wins</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="draws">0</div>
+                <div class="stat-label">Draws</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="losses">0</div>
+                <div class="stat-label">Losses</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="winRate">0%</div>
+                <div class="stat-label">Win Rate</div>
+            </div>
+        </div>
+        
+        <!-- Games List -->
+        <div class="games-list" id="gamesList">
+            <div class="loading">Loading games...</div>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="pagination" id="pagination"></div>
+    </main>
+    
+    <script src="./js/auth-check.js"></script>
+    <script src="./js/navbar.js"></script>
+    <script src="./js/game-history.js"></script>
+</body>
+</html>

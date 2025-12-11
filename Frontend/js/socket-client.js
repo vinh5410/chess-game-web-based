@@ -6,7 +6,7 @@ class SocketClient {
         this.username = null;
         this.currentRoom = null;
         this.eventHandlers = new Map();
-        
+        this.isLoggedIn = false;
         // Server URL - Change this to your server address
         this.serverUrl = 'http://localhost:3000';
     }
@@ -66,17 +66,28 @@ class SocketClient {
     }
     
     // User authentication
+    // User authentication
     login(username) {
+        // NGĂN LOGIN NHIỀU LẦN
+        if (this.isLoggedIn && this.username === username) {
+            console.log('⚠️ Already logged in as:', this.username);
+            return;
+        }
+        
         console.log('👤 Logging in as:', username);
         this.username = username;
+        this.isLoggedIn = true;
         this.socket.emit('user:login', { username });
     }
     
     logout() {
         console.log('👋 Logging out');
-        this.socket.emit('user:logout');
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('user:logout');
+        }
         this.username = null;
         this.currentRoom = null;
+        this.isLoggedIn = false; // Reset flag
     }
     
     // Random matchmaking

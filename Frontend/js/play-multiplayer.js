@@ -1,15 +1,3 @@
-// Auto-fill username if logged in
-document.addEventListener('DOMContentLoaded', () => {
-    const user = getCurrentUser();
-    if (user) {
-        const usernameInput = document.getElementById('usernameInput');
-        if (usernameInput) {
-            usernameInput.value = user.username;
-            usernameInput.disabled = true;
-        }
-    }
-});
-
 class MultiplayerChess {
     constructor() {
         this.canvas = null;
@@ -80,10 +68,30 @@ class MultiplayerChess {
         
         await this.loadPieceImages();
         this.setupEventListeners();
-        this.setupSocketListeners();
+        
+        // ✅ QUAN TRỌNG: Connect TRƯỚC
         this.socket.connect();
         
+        // ✅ Đợi socket.socket được tạo (không cần đợi connect)
+        await new Promise(resolve => {
+            const checkSocket = setInterval(() => {
+                if (this.socket.socket) { // Kiểm tra socket.io client đã được tạo
+                    clearInterval(checkSocket);
+                    resolve();
+                }
+            }, 10);
+            // Timeout sau 5s
+            setTimeout(() => {
+                clearInterval(checkSocket);
+                resolve();
+            }, 5000);
+        });
+        
+        // ✅ Setup listeners SAU KHI socket.socket đã tồn tại
+        this.setupSocketListeners();
+        
         console.log('✅ Multiplayer Chess initialized');
+        console.log('🔍 Socket object:', this.socket.socket ? 'exists' : 'NOT FOUND');
         return true;
     }
     
@@ -150,11 +158,19 @@ class MultiplayerChess {
     }
     
     setupSocketListeners() {
+        
         console.log('🔌 Setting up socket listeners...');
         
         this.socket.on('connection_success', () => {
             console.log('✅ Socket connected');
-            updateGameStatus('Connected! Please login.');
+            // KHÔNG GỌI login() Ở ĐÂY
+            // Chỉ update status
+            const user = getCurrentUser();
+            if (user) {
+                updateGameStatus(`Connected as ${user.username}`);
+            } else {
+                updateGameStatus('Connected! Please login.');
+            }
         });
         
         this.socket.on('connection_error', (error) => {
@@ -289,9 +305,12 @@ class MultiplayerChess {
     
     onMatchFound(data) {
         console.log('🎉 Match found with:', data.opponent);
+        console.log('📍 Room ID:', data.roomId);
         this.socket.setCurrentRoom(data.roomId);
         hideAllScreens();
         document.getElementById('gameScreen').classList.remove('hidden');
+        updateGameStatus('Starting game...');
+        console.log('⏳ Waiting for game:start event...');
     }
     
     onRoomCreated(data) {
@@ -819,10 +838,11 @@ function login() {
     const user = getCurrentUser();
     let username;
     
-    if (user) {
+    if (user && user.username) {
         username = user.username;
     } else {
-        username = document.getElementById('usernameInput').value.trim();
+        const usernameInput = document.getElementById('usernameInput');
+        username = usernameInput ? usernameInput.value.trim() : '';
     }
     
     if (!username) {
@@ -835,6 +855,7 @@ function login() {
         return;
     }
     
+    // GỌI LOGIN 1 LẦN
     window.socketClient.login(username);
 }
 
@@ -948,7 +969,37 @@ function inviteUser(userId) {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Initializing Multiplayer Chess...');
     
+    // Initialize game instance
     gameInstance = new MultiplayerChess();
+    
+    // AUTO-LOGIN nếu đã có user
+    const user = getCurrentUser();
+    if (user && user.username) {
+        console.log('✅ Auto-login as:', user.username);
+        
+        // Đợi socket connect trước
+        await new Promise(resolve => {
+            if (window.socketClient.isConnected()) {
+                resolve();
+            } else {
+                window.socketClient.on('connection_success', () => {
+                    resolve();
+                });
+            }
+        });
+        
+        // Ẩn màn hình login và tự động login
+        hideAllScreens();
+        document.getElementById('lobbyScreen').classList.remove('hidden');
+        updateGameStatus(`Welcome, ${user.username}!`);
+        
+        // Gọi socket login 1 LẦN DUY NHẤT
+        window.socketClient.login(user.username);
+    } else {
+        // Nếu chưa login, hiện màn hình login
+        document.getElementById('loginScreen').classList.remove('hidden');
+        updateGameStatus('Please enter your name');
+    }
     
     console.log('✅ Client ready!');
 });

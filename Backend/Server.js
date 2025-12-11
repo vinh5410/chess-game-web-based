@@ -32,6 +32,8 @@ const GameManager = require('./game-manager');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const puzzleRoutes = require('./routes/puzzle');
+// Game History routes
+const gameHistoryRoutes = require('./routes/gameHistory');
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server, {
@@ -73,18 +75,18 @@ const connectDB = async () => {
         
         const conn = await mongoose.connect(process.env.MONGODB_URI, options);
         
-        console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-        console.log(`📁 Database: ${conn.connection.name}`);
+        console.log(` MongoDB Connected: ${conn.connection.host}`);
+        console.log(` Database: ${conn.connection.name}`);
         
     } catch (error) {
         console.error('❌ MongoDB connection failed:', error.message);
-        console.log('\n⚠️  Possible issues:');
+        console.log('\n Possible issues:');
         console.log('   1. Check MONGODB_URI in .env file');
         console.log('   2. Ensure IP is whitelisted in MongoDB Atlas (0.0.0.0/0)');
         console.log('   3. Verify username/password are correct');
         console.log('   4. Check internet connection');
-        console.log('\n⚠️  Server will continue WITHOUT database');
-        console.log('⚠️  Auth features (login/register) will NOT work\n');
+        console.log('\nServer will continue WITHOUT database');
+        console.log('  Auth features (login/register) will NOT work\n');
     }
 };
 
@@ -131,6 +133,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/puzzles', puzzleRoutes);
+app.use('/api/game-history', gameHistoryRoutes);
 // Stockfish API endpoint
 app.post('/api/stockfish/move', async (req, res) => {
     try {
@@ -199,7 +202,7 @@ io.on('connection', (socket) => {
         
         const existingUser = userManager.getUser(socket.id);
         if (existingUser) {
-            console.log(`⚠️ Socket ${socket.id} already logged in as ${existingUser.username}`);
+            console.log(`Socket ${socket.id} already logged in as ${existingUser.username}`);
             socket.emit('user:login_error', {
                 message: 'Already logged in'
             });
@@ -248,14 +251,17 @@ io.on('connection', (socket) => {
         }
         
         console.log(`🎲 ${user.username} joining matchmaking...`);
+        console.log(`📊 Current queue size: ${gameManager.getMatchmakingQueueSize()}`);
         
         const result = gameManager.addToMatchmaking(socket.id);
         
         if (result.matched) {
             console.log(`🎉 Match found: ${result.player1.username} vs ${result.player2.username}`);
         } else {
+            const queueSize = gameManager.getMatchmakingQueueSize();
+            console.log(`⏳ Added to queue. Queue size: ${queueSize}`);
             socket.emit('matchmaking:waiting', {
-                queue: gameManager.getMatchmakingQueueSize()
+                queue: queueSize
             });
         }
     });
@@ -380,19 +386,9 @@ io.on('connection', (socket) => {
         }
     });
     
-    socket.on('game:resign', ({ roomId }) => {
-        const room = gameManager.getRoom(roomId);
-        if (room) {
-            const winner = room.players.find(p => p !== socket.id);
-            
-            io.to(roomId).emit('game:over', {
-                winner: room.getPlayerColor(winner),
-                reason: 'resignation'
-            });
-            
-            gameManager.endGame(roomId, winner, 'resignation');
-            console.log(`🏳️ Resignation in ${roomId}`);
-        }
+    socket.on('game:resign', async ({ roomId }) => {
+        console.log(`🏳️ ${socket.id} resigned in room ${roomId}`);
+        await gameManager.handleResignation(roomId, socket.id);
     });
     
     // Chat
@@ -520,6 +516,6 @@ server.listen(PORT, () => {
 
 // Handle unhandled rejections
 process.on('unhandledRejection', (err) => {
-    console.error('❌ Unhandled Promise Rejection:', err);
+    console.error(' Unhandled Promise Rejection:', err);
     server.close(() => process.exit(1));
 });

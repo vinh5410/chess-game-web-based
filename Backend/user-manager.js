@@ -17,7 +17,7 @@ class UserManager {
         
         const user = {
             id: socketId,
-            username: username.trim(),
+            username: username,
             connectedAt: Date.now(),
             inGame: false,
             currentRoom: null
@@ -58,7 +58,19 @@ class UserManager {
         if (user) {
             user.inGame = inGame;
             user.currentRoom = roomId;
+            return true;
         }
+        return false;
+    }
+    
+    // THÊM: Lấy user theo username
+    getUserByUsername(username) {
+        for (const user of this.users.values()) {
+            if (user.username === username) {
+                return user;
+            }
+        }
+        return null;
     }
     
     isUserOnline(socketId) {
