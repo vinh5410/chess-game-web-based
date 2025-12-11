@@ -110,6 +110,86 @@ module.exports = (io, userManager, gameManager) => {
             }
         });
 
+        // --- 5. FRIEND SYSTEM & INVITE ---
+
+        // A. Xử lý Kết bạn
+        socket.on('friend:request', async ({ toUsername }) => {
+            const sender = userManager.getUser(socket.id);
+            if (!sender) return;
+
+            try {
+                // Tìm người nhận trong DB
+                const receiverDB = await User.findOne({ username: toUsername });
+                const senderDB = await User.findOne({ username: sender.username });
+
+                if (!receiverDB) {
+                    return socket.emit('friend:error', { message: 'User not found' });
+                }
+                if (receiverDB.username === sender.username) {
+                    return socket.emit('friend:error', { message: 'Cannot add yourself' });
+                }
+
+                // Kiểm tra trùng
+                const isFriend = senderDB.friends.find(f => f.username === toUsername);
+                if (isFriend) {
+                    return socket.emit('friend:error', { message: 'Already friends or request sent' });
+                }
+
+                // Update DB (Thêm vào danh sách cả 2 với status pending)
+                receiverDB.friends.push({ 
+                    userId: senderDB._id, 
+                    username: sender.username, 
+                    status: 'pending' 
+                });
+                await receiverDB.save();
+
+                socket.emit('friend:success', { message: `Request sent to ${toUsername}` });
+
+                // Báo ngay cho người nhận nếu đang online
+                // (Dùng hàm tìm user của userManager)
+                // Lưu ý: userManager của bạn lưu theo socketId, nên phải duyệt map để tìm
+                const allUsers = userManager.getAllUsers(); // Hàm này trả về array {id, username...}
+                const receiverOnline = allUsers.find(u => u.username === toUsername);
+                
+                if (receiverOnline) {
+                    io.to(receiverOnline.id).emit('friend:received_request', { 
+                        from: sender.username 
+                    });
+                }
+
+            } catch (e) {
+                console.error(e);
+                socket.emit('friend:error', { message: 'Database error' });
+            }
+        });
+
+        // B. Xử lý Mời chơi (Game Invite)
+        socket.on('game:invite', ({ toUsername, roomId }) => {
+            const sender = userManager.getUser(socket.id);
+            if (!sender) return;
+
+            // Tìm người được mời
+            const allUsers = userManager.getAllUsers();
+            const receiver = allUsers.find(u => u.username === toUsername);
+            
+            if (receiver) {
+                // Gửi lời mời kèm RoomID
+                io.to(receiver.id).emit('game:invite_received', {
+                    from: sender.username,
+                    roomId: roomId
+                });
+                socket.emit('game:invite_sent', { to: toUsername });
+            } else {
+                socket.emit('game:error', { message: 'User is offline or not found' });
+            }
+        });
+        
+        // C. Chấp nhận lời mời (Optional - Client có thể tự join thẳng)
+        socket.on('game:invite_accept', ({ roomId }) => {
+            // Logic này client tự xử lý bằng cách emit 'room:join'
+            console.log(`User ${socket.id} accepted invite to ${roomId}`);
+        });
+
         // --- DISCONNECT ---
         socket.on('disconnect', () => {
             const user = userManager.getUser(socket.id);
