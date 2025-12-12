@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - CHESSMATE</title>
+    <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="stylesheet" href="./styles/profile.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <span>♔</span> CHESSMATE
+            </a>
+            
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/play-vs-bot.html">Play vs Bot</a></li>
+                <li><a href="/play-multiplayer.html">Multiplayer</a></li>
+                <li><a href="/leaderboard.html">Leaderboard</a></li>
+            </ul>
+            
+            <div class="navbar-actions">
+                <div id="auth-buttons">
+                    <a href="/login.html" class="btn btn-secondary">Login</a>
+                    <a href="/register.html" class="btn btn-primary">Register</a>
+                </div>
+                
+                <div id="user-menu">
+                    <div class="dropdown">
+                        <div class="user-info">
+                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
+                            <span id="username-display" class="username">User</span>
+                        </div>
+                        <div class="dropdown-menu">
+                            <a href="/profile.html" class="dropdown-item">👤 My Profile</a>
+                            <a href="/edit-profile.html" class="dropdown-item">⚙️ Edit Profile</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" id="logout-btn" class="dropdown-item">🚪 Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Profile Content -->
+    <div class="profile-container">
+        <div class="profile-header">
+            <img id="profile-avatar" src="" alt="Avatar" class="profile-avatar">
+            <div class="profile-info">
+                <h1 id="profile-username" class="profile-username">Loading...</h1>
+                <p id="profile-email" class="profile-email">Loading...</p>
+                <div class="profile-meta">
+                    <span id="profile-rating" class="rating">⭐ 1200</span>
+                    <span class="status" id="profile-status">🟢 Online</span>
+                    <span id="profile-joined">📅 Joined: Loading...</span>
+                </div>
+            </div>
+            <a href="/edit-profile.html" class="btn btn-primary">Edit Profile</a>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon">🎮</div>
+                <div class="stat-value" id="stat-games">0</div>
+                <div class="stat-label">Games Played</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value" id="stat-won">0</div>
+                <div class="stat-label">Wins</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">❌</div>
+                <div class="stat-value" id="stat-lost">0</div>
+                <div class="stat-label">Losses</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🤝</div>
+                <div class="stat-value" id="stat-draw">0</div>
+                <div class="stat-label">Draws</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="stat-winrate">0%</div>
+                <div class="stat-label">Win Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/auth-check.js"></script>
+    <script src="./js/navbar.js"></script>
+    <script src="./js/profile.js"></script>
+</body>
+</html>

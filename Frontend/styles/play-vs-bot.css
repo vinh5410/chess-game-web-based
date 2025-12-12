@@ -1,0 +1,453 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #2c2c2c;
+    min-height: 100vh;
+    color: white;
+}
+
+.app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header Styles */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+    text-align: center;
+    position: relative;
+    width: 100%;
+}
+
+.game-info {
+    flex: 1;
+}
+
+.game-info h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.game-info p {
+    margin: 5px 0;
+    font-size: 16px;
+}
+
+.back-home-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 0.5rem 1rem;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.back-home-btn:hover {
+    background: #da190b;
+    transform: translateY(-50%) translateY(-2px);
+}
+
+/* Menu Styles */
+.menu, .difficulty-menu {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    text-align: center;
+    color: #333;
+    animation: fadeIn 0.5s ease;
+}
+
+.menu h2, .difficulty-menu h2 {
+    font-size: 32px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.difficulty-subtitle {
+    margin-bottom: 30px;
+    color: #666;
+    font-size: 18px;
+}
+
+.menu-buttons {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.mode-btn {
+    padding: 20px 40px;
+    font-size: 20px;
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px;
+    font-weight: bold;
+}
+
+.mode-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+/* Difficulty Menu Styles */
+.difficulty-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+    max-width: 800px;
+}
+
+.difficulty-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.difficulty-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.difficulty-btn {
+    width: 100%;
+    padding: 20px 15px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.difficulty-btn:hover {
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.difficulty-level {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.level-emoji {
+    font-size: 28px;
+}
+
+.level-number {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+.difficulty-desc {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* Color Grid */
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.color-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.color-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.2);
+}
+
+.color-btn {
+    width: 100%;
+    padding: 30px 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.color-btn:hover {
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.color-icon {
+    font-size: 60px;
+    margin-bottom: 15px;
+}
+
+.color-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.color-desc {
+    font-size: 14px;
+    color: #666;
+}
+
+/* Game Controls Styles */
+.game-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    flex-wrap: wrap;
+}
+
+.back-btn, .restart-btn, .flip-btn {
+    padding: 10px 20px;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.back-btn {
+    background-color: #f44336;
+}
+
+.back-btn:hover {
+    background-color: #da190b;
+    transform: translateY(-2px);
+}
+
+.restart-btn {
+    background-color: #2196F3;
+}
+
+.restart-btn:hover {
+    background-color: #1976D2;
+    transform: translateY(-2px);
+}
+
+.flip-btn {
+    background-color: #FF9800;
+}
+
+.flip-btn:hover {
+    background-color: #F57C00;
+    transform: translateY(-2px);
+}
+
+.bot-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: white;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.bot-info {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Canvas Chessboard Styles */
+.chessboard-container {
+    position: relative;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    display: inline-block;
+    width: 100%;
+    max-width: 680px;
+}
+
+#chessCanvas {
+    display: block;
+    cursor: pointer;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    width: 100%;
+    height: auto;
+}
+
+.game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    color: white;
+    min-width: 300px;
+    z-index: 1000;
+}
+
+.game-over p {
+    margin: 10px 0;
+    font-size: 20px;
+}
+
+.game-over p:first-child {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Animation Effects */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menu, .difficulty-menu, .chessboard-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .game-topbar {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .back-home-btn {
+        position: static;
+        transform: none;
+        width: 100%;
+    }
+    
+    .back-home-btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .difficulty-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .color-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .game-meta h1 {
+        font-size: 28px;
+    }
+    
+    #chessCanvas {
+        max-width: 100%;
+    }
+    
+    .menu, .difficulty-menu {
+        padding: 20px;
+    }
+    
+    .mode-btn {
+        padding: 15px 25px;
+        font-size: 18px;
+        min-width: 180px;
+    }
+    
+    .game-actions {
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .chessboard-container {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app {
+        padding: 10px;
+    }
+    
+    .difficulty-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .menu, .difficulty-menu {
+        padding: 15px;
+        margin: 10px;
+    }
+    
+    .game-info h1 {
+        font-size: 24px;
+    }
+    
+    .mode-btn {
+        padding: 12px 20px;
+        font-size: 16px;
+        min-width: 150px;
+    }
+    
+    .chessboard-container {
+        padding: 10px;
+    }
+    
+    .back-btn {
+        width: 100%;
+    }
+    .game-actions .restart-btn, .game-actions .flip-btn {
+        width: auto;
+    }
+}

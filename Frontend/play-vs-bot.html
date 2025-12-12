@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play vs Bot - CHESSMATE</title>
+    <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="stylesheet" href="./styles/play-vs-bot.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <span>♔</span> CHESSMATE
+            </a>
+            
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/play-vs-bot.html">Play vs Bot</a></li>
+                <li><a href="/play-multiplayer.html">Multiplayer</a></li>
+                <li><a href="/leaderboard.html">Leaderboard</a></li>
+            </ul>
+            
+            <div class="navbar-actions">
+                <!-- Show when NOT logged in -->
+                <div id="auth-buttons">
+                    <a href="/login.html" class="btn btn-secondary">Login</a>
+                    <a href="/register.html" class="btn btn-primary">Register</a>
+                </div>
+                
+                <!-- Show when logged in -->
+                <div id="user-menu">
+                    <div class="dropdown">
+                        <div class="user-info">
+                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
+                            <span id="username-display" class="username">User</span>
+                        </div>
+                        <div class="dropdown-menu">
+                            <a href="/profile.html" class="dropdown-item">👤 My Profile</a>
+                            <a href="/edit-profile.html" class="dropdown-item">⚙️ Edit Profile</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" id="logout-btn" class="dropdown-item">🚪 Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app">
+        <div class="header">
+            <div class="game-info">
+                <h1>♟️ Play vs Bot</h1>
+            </div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="mainMenu" class="menu">
+            <h2>Choose Game Mode</h2>
+            <div class="menu-buttons">
+                <button onclick="showDifficultyMenu()" class="mode-btn">
+                    🤖 Play vs AI Bot
+                </button>
+            </div>
+        </div>
+
+        <!-- Color Selection Menu (NEW) -->
+        <div id="colorMenu" class="difficulty-menu hidden">
+            <h2>Choose Your Color</h2>
+            <p class="difficulty-subtitle">Select which side you want to play:</p>
+            <div class="color-grid">
+                <div class="color-card">
+                    <button onclick="selectColor('white')" class="color-btn">
+                        <div class="color-icon">♔</div>
+                        <div class="color-name">White</div>
+                        <div class="color-desc">You play first</div>
+                    </button>
+                </div>
+                <div class="color-card">
+                    <button onclick="selectColor('black')" class="color-btn">
+                        <div class="color-icon">♚</div>
+                        <div class="color-name">Black</div>
+                        <div class="color-desc">Bot plays first</div>
+                    </button>
+                </div>
+                <div class="color-card">
+                    <button onclick="selectColor('random')" class="color-btn">
+                        <div class="color-icon">🎲</div>
+                        <div class="color-name">Random</div>
+                        <div class="color-desc">50/50 chance</div>
+                    </button>
+                </div>
+            </div>
+            <button onclick="backToMenu()" class="back-btn">← Back to Menu</button>
+        </div>
+
+        <!-- Difficulty Selection Menu -->
+        <div id="difficultyMenu" class="difficulty-menu hidden">
+            <h2>Choose Bot Difficulty</h2>
+            <p class="difficulty-subtitle">Select your challenge level:</p>
+            <div class="difficulty-grid">
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(1)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">😊</span>
+                            <span class="level-number">Level 1</span>
+                        </div>
+                        <div class="difficulty-desc">Beginner - Random</div>
+                    </button>
+                </div>
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(3)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">🙂</span>
+                            <span class="level-number">Level 3</span>
+                        </div>
+                        <div class="difficulty-desc">Easy - Rule-based</div>
+                    </button>
+                </div>
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(5)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">🤔</span>
+                            <span class="level-number">Level 5</span>
+                        </div>
+                        <div class="difficulty-desc">Medium - Lichess API</div>
+                    </button>
+                </div>
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(8)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">😤</span>
+                            <span class="level-number">Level 8</span>
+                        </div>
+                        <div class="difficulty-desc">Hard - Lichess API</div>
+                    </button>
+                </div>
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(10)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">🔥</span>
+                            <span class="level-number">Level 10</span>
+                        </div>
+                        <div class="difficulty-desc">Expert - Lichess API</div>
+                    </button>
+                </div>
+                <div class="difficulty-card">
+                    <button onclick="startBotGame(15)" class="difficulty-btn">
+                        <div class="difficulty-level">
+                            <span class="level-emoji">🔥</span>
+                            <span class="level-number">Level 15</span>
+                        </div>
+                        <div class="difficulty-desc">Master - Lichess API</div>
+                    </button>
+                </div>
+            </div>
+            <button onclick="backToDifficultyMenu()" class="back-btn">← Back</button>
+        </div>
+
+        <!-- Game Controls -->
+        <div id="gameControls" class="game-controls hidden">
+            <div class="bot-controls">
+                <span class="bot-info" id="botLevelInfo">Playing vs Bot Level 5 🤔</span>
+                <span class="color-info" id="playerColorInfo">You are White ♔</span>
+                <button onclick="restartGame()" class="restart-btn">🔄 New Game</button>
+                <button onclick="flipBoard()" class="flip-btn">🔄 Flip Board</button>
+            </div>
+        </div>
+
+        <!-- Canvas Chessboard -->
+        <div id="chessboardContainer" class="chessboard-container hidden">
+            <canvas id="chessCanvas" width="640" height="640"></canvas>
+            <div id="gameOverOverlay" class="game-over hidden">
+                <p>Game Over</p>
+                <p id="winnerText">Winner: White</p>
+                <p>Press Enter to restart</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Chess.js only -->
+    <script src="./libs/chess.js/dist/cjs/chess.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Loading Canvas Chess Game...');
+            
+            if (typeof Chess !== 'undefined') {
+                window.Chess = Chess;
+                
+                try {
+                    const testGame = new Chess();
+                    console.log('✅ Chess.js working:', testGame.fen());
+                    document.getElementById('gameStatus').textContent = 'Choose game mode to start';
+                } catch (error) {
+                    console.error('❌ Chess.js test failed:', error);
+                    document.getElementById('gameStatus').textContent = '❌ Chess library error';
+                }
+            } else {
+                console.error('❌ Chess.js not found');
+                document.getElementById('gameStatus').textContent = '❌ Chess library not found';
+            }
+        });
+    </script>
+    
+    <script src="./js/play-vs-bot.js"></script>
+    <script src="./js/navbar.js"></script>
+</body>
+</html>

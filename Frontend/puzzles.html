@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Puzzles - CHESSMATE</title>
+    <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="stylesheet" href="./styles/puzzles.css">
+    <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <span>♔</span> CHESSMATE
+            </a>
+            
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/play-vs-bot.html">Play vs Bot</a></li>
+                <li><a href="/play-multiplayer.html">Multiplayer</a></li>
+                <li><a href="/puzzles.html">Puzzles</a></li>
+                <li><a href="/puzzle-leaderboard.html">Leaderboard</a></li>
+            </ul>
+            
+            <div class="navbar-actions">
+                <div id="auth-buttons">
+                    <a href="/login.html" class="btn btn-secondary">Login</a>
+                    <a href="/register.html" class="btn btn-primary">Register</a>
+                </div>
+                
+                <div id="user-menu">
+                    <div class="dropdown">
+                        <div class="user-info">
+                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
+                            <span id="username-display" class="username">User</span>
+                        </div>
+                        <div class="dropdown-menu">
+                            <a href="/profile.html" class="dropdown-item">👤 My Profile</a>
+                            <a href="/edit-profile.html" class="dropdown-item">⚙️ Edit Profile</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" id="logout-btn" class="dropdown-item">🚪 Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="puzzles-container">
+        <!-- Stats Header -->
+        <div class="puzzle-stats">
+            <div class="stat-item">
+                <span class="stat-icon">📊</span>
+                <span class="stat-label">Puzzle Rating</span>
+                <span class="stat-value" id="puzzle-rating">1200</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">✅</span>
+                <span class="stat-label">Solved</span>
+                <span class="stat-value" id="puzzles-solved">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">🔥</span>
+                <span class="stat-label">Current Streak</span>
+                <span class="stat-value" id="current-streak">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">📈</span>
+                <span class="stat-label">Success Rate</span>
+                <span class="stat-value" id="success-rate">0%</span>
+            </div>
+        </div>
+
+        <!-- Main Puzzle Area -->
+        <div class="puzzle-main">
+            <!-- Puzzle Board -->
+            <div class="puzzle-board-container">
+                <div class="puzzle-header">
+                    <h2 id="puzzle-title">♟️ Find the best move!</h2>
+                    <div class="puzzle-meta">
+                        <span class="puzzle-info-item">
+                            <strong>Difficulty:</strong> <span id="puzzle-difficulty">Intermediate</span>
+                        </span>
+                        <span class="puzzle-info-item">
+                            <strong>Rating:</strong> <span id="puzzle-puzzle-rating">1500</span>
+                        </span>
+                        <span class="puzzle-info-item">
+                            <strong>Themes:</strong> <span id="puzzle-themes">Tactics</span>
+                        </span>
+                    </div>
+                    <p id="to-move" class="to-move">⚪ White to move</p>
+                </div>
+
+                <canvas id="puzzleCanvas" width="640" height="640"></canvas>
+
+                <div class="puzzle-controls">
+                    <button id="hint-btn" class="control-btn btn-hint">💡 Hint</button>
+                    <button id="new-puzzle-btn" class="control-btn btn-new">🔄 New Puzzle</button>
+                    <button id="solution-btn" class="control-btn btn-solution">👁️ Show Solution</button>
+                </div>
+
+                <div id="feedback" class="feedback hidden">
+                    <div class="feedback-icon" id="feedback-icon">✅</div>
+                    <p id="feedback-message"></p>
+                    <div id="rating-change"></div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="puzzle-sidebar">
+                <!-- Timer -->
+                <div class="timer-box">
+                    <span class="timer-label">⏱️ Time</span>
+                    <span class="timer-value" id="timer">0:00</span>
+                </div>
+                
+                <!-- Moves List -->
+                <div class="moves-box">
+                    <h3>📝 Your Moves</h3>
+                    <div id="moves-container" class="moves-list"></div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters-box">
+                    <h3>🎯 Filters</h3>
+                    <select id="difficulty-filter" class="filter-select">
+                        <option value="">All Difficulties</option>
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                        <option value="expert">Expert</option>
+                    </select>
+                    <select id="theme-filter" class="filter-select">
+                        <option value="">All Themes</option>
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./libs/chess.js/dist/cjs/chess.js"></script>
+    <script src="./js/auth-check.js"></script>
+    <script src="./js/navbar.js"></script>
+    <script src="./js/puzzle-renderer.js"></script>
+    <script src="./js/puzzles.js"></script>
+</body>
+</html>
