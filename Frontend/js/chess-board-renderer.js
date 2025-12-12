@@ -212,24 +212,25 @@ class ChessBoardRenderer {
     
     drawPieces() {
         const board = this.game.board();
-        
+
         for (let rank = 0; rank < 8; rank++) {
             for (let file = 0; file < 8; file++) {
                 const piece = board[rank][file];
                 if (!piece) continue;
-                
-                const actualRank = this.isFlipped ? rank : 7 - rank;
+
+                // board[0] = rank 8, board[7] = rank 1 in Chess.js
+                const actualRank = 7 - rank;
                 const square = String.fromCharCode(97 + file) + (actualRank + 1);
-                
+
                 // Skip dragged piece
                 if (this.isDragging && square === this.dragStartSquare) continue;
-                
+
                 const pos = this.squareToCanvas(square);
                 this.drawPiece(piece, pos.x, pos.y);
             }
         }
     }
-    
+
     drawPiece(piece, x, y) {
         const pieceKey = piece.color + piece.type.toUpperCase();
         const img = this.pieceImages[pieceKey];
