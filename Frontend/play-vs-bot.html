@@ -26,7 +26,7 @@
             </div>
         </div>
 
-        <!-- Color Selection Menu (NEW) -->
+        <!-- Color Selection Menu -->
         <div id="colorMenu" class="difficulty-menu hidden">
             <h2>Choose Your Color</h2>
             <p class="difficulty-subtitle">Select which side you want to play:</p>
@@ -141,30 +141,30 @@
         </div>
     </div>
 
-    <!-- Load Chess.js only -->
+    <!-- ==================== SCRIPTS - LOAD IN CORRECT ORDER ==================== -->
+    
+    <!-- 1. Chess.js library -->
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
+    
+    <!-- 2. Initialize Chess.js -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Loading Canvas Chess Game...');
-            
-            if (typeof Chess !== 'undefined') {
-                window.Chess = Chess;
-                
-                try {
-                    const testGame = new Chess();
-                    console.log('✅ Chess.js working:', testGame.fen());
-                    document.getElementById('gameStatus').textContent = 'Choose game mode to start';
-                } catch (error) {
-                    console.error('❌ Chess.js test failed:', error);
-                    document.getElementById('gameStatus').textContent = '❌ Chess library error';
-                }
-            } else {
-                console.error('❌ Chess.js not found');
-                document.getElementById('gameStatus').textContent = '❌ Chess library not found';
-            }
-        });
+        if (typeof Chess !== 'undefined') {
+            window.Chess = Chess;
+            console.log('✅ Chess.js loaded and initialized');
+        } else {
+            console.error('❌ Chess.js not found');
+        }
     </script>
     
+    <!-- 3. UTILITY CLASSES (MUST load before game classes) -->
+    <script src="./js/utils.js"></script>
+    <script src="./js/ui-manager.js"></script>
+    <script src="./js/event-manager.js"></script>
+    
+    <!-- 4. Base chess board renderer -->
+    <script src="./js/chess-board-renderer.js"></script>
+    
+    <!-- 5. Game-specific class -->
     <script src="./js/play-vs-bot.js"></script>
 </body>
 </html>

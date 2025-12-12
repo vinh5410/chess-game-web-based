@@ -251,6 +251,15 @@ io.on('connection', (socket) => {
         
         const result = gameManager.addToMatchmaking(socket.id, timeControl);
         
+        if (result.alreadyInQueue) {
+            // EMIT ERROR BACK TO CLIENT
+            console.log(`⚠️ ${user.username} already in queue`);
+            socket.emit('matchmaking:error', { 
+                message: 'You are already in matchmaking queue' 
+            });
+            return;
+        }
+        
         if (result.matched) {
             console.log(`🎉 Match found: ${result.player1.username} vs ${result.player2.username}`);
         } else {
@@ -259,10 +268,13 @@ io.on('connection', (socket) => {
             });
         }
     });
-    
+
     socket.on('matchmaking:leave', () => {
-        gameManager.removeFromMatchmaking(socket.id);
-        console.log(`❌ User left matchmaking: ${socket.id}`);
+        const removed = gameManager.removeFromMatchmaking(socket.id);
+        if (removed) {
+            console.log(`❌ User left matchmaking: ${socket.id}`);
+            socket.emit('matchmaking:left'); // CONFIRM TO CLIENT
+        }
     });
     
     // Private rooms

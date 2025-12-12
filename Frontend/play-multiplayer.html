@@ -16,7 +16,6 @@
                 <p id="onlineUsers" class="online-users">👥 Online: 0</p>
             </div>
             
-            <!-- ADD BACK TO HOME BUTTON -->
             <button onclick="backToHome()" class="back-home-btn" style="position: absolute; right: 20px; top: 20px; padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
                 🏠 Home
             </button>
@@ -52,38 +51,27 @@
         </div>
 
         <!-- Random Match Screen -->
-        <!-- Random Match Screen -->
         <div id="randomMatchScreen" class="screen hidden">
             <h2>🎲 Random Match</h2>
-            
-            <!-- Time Selector -->
             <div id="randomMatchTimeSelector"></div>
-            
             <div id="searchStatus">Click button to start searching</div>
-            <button class="btn btn-primary" onclick="startRandomSearch()">
+            
+            <!-- ADD ID HERE -->
+            <button id="searchBtn" class="btn btn-primary" onclick="startRandomSearch()">
                 🔍 Find Match
             </button>
             <button class="btn btn-danger" onclick="cancelSearch()">Cancel</button>
         </div>
-
         <!-- Invite Friend Screen -->
         <div id="inviteFriendScreen" class="screen hidden">
             <h2>🔐 Private Room</h2>
-            
-            <!-- Time Selector (shown first) -->
             <div id="privateRoomTimeSelector" class="time-selector-wrapper"></div>
-            
-            <!-- Room Code Display (shown after room created) -->
             <div id="roomCodeSection" class="room-code-display hidden">
                 <h3>Room Code:</h3>
                 <input type="text" id="roomCodeDisplay" readonly />
                 <button class="copy-btn" onclick="copyRoomCode()">📋 Copy</button>
                 <p>Share this code with your friend!</p>
             </div>
-            
-            <button class="btn btn-danger" onclick="cancelInvite()">Cancel</button>
-        </div>
-            
             <button class="btn btn-danger" onclick="cancelInvite()">Cancel</button>
         </div>
 
@@ -137,15 +125,9 @@
             </div>
 
             <div class="game-controls">
-                <button onclick="offerDraw()" class="control-btn" id="drawBtn">
-                    🤝 Offer Draw
-                </button>
-                <button onclick="resign()" class="control-btn resign-btn">
-                    🏳️ Resign
-                </button>
-                <button onclick="flipBoard()" class="control-btn">
-                    🔄 Flip
-                </button>
+                <button onclick="offerDraw()" class="control-btn" id="drawBtn">🤝 Offer Draw</button>
+                <button onclick="resign()" class="control-btn resign-btn">🏳️ Resign</button>
+                <button onclick="flipBoard()" class="control-btn">🔄 Flip</button>
             </div>
 
             <!-- Chat Box -->
@@ -159,41 +141,174 @@
         </div>
     </div>
 
-    <!-- Load Libraries -->
+    <!-- ==================== SCRIPTS - LOAD IN CORRECT ORDER ==================== -->
+    
+    <!-- 0. DEBUG SCRIPT - ADD THIS FIRST -->
+    <script>
+        console.log('🔧 ========================================');
+        console.log('🔧 DEBUG: Page loading started');
+        console.log('🔧 ========================================');
+        
+        // Test function to verify onclick works
+        window.testButtonClick = function() {
+            console.log('✅ TEST: Button onclick is working!');
+            alert('Button click works!');
+        };
+        
+        // Override console.error to catch all errors
+        const originalError = console.error;
+        console.error = function(...args) {
+            originalError.apply(console, ['🚨 ERROR:', ...args]);
+            originalError.apply(console, args);
+        };
+        
+        // Catch all unhandled errors
+        window.addEventListener('error', (e) => {
+            console.error('🚨 Unhandled error:', e.message, e.filename, e.lineno, e.colno);
+        });
+        
+        // Catch all promise rejections
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('🚨 Unhandled promise rejection:', e.reason);
+        });
+        
+        console.log('🔧 Debug script loaded');
+    </script>
+    
+    <!-- 1. External libraries -->
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
-    <!-- ADD AUTH CHECK BEFORE OTHER SCRIPTS -->
+    <!-- 2. Auth check -->
     <script src="./js/auth-check.js"></script>
     
+    <!-- 3. Initialize libraries -->
     <script>
-        // CHECK AUTH FIRST
-        if (!requireAuth()) {
-            // Will redirect to login if not authenticated
+        console.log('🔧 Initializing libraries...');
+        
+        // Check auth
+        if (typeof requireAuth === 'function' && !requireAuth()) {
+            // Will redirect if not authenticated
         }
         
         // Initialize Chess.js
         if (typeof Chess !== 'undefined') {
             window.Chess = Chess;
             console.log('✅ Chess.js loaded');
+        } else {
+            console.error('❌ Chess.js not loaded');
         }
         
         // Initialize Socket.IO
         if (typeof io !== 'undefined') {
             console.log('✅ Socket.IO loaded');
+        } else {
+            console.error('❌ Socket.IO not loaded');
         }
         
-        // ADD BACK TO HOME FUNCTION
+        // Back to home function
         function backToHome() {
             if (confirm('Are you sure you want to leave the game?')) {
                 window.location.href = '/index.html';
             }
         }
+        
+        console.log('🔧 Libraries initialized');
     </script>
     
+    <!-- 4. UTILITY CLASSES -->
+    <script>
+        console.log('🔧 Loading utils.js...');
+    </script>
+    <script src="./js/utils.js"></script>
+    <script>
+        console.log('🔧 Utils.js loaded, checking GameUtils:', typeof GameUtils);
+    </script>
+    
+    <script>
+        console.log('🔧 Loading ui-manager.js...');
+    </script>
+    <script src="./js/ui-manager.js"></script>
+    <script>
+        console.log('🔧 UI-manager.js loaded, checking uiManager:', typeof window.uiManager);
+    </script>
+    
+    <script>
+        console.log('🔧 Loading event-manager.js...');
+    </script>
+    <script src="./js/event-manager.js"></script>
+    <script>
+        console.log('🔧 Event-manager.js loaded, checking eventManager:', typeof window.eventManager);
+    </script>
+    
+    <!-- 5. Socket client -->
+    <script>
+        console.log('🔧 Loading socket-client.js...');
+    </script>
     <script src="./js/socket-client.js"></script>
+    <script>
+        console.log('🔧 Socket-client.js loaded, checking socketClient:', typeof window.socketClient);
+    </script>
+    
+    <!-- 6. Time control utilities -->
+    <script>
+        console.log('🔧 Loading time-controls-config.js...');
+    </script>
     <script src="./js/time-controls-config.js"></script>
+    <script>
+        console.log('🔧 Time-controls-config.js loaded, checking TIME_CONTROLS:', typeof TIME_CONTROLS);
+    </script>
+    
+    <script>
+        console.log('🔧 Loading time-selector.js...');
+    </script>
     <script src="./js/time-selector.js"></script>
+    <script>
+        console.log('🔧 Time-selector.js loaded, checking renderTimeSelector:', typeof renderTimeSelector);
+    </script>
+    
+    <!-- 7. Base chess board renderer -->
+    <script>
+        console.log('🔧 Loading chess-board-renderer.js...');
+    </script>
+    <script src="./js/chess-board-renderer.js"></script>
+    <script>
+        console.log('🔧 Chess-board-renderer.js loaded, checking ChessBoardRenderer:', typeof ChessBoardRenderer);
+    </script>
+    
+    <!-- 8. Game-specific class -->
+    <script>
+        console.log('🔧 Loading play-multiplayer.js...');
+    </script>
     <script src="./js/play-multiplayer.js"></script>
+    <script>
+        console.log('🔧 Play-multiplayer.js loaded');
+        console.log('🔧 Checking functions:');
+        console.log('   - MultiplayerChess:', typeof MultiplayerChess);
+        console.log('   - startRandomSearch:', typeof startRandomSearch);
+        console.log('   - cancelSearch:', typeof cancelSearch);
+        console.log('   - showRandomMatch:', typeof showRandomMatch);
+        console.log('🔧 ========================================');
+        console.log('🔧 All scripts loaded');
+        console.log('🔧 ========================================');
+    </script>
+    
+    <!-- TEST BUTTON INLINE -->
+    <script>
+        // Make functions globally accessible for debugging
+        if (typeof startRandomSearch !== 'undefined') {
+            window.startRandomSearch = startRandomSearch;
+            console.log('✅ startRandomSearch exposed to window');
+        } else {
+            console.error('❌ startRandomSearch not found!');
+        }
+        
+        if (typeof cancelSearch !== 'undefined') {
+            window.cancelSearch = cancelSearch;
+            console.log('✅ cancelSearch exposed to window');
+        } else {
+            console.error('❌ cancelSearch not found!');
+        }
+    </script>
 </body>
 </html>

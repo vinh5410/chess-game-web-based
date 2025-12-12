@@ -44,7 +44,11 @@ module.exports = (io, userManager, gameManager) => {
         });
 
         socket.on('matchmaking:leave', () => {
-            gameManager.removeFromMatchmaking(socket.id);
+            const removed = gameManager.removeFromMatchmaking(socket.id);
+            if (removed) {
+                socket.emit('matchmaking:left'); // EMIT EVENT VỀ CLIENT
+                console.log(`👋 User left matchmaking: ${socket.id}`);
+            }
         });
 
         // --- PRIVATE ROOM ---

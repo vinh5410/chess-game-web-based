@@ -2,7 +2,7 @@ const { Chess } = require('chess.js');
 const { v4: uuidv4 } = require('uuid');
 
 class GameRoom {
-    constructor(id, type = 'private') {
+    constructor(id, type = 'private', timeControl = null) {
         this.id = id;
         this.type = type; // 'private' or 'matchmaking'
         this.code = this.generateRoomCode();
@@ -17,6 +17,7 @@ class GameRoom {
         this.winner = null;
         this.moves = [];
         this.chatHistory = [];
+        this.timeControl = timeControl;
     }
     
     generateRoomCode() {
@@ -169,8 +170,9 @@ class GameManager {
             (entry.socketId === socketId) || (entry === socketId)
         );
         if (existingIndex !== -1) {
-            console.log(`⚠️ Player ${socketId} already in queue`);
-            return { matched: false };
+            const oldTime = this.matchmakingQueue[existingIndex].timeControl;
+            console.log(`⚠️ Player ${socketId} already in queue, updating time: ${oldTime}s → ${timeControl}s`);
+            this.matchmakingQueue.splice(existingIndex, 1);
         }
         
         // Add to queue with timeControl
@@ -202,12 +204,8 @@ class GameManager {
                 
                 const player1 = this.userManager.getUser(player1Id);
                 const player2 = this.userManager.getUser(player2Id);
-                
                 if (!player1 || !player2) {
                     console.log(`❌ One player disconnected: player1=${!!player1}, player2=${!!player2}`);
-                    // One player disconnected, put the other back in queue
-                    if (player1) this.matchmakingQueue.push(entry1);
-                    if (player2) this.matchmakingQueue.push(entry2);
                     return { matched: false };
                 }
                 
@@ -279,15 +277,10 @@ class GameManager {
         );
         if (index > -1) {
             this.matchmakingQueue.splice(index, 1);
-            console.log(`❌ Player ${socketId} left matchmaking queue`);
+            console.log(`✅ Removed ${socketId} from matchmaking queue`);
+            return true; // RETURN SUCCESS
         }
-    }
-    
-    removeFromMatchmaking(socketId) {
-        const index = this.matchmakingQueue.indexOf(socketId);
-        if (index > -1) {
-            this.matchmakingQueue.splice(index, 1);
-        }
+        return false; // NOT IN QUEUE
     }
     
     getMatchmakingQueueSize() {
