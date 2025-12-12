@@ -1,3 +1,4 @@
+const User = require('../models/User');
 module.exports = (io, userManager, gameManager) => {
     io.on('connection', (socket) => {
         console.log(`🔌 Client connected: ${socket.id}`);
@@ -87,18 +88,46 @@ module.exports = (io, userManager, gameManager) => {
         // Trong game-manager.js bạn gửi t, nó emit 'game:move'. 
         // Nên ở đây mình listen 'game:move' cho đồng bộ.
         socket.on('game:move', ({ roomId, move }) => {
-            // gameManager.makeMove đã xử lý logic check turn, validate move
-            // và tự emit 'game:move' cho đối thủ nếu thành công.
+            // Gọi Manager để kiểm tra và lấy kết quả
             const result = gameManager.makeMove(roomId, socket.id, move);
             
-            if (!result.success) {
+            if (result.success) {
+                // QUAN TRỌNG: Gửi nước đi cho đối thủ (Code cũ bị thiếu dòng này)
+                socket.to(roomId).emit('game:move', { 
+                    move: move, 
+                    fen: result.fen 
+                });
+
+                // Kiểm tra nếu hết ván
+                if (result.gameOver) {
+                    io.to(roomId).emit('game:over', {
+                        winner: result.winner,
+                        reason: result.reason,
+                        fen: result.fen
+                    });
+                    // Gọi hàm kết thúc để dọn dẹp
+                    gameManager.endGame(roomId, null, result.reason); 
+                }
+            } else {
                 socket.emit('game:invalid_move', { message: result.message });
             }
-            // Nếu result.success, gameManager tự lo việc broadcast
         });
 
         socket.on('game:resign', ({ roomId }) => {
-             gameManager.handleResignation(roomId, socket.id);
+            const room = gameManager.getRoom(roomId);
+            if (room) {
+                // Logic: Tìm người còn lại là người thắng
+                const opponentId = room.getOpponent(socket.id);
+                const winnerColor = room.getPlayerColor(opponentId);
+                
+                io.to(roomId).emit('game:over', {
+                    winner: winnerColor,
+                    reason: 'resignation'
+                });
+                
+                // Gọi endGame có sẵn
+                gameManager.endGame(roomId, opponentId, 'resignation');
+            }
         });
 
         // --- CHAT ---
