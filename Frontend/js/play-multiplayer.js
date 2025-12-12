@@ -526,26 +526,6 @@ function startActualSearch(timeControl) {
         searchBtn.textContent = '⏳ Searching...';
     }
     
-    // Disable time control buttons while searching to prevent spam
-    const timeButtons = document.querySelectorAll('.time-btn');
-    timeButtons.forEach(btn => btn.disabled = true);
-    
-    window.socketClient.findRandomMatch(timeControl);
-    console.log('✅ Search started');
-}
-
-// Helper function
-function startActualSearch(timeControl) {
-    console.log('🚀 Starting search with:', timeControl);
-    
-    window.uiManager.updateSearchStatus('Searching for opponent...');
-    
-    const searchBtn = GameUtils.getElement('searchBtn');
-    if (searchBtn) {
-        searchBtn.disabled = true;
-        searchBtn.textContent = '⏳ Searching...';
-    }
-    
     window.socketClient.findRandomMatch(timeControl);
     console.log('✅ Search started');
 }

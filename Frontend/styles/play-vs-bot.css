@@ -313,9 +313,11 @@ body {
     display: block;
     cursor: pointer;
     border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-    width: 100%;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    max-width: 100%;
     height: auto;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .game-over {
@@ -453,5 +455,43 @@ body {
     
     .back-btn, .restart-btn, .flip-btn {
         width: 100%;
+    }
+}
+/* Mobile Touch Optimizations */
+@media (max-width: 480px) {
+    body {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+    
+    input, textarea {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+    
+    .chessboard-container {
+        padding: 5px;
+    }
+    
+    /* Larger tap targets */
+    .back-btn, .restart-btn, .flip-btn {
+        min-height: 44px;
+        font-size: 16px;
+    }
+    
+    .mode-btn, .difficulty-btn, .color-btn {
+        min-height: 48px;
+    }
+}
+
+@media (max-width: 360px) {
+    .chessboard-container {
+        padding: 2px;
+    }
+    
+    .game-info h1 {
+        font-size: 20px;
     }
 }

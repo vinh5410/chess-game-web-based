@@ -372,8 +372,10 @@ body {
     display: block;
     cursor: pointer;
     border-radius: 8px;
-    width: 100%;
+    max-width: 100%;
     height: auto;
+    touch-action: none; /* Prevent default touch behaviors */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
 }
 
 .game-controls {
@@ -643,5 +645,50 @@ body {
     
     .chessboard-container {
         padding: 10px;
+    }
+}
+/* Mobile optimizations */
+@media (max-width: 480px) {
+    .chessboard-container {
+        padding: 5px;
+        max-width: 100%;
+    }
+    
+    #chessCanvas {
+        border-radius: 4px;
+    }
+    
+    /* Larger tap targets */
+    .control-btn {
+        min-height: 44px;
+        font-size: 16px;
+    }
+    
+    .mode-btn {
+        min-height: 48px;
+    }
+    
+    /* Prevent text selection during drag */
+    body {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+    
+    input, textarea {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+}
+
+@media (max-width: 360px) {
+    .chessboard-container {
+        padding: 2px;
+    }
+    
+    .game-info h1 {
+        font-size: 24px;
     }
 }

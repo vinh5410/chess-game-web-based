@@ -108,6 +108,8 @@ body {
     box-shadow: 0 4px 16px rgba(0,0,0,0.2);
     max-width: 100%;
     height: auto;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Controls */
@@ -338,5 +340,20 @@ body {
     
     .stat-value {
         font-size: 1.5rem;
+    }
+}
+@media (max-width: 480px) {
+    body {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+    
+    .puzzle-board-container {
+        padding: 0.5rem;
+    }
+    
+    .control-btn {
+        min-height: 44px;
     }
 }

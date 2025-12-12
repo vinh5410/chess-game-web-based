@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chess Puzzles - CHESSMATE</title>
     <link rel="stylesheet" href="./styles/navbar.css">
     <link rel="stylesheet" href="./styles/puzzles.css">
@@ -139,8 +139,18 @@
     </div>
 
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
+    
+    <!-- 2. Initialize Chess.js -->
+    <script>
+        if (typeof Chess !== 'undefined') {
+            window.Chess = Chess;
+            console.log('Chess.js loaded and initialized');
+        } else {
+            console.error('Chess.js not found');
+        }
+    </script>
     <script src="./js/auth-check.js"></script>
-    <script src="./js/puzzle-renderer.js"></script>
+    <script src="./js/chess-board-renderer.js"></script>
     <script src="./js/puzzles.js"></script>
 </body>
 </html>

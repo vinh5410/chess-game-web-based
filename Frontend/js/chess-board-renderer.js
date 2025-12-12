@@ -8,9 +8,8 @@ class ChessBoardRenderer {
         this.ctx = this.canvas.getContext('2d');
         this.game = new window.Chess();
         
-        // Canvas settings
-        this.canvasSize = 640;
-        this.squareSize = 80;
+        // Canvas settings - RESPONSIVE
+        this.calculateResponsiveSize();
         this.canvas.width = this.canvasSize;
         this.canvas.height = this.canvasSize;
         
@@ -27,15 +26,56 @@ class ChessBoardRenderer {
         this.legalMoves = [];
         this.isFlipped = false;
         
-        // Mouse interaction
+        // Mouse/Touch interaction
         this.isDragging = false;
         this.dragPiece = null;
         this.dragStartSquare = null;
         this.mousePos = { x: 0, y: 0 };
         
+        // Touch support
+        this.isTouchDevice = 'ontouchstart' in window;
+        this.lastTouchTime = 0;
+        
         // Piece images
         this.pieceImages = {};
         this.imagesLoaded = false;
+    }
+    
+    // ==================== RESPONSIVE SIZING ====================
+    
+    calculateResponsiveSize() {
+        const parent = this.canvas.parentElement;
+        if (parent) {
+            // Get available width
+            const parentWidth = parent.clientWidth;
+            const padding = window.innerWidth <= 480 ? 20 : 40;
+            
+            // Max 640px, min 280px for very small screens
+            const maxSize = 640;
+            const minSize = 280;
+            const availableSize = parentWidth - padding;
+            
+            this.canvasSize = Math.max(minSize, Math.min(maxSize, availableSize));
+            this.squareSize = this.canvasSize / 8;
+            
+            console.log(`📱 Canvas size calculated: ${this.canvasSize}px (parent: ${parentWidth}px)`);
+        } else {
+            // Fallback
+            this.canvasSize = 640;
+            this.squareSize = 80;
+        }
+    }
+    
+    handleResize() {
+        const oldSize = this.canvasSize;
+        this.calculateResponsiveSize();
+        
+        if (oldSize !== this.canvasSize) {
+            this.canvas.width = this.canvasSize;
+            this.canvas.height = this.canvasSize;
+            console.log(`🔄 Canvas resized: ${oldSize}px → ${this.canvasSize}px`);
+            this.draw();
+        }
     }
     
     // ==================== PIECE LOADING ====================
@@ -117,37 +157,33 @@ class ChessBoardRenderer {
         for (let rank = 0; rank < 8; rank++) {
             for (let file = 0; file < 8; file++) {
                 const isLight = (rank + file) % 2 === 0;
-                const color = isLight ? this.lightSquareColor : this.darkSquareColor;
+                this.ctx.fillStyle = isLight ? this.lightSquareColor : this.darkSquareColor;
                 
                 const x = file * this.squareSize;
                 const y = rank * this.squareSize;
                 
-                this.ctx.fillStyle = color;
                 this.ctx.fillRect(x, y, this.squareSize, this.squareSize);
             }
         }
     }
     
     drawCoordinates() {
-        this.ctx.font = '12px Arial';
+        this.ctx.font = `${Math.max(10, this.squareSize * 0.15)}px Arial`;
+        this.ctx.fillStyle = '#333';
         
         // Files (a-h)
         for (let file = 0; file < 8; file++) {
             const letter = String.fromCharCode(97 + file);
             const x = file * this.squareSize + 5;
             const y = 8 * this.squareSize - 5;
-            const isDark = file % 2 === 0;
-            this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
             this.ctx.fillText(letter, x, y);
         }
         
         // Ranks (1-8)
         for (let rank = 0; rank < 8; rank++) {
-            const number = this.isFlipped ? rank + 1 : 8 - rank;
+            const number = this.isFlipped ? (rank + 1) : (8 - rank);
             const x = 8 * this.squareSize - 15;
             const y = rank * this.squareSize + 15;
-            const isDark = rank % 2 === 1;
-            this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
             this.ctx.fillText(number, x, y);
         }
     }
@@ -160,37 +196,18 @@ class ChessBoardRenderer {
             this.ctx.fillRect(pos.x, pos.y, this.squareSize, this.squareSize);
         }
         
-        // Draw legal move indicators
-        for (const move of this.legalMoves) {
+        // Highlight legal moves
+        this.legalMoves.forEach(move => {
             const pos = this.squareToCanvas(move.to);
+            const centerX = pos.x + this.squareSize / 2;
+            const centerY = pos.y + this.squareSize / 2;
+            const radius = this.squareSize * 0.15;
             
-            if (move.captured) {
-                // Capture indicator - hollow circle
-                this.ctx.strokeStyle = this.captureColor;
-                this.ctx.lineWidth = 4;
-                this.ctx.beginPath();
-                this.ctx.arc(
-                    pos.x + this.squareSize / 2,
-                    pos.y + this.squareSize / 2,
-                    this.squareSize / 2 - 6,
-                    0,
-                    2 * Math.PI
-                );
-                this.ctx.stroke();
-            } else {
-                // Move dot
-                this.ctx.fillStyle = this.legalMoveColor;
-                this.ctx.beginPath();
-                this.ctx.arc(
-                    pos.x + this.squareSize / 2,
-                    pos.y + this.squareSize / 2,
-                    12,
-                    0,
-                    2 * Math.PI
-                );
-                this.ctx.fill();
-            }
-        }
+            this.ctx.fillStyle = move.captured ? this.captureColor : this.legalMoveColor;
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+        });
     }
     
     drawPieces() {
@@ -198,30 +215,33 @@ class ChessBoardRenderer {
         
         for (let rank = 0; rank < 8; rank++) {
             for (let file = 0; file < 8; file++) {
-                const boardRank = this.isFlipped ? 7 - rank : rank;
-                const piece = board[boardRank][file];
+                const piece = board[rank][file];
                 if (!piece) continue;
                 
-                const squareRank = this.isFlipped ? rank + 1 : 8 - rank;
-                const square = String.fromCharCode(97 + file) + squareRank;
+                const actualRank = this.isFlipped ? rank : 7 - rank;
+                const square = String.fromCharCode(97 + file) + (actualRank + 1);
                 
-                // Skip piece being dragged
-                if (this.isDragging && this.dragStartSquare === square) continue;
+                // Skip dragged piece
+                if (this.isDragging && square === this.dragStartSquare) continue;
                 
-                this.drawPiece(piece, file * this.squareSize, rank * this.squareSize);
+                const pos = this.squareToCanvas(square);
+                this.drawPiece(piece, pos.x, pos.y);
             }
         }
     }
     
     drawPiece(piece, x, y) {
         const pieceKey = piece.color + piece.type.toUpperCase();
+        const img = this.pieceImages[pieceKey];
         
-        if (this.imagesLoaded && this.pieceImages[pieceKey] && this.pieceImages[pieceKey].complete) {
+        if (this.imagesLoaded && img && img.complete) {
+            const padding = this.squareSize * 0.1;
             this.ctx.drawImage(
-                this.pieceImages[pieceKey],
-                x + 4, y + 4,
-                this.squareSize - 8,
-                this.squareSize - 8
+                img,
+                x + padding,
+                y + padding,
+                this.squareSize - padding * 2,
+                this.squareSize - padding * 2
             );
         } else {
             this.drawTextPiece(piece, x, y);
@@ -229,44 +249,19 @@ class ChessBoardRenderer {
     }
     
     drawTextPiece(piece, x, y) {
-        const pieceSymbols = {
-            'wK': '♔', 'wQ': '♕', 'wR': '♖', 'wB': '♗', 'wN': '♘', 'wP': '♙',
-            'bK': '♚', 'bQ': '♛', 'bR': '♜', 'bB': '♝', 'bN': '♞', 'bP': '♟'
+        const symbols = {
+            'k': '♔', 'q': '♕', 'r': '♖', 'b': '♗', 'n': '♘', 'p': '♙',
+            'K': '♚', 'Q': '♛', 'R': '♜', 'B': '♝', 'N': '♞', 'P': '♟'
         };
         
-        const pieceKey = piece.color + piece.type.toUpperCase();
-        const symbol = pieceSymbols[pieceKey];
-        
-        if (symbol) {
-            this.ctx.font = `bold ${this.squareSize * 0.7}px Arial`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            
-            // Add shadow for better visibility
-            this.ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            this.ctx.shadowBlur = 3;
-            this.ctx.shadowOffsetX = 2;
-            this.ctx.shadowOffsetY = 2;
-            
-            this.ctx.fillStyle = piece.color === 'w' ? '#fff' : '#000';
-            this.ctx.fillText(symbol, x + this.squareSize / 2, y + this.squareSize / 2);
-            
-            // Stroke for white pieces
-            if (piece.color === 'w') {
-                this.ctx.strokeStyle = '#333';
-                this.ctx.lineWidth = 2;
-                this.ctx.strokeText(symbol, x + this.squareSize / 2, y + this.squareSize / 2);
-            }
-            
-            // Reset shadow
-            this.ctx.shadowColor = 'transparent';
-            this.ctx.shadowBlur = 0;
-            this.ctx.shadowOffsetX = 0;
-            this.ctx.shadowOffsetY = 0;
-            
-            this.ctx.textAlign = 'start';
-            this.ctx.textBaseline = 'alphabetic';
-        }
+        const symbol = piece.color === 'w' ? symbols[piece.type] : symbols[piece.type.toUpperCase()];
+        this.ctx.font = `${this.squareSize * 0.7}px Arial`;
+        this.ctx.fillStyle = piece.color === 'w' ? '#fff' : '#000';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(symbol, x + this.squareSize / 2, y + this.squareSize / 2);
+        this.ctx.textAlign = 'start';
+        this.ctx.textBaseline = 'alphabetic';
     }
     
     drawDragPiece() {
@@ -281,33 +276,41 @@ class ChessBoardRenderer {
     // ==================== EVENT LISTENERS ====================
     
     setupEventListeners() {
+        // Mouse events (desktop)
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
         this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
         this.canvas.addEventListener('click', this.onClick.bind(this));
         this.canvas.addEventListener('contextmenu', e => e.preventDefault());
         
+        // Touch events (mobile)
+        this.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
+        this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
+        this.canvas.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: false });
+        this.canvas.addEventListener('touchcancel', this.onTouchEnd.bind(this), { passive: false });
+        
+        // Resize handler
         window.addEventListener('resize', this.handleResize.bind(this));
+        
+        console.log('✅ Event listeners setup (Mouse + Touch)');
     }
     
     // ==================== TEMPLATE METHOD PATTERN ====================
-    // These methods should be overridden by subclasses
     
     canInteract() {
-        // Override in subclass
         return false;
     }
     
     getPlayerColor() {
-        // Override in subclass
         return 'w';
     }
     
     afterMove(move) {
-        // Override in subclass - called after successful move
+        // Override in subclass
     }
     
-    // Common mouse down handler with template method
+    // ==================== MOUSE HANDLERS ====================
+    
     onMouseDown(e) {
         if (!this.canInteract()) return;
         
@@ -320,7 +323,6 @@ class ChessBoardRenderer {
         }
     }
     
-    // Helper methods
     getMousePosition(e) {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -377,24 +379,86 @@ class ChessBoardRenderer {
         const { square } = this.getMousePosition(e);
         if (!square) return;
         
-        // Deselect if clicking same square
         if (this.selectedSquare === square) {
             this.clearSelection();
             return;
         }
         
-        // Try to move if a square is selected and target is legal
         if (this.selectedSquare && this.isLegalMove(square)) {
             this.executeMoveFromClick(this.selectedSquare, square);
             return;
         }
         
-        // Select piece if it's player's piece
         const piece = this.game.get(square);
         if (piece && piece.color === this.getPlayerColor()) {
             this.selectSquare(square);
         }
     }
+    
+    // ==================== TOUCH HANDLERS (MOBILE) ====================
+    
+    onTouchStart(e) {
+        e.preventDefault(); // Prevent scrolling
+        
+        if (!this.canInteract() || e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        const { square, x, y } = this.getTouchPosition(touch);
+        
+        if (!square) return;
+        
+        const piece = this.game.get(square);
+        if (piece && piece.color === this.getPlayerColor()) {
+            this.mousePos = { x, y };
+            this.startDrag(square, piece);
+            console.log('📱 Touch drag started:', square);
+        }
+    }
+    
+    onTouchMove(e) {
+        e.preventDefault();
+        
+        if (!this.isDragging || e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        const { x, y } = this.getTouchPosition(touch);
+        
+        this.mousePos = { x, y };
+        this.draw();
+    }
+    
+    onTouchEnd(e) {
+        e.preventDefault();
+        
+        if (!this.isDragging || !this.dragStartSquare) return;
+        
+        // Get final position from last touch or changedTouches
+        const touch = e.changedTouches[0];
+        const { square: targetSquare } = this.getTouchPosition(touch);
+        
+        console.log('📱 Touch drag ended:', this.dragStartSquare, '→', targetSquare);
+        
+        if (targetSquare && targetSquare !== this.dragStartSquare) {
+            this.tryMove(this.dragStartSquare, targetSquare);
+        }
+        
+        this.isDragging = false;
+        this.dragPiece = null;
+        this.dragStartSquare = null;
+        this.selectedSquare = null;
+        this.legalMoves = [];
+        this.draw();
+    }
+    
+    getTouchPosition(touch) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const square = this.canvasToSquare(x, y);
+        return { x, y, square };
+    }
+    
+    // ==================== MOVE EXECUTION ====================
     
     clearSelection() {
         this.selectedSquare = null;
@@ -403,7 +467,7 @@ class ChessBoardRenderer {
     }
     
     isLegalMove(to) {
-        return this.legalMoves.some(m => m.to === to);
+        return this.legalMoves.some(move => move.to === to);
     }
     
     selectSquare(square) {
@@ -417,49 +481,51 @@ class ChessBoardRenderer {
         this.clearSelection();
     }
     
-    // Common move execution with hook
     tryMove(from, to) {
         try {
-            const move = this.game.move({ from, to, promotion: 'q' });
+            const moves = this.game.moves({ square: from, verbose: true });
+            const move = moves.find(m => m.to === to);
             
-            if (move) {
-                console.log('✅ Valid move:', move.san);
+            if (!move) {
+                console.log('❌ Illegal move');
+                return;
+            }
+            
+            // Handle promotion
+            if (move.flags.includes('p')) {
+                move.promotion = 'q';
+            }
+            
+            const result = this.game.move({
+                from: from,
+                to: to,
+                promotion: move.promotion || 'q'
+            });
+            
+            if (result) {
+                console.log('✅ Move executed:', result.san);
                 this.draw();
-                this.afterMove(move); // Hook for subclass
-                return true;
+                this.afterMove(result);
             }
         } catch (error) {
-            console.log('❌ Invalid move:', from, 'to', to);
+            console.error('❌ Move error:', error);
         }
-        return false;
     }
     
-    // ==================== UTILITY METHODS ====================
+    loadPosition(fen) {
+        this.game.load(fen);
+        this.clearSelection();
+        this.draw();
+    }
     
     flipBoard() {
         this.isFlipped = !this.isFlipped;
         this.draw();
-        console.log('🔄 Board flipped:', this.isFlipped ? 'Black perspective' : 'White perspective');
     }
     
-    handleResize() {
-        const container = this.canvas.parentElement;
-        if (!container) return;
-        
-        const maxSize = Math.min(container.clientWidth - 40, 640);
-        
-        if (maxSize !== this.canvasSize) {
-            this.canvasSize = maxSize;
-            this.squareSize = maxSize / 8;
-            this.canvas.width = maxSize;
-            this.canvas.height = maxSize;
-            this.draw();
-        }
-    }
-    
-    // Helper to check if move is valid
-    isValidMove(from, to) {
-        const moves = this.game.moves({ square: from, verbose: true });
-        return moves.some(move => move.to === to);
+    reset() {
+        this.game.reset();
+        this.clearSelection();
+        this.draw();
     }
 }
