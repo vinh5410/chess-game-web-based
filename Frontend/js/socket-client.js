@@ -7,7 +7,7 @@ class SocketClient {
         this.currentRoom = null;
         this.isLoggedIn = false;
         this.eventHandlers = new Map();
-        this.isInMatchmaking = false;        
+        
         // Server URL - Change this to your server address
         this.serverUrl = 'http://localhost:3000';
     }
@@ -92,21 +92,13 @@ class SocketClient {
     
     // Random matchmaking
     findRandomMatch(timeControl = 300) {
-        // PREVENT MULTIPLE JOINS
-        if (this.isInMatchmaking) {
-            console.warn('⚠️ Already in matchmaking queue');
-            return;
-        }
-        
         console.log('🎲 Finding random match with time control:', timeControl);
-        this.isInMatchmaking = true;
         this.socket.emit('matchmaking:join', { timeControl });
     }
     
     cancelRandomMatch() {
         console.log('❌ Cancelling random match...');
         this.socket.emit('matchmaking:leave');
-        // Flag will be reset by 'matchmaking:left' event
     }
     
     // Private room

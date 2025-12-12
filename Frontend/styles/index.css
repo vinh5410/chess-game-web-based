@@ -5,6 +5,8 @@ body {
     padding: 0;
     font-family: montserrat;
     box-sizing: border-box;
+    background: #2c2c2c;
+    min-height: 100vh;
 }
 
 /* Animation Background */

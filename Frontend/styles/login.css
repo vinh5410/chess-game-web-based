@@ -17,11 +17,8 @@ body{
     font-family: montserrat, poppins;
     margin: 0px;
     padding: 0px;
-    background-image: url(../assets/bg2.jpg);
-    background-repeat: no-repeat;
-    background-size: cover;
+    background: #2c2c2c;
     height: 100vh;
-
 }
 
 body>img{

@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #2c2c2c;
     min-height: 100vh;
     color: white;
 }
@@ -167,6 +167,86 @@ body {
     margin: 20px 0;
 }
 
+/* Time selector small boxes */
+.time-selector-container h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.time-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.time-option-btn {
+    background: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 8px 10px;
+    border-radius: 8px;
+    min-width: 110px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.time-option-btn .time-icon {
+    font-size: 18px;
+}
+
+.time-option-btn .time-label {
+    font-weight: 700;
+}
+
+.time-option-btn .time-desc {
+    font-size: 11px;
+    color: #666;
+}
+
+.time-option-btn.active {
+    border-color: #667eea;
+    box-shadow: 0 6px 18px rgba(102,126,234,0.18);
+    transform: translateY(-3px);
+}
+
+/* Mode icon inside boxed buttons */
+.mode-icon {
+    font-size: 14px;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+/* Smaller variant for Find Match button */
+.mode-btn.small {
+    padding: 12px 18px;
+    font-size: 16px;
+    border-radius: 10px;
+    width: fit-content;
+}
+
+.mode-btn.small .mode-icon {
+    font-size: 12px;
+    margin-right: 6px;
+}
+
+/* Menu buttons layout for Random Match - horizontal */
+#randomMatchScreen .menu-buttons {
+    flex-direction: row;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+}
+}
+
 .loading-state {
     text-align: center;
     padding: 20px;
@@ -191,6 +271,7 @@ body {
     font-size: 16px;
     font-weight: bold;
     transition: all 0.3s;
+    width: fit-content;
 }
 
 .back-btn:hover {
@@ -201,12 +282,19 @@ body {
 /* Room Code Display */
 .room-code-display {
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 12px;
     margin: 20px 0;
+    text-align: center;
+}
+
+.room-code-display h3 {
+    font-size: 16px;
+    color: #333;
+    margin: 0 0 8px 0;
 }
 
 .room-code-display input {
-    flex: 1;
     padding: 15px;
     font-size: 24px;
     font-weight: bold;
@@ -217,16 +305,25 @@ body {
     letter-spacing: 3px;
 }
 
+.room-code-display p {
+    font-size: 14px;
+    color: #666;
+    margin: 8px 0 0 0;
+}
+
 .copy-btn {
-    padding: 15px 25px;
+    padding: 12px 24px;
     background: #2196F3;
     color: white;
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: bold;
     transition: all 0.3s;
+    width: fit-content;
+    align-self: center;
+}
 }
 
 .copy-btn:hover {
@@ -346,13 +443,17 @@ body {
 .game-screen {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 20px;
+    gap: 28px;
     max-width: 1400px;
     margin: 0 auto;
+    align-items: start;
+    padding-bottom: 30px;
 }
 
 .game-header, .game-footer {
     grid-column: 1 / 2;
+    display: flex;
+    justify-content: center;
 }
 
 .chessboard-container {
@@ -360,31 +461,32 @@ body {
     grid-row: 2 / 3;
     position: relative;
     background: white;
-    padding: 20px;
+    padding: 18px;
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.35);
     justify-self: center;
     width: 100%;
-    max-width: 680px;
+    max-width: min(72vw, 720px);
 }
 
 #chessCanvas {
     display: block;
     cursor: pointer;
     border-radius: 8px;
-    max-width: 100%;
+    width: 100%;
     height: auto;
-    touch-action: none; /* Prevent default touch behaviors */
-    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
 }
 
 .game-controls {
-    grid-column: 1 / 2;
+    grid-column: 2 / 3;
+    grid-row: 5 / 6;
     display: flex;
-    gap: 10px;
+    gap: 12px;
     justify-content: center;
-    margin-top: 15px;
+    margin-top: 12px;
     flex-wrap: wrap;
+    width: 320px;
+    justify-self: center;
 }
 
 .control-btn {
@@ -417,12 +519,14 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
-    padding: 15px 20px;
+    padding: 14px 18px;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
     color: #333;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
+    width: 100%;
+    max-width: 720px;
 }
 
 .player-avatar {
@@ -457,23 +561,24 @@ body {
     grid-row: 1 / 5;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 12px;
-    padding: 20px;
-    width: 300px;
+    padding: 18px;
+    width: 320px;
     height: fit-content;
-    max-height: 600px;
+    max-height: 720px;
     display: flex;
     flex-direction: column;
+    align-self: start;
 }
 
 .chat-messages {
     flex: 1;
     overflow-y: auto;
     margin-bottom: 15px;
-    padding: 10px;
+    padding: 12px;
     background: #f9f9f9;
     border-radius: 8px;
-    min-height: 400px;
-    max-height: 500px;
+    min-height: 440px;
+    max-height: 640px;
 }
 
 .chat-message {
@@ -647,48 +752,17 @@ body {
         padding: 10px;
     }
 }
-/* Mobile optimizations */
-@media (max-width: 480px) {
-    .chessboard-container {
-        padding: 5px;
-        max-width: 100%;
-    }
-    
-    #chessCanvas {
-        border-radius: 4px;
-    }
-    
-    /* Larger tap targets */
-    .control-btn {
-        min-height: 44px;
-        font-size: 16px;
-    }
-    
-    .mode-btn {
-        min-height: 48px;
-    }
-    
-    /* Prevent text selection during drag */
-    body {
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-        -webkit-touch-callout: none;
-    }
-    
-    input, textarea {
-        -webkit-user-select: text;
-        user-select: text;
-    }
-}
 
-@media (max-width: 360px) {
-    .chessboard-container {
-        padding: 2px;
+/* Responsive: place controls under board/chat when collapsed */
+@media (max-width: 1024px) {
+    .game-controls {
+        grid-column: 1 / 2;
+        grid-row: auto;
+        width: 100%;
+        justify-content: center;
+        margin-top: 12px;
     }
-    
-    .game-info h1 {
-        font-size: 24px;
+    .game-controls .control-btn {
+        min-width: 180px;
     }
 }

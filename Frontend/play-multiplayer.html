@@ -2,12 +2,53 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multiplayer - CHESSMATE</title>
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="stylesheet" href="./styles/navbar.css">
     <link rel="stylesheet" href="./styles/play-multiplayer.css">
 </head>
 <body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <span>♔</span> CHESSMATE
+            </a>
+            
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/play-vs-bot.html">Play vs Bot</a></li>
+                <li><a href="/play-multiplayer.html">Multiplayer</a></li>
+                <li><a href="/leaderboard.html">Leaderboard</a></li>
+            </ul>
+            
+            <div class="navbar-actions">
+                <!-- Show when NOT logged in -->
+                <div id="auth-buttons">
+                    <a href="/login.html" class="btn btn-secondary">Login</a>
+                    <a href="/register.html" class="btn btn-primary">Register</a>
+                </div>
+                
+                <!-- Show when logged in -->
+                <div id="user-menu">
+                    <div class="dropdown">
+                        <div class="user-info">
+                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
+                            <span id="username-display" class="username">User</span>
+                        </div>
+                        <div class="dropdown-menu">
+                            <a href="/profile.html" class="dropdown-item">👤 My Profile</a>
+                            <a href="/edit-profile.html" class="dropdown-item">⚙️ Edit Profile</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" id="logout-btn" class="dropdown-item">🚪 Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <div class="app">
         <div class="header">
             <div class="game-info">
@@ -16,13 +57,11 @@
                 <p id="onlineUsers" class="online-users">👥 Online: 0</p>
             </div>
             
-            <button onclick="backToHome()" class="back-home-btn" style="position: absolute; right: 20px; top: 20px; padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                🏠 Home
-            </button>
+
         </div>
 
         <!-- Login Screen -->
-        <div id="loginScreen" class="menu">
+        <div id="loginScreen" class="menu hidden">
             <h2>Enter Your Name</h2>
             <div class="login-form">
                 <input type="text" id="usernameInput" placeholder="Your name" maxlength="20" />
@@ -47,32 +86,48 @@
                     <span class="btn-desc">Enter room code</span>
                 </button>
             </div>
-            <button onclick="logout()" class="back-btn">Logout</button>
+
         </div>
 
         <!-- Random Match Screen -->
+        <!-- Random Match Screen -->
         <div id="randomMatchScreen" class="screen hidden">
-            <h2>🎲 Random Match</h2>
-            <div id="randomMatchTimeSelector"></div>
-            <div id="searchStatus">Click button to start searching</div>
-            
-            <!-- ADD ID HERE -->
-            <button id="searchBtn" class="btn btn-primary" onclick="startRandomSearch()">
-                🔍 Find Match
-            </button>
-            <button class="btn btn-danger" onclick="cancelSearch()">Cancel</button>
+            <div class="menu">
+                <h2>🎲 Random Match</h2>
+
+                <!-- Time Selector -->
+                <div id="randomMatchTimeSelector" class="time-selector-wrapper"></div>
+
+                <div id="searchStatus">Click button to start searching</div>
+
+                <div class="menu-buttons">
+                    <button onclick="backToLobby()" class="back-btn">← Back</button>
+                    <button id="findMatchBtn" class="mode-btn small" onclick="startRandomSearch()">
+                        <span class="mode-icon">🔍</span>
+                        Find Match
+                    </button>
+                </div>
+            </div>
         </div>
+
         <!-- Invite Friend Screen -->
         <div id="inviteFriendScreen" class="screen hidden">
-            <h2>🔐 Private Room</h2>
-            <div id="privateRoomTimeSelector" class="time-selector-wrapper"></div>
-            <div id="roomCodeSection" class="room-code-display hidden">
-                <h3>Room Code:</h3>
-                <input type="text" id="roomCodeDisplay" readonly />
-                <button class="copy-btn" onclick="copyRoomCode()">📋 Copy</button>
-                <p>Share this code with your friend!</p>
+            <div class="menu">
+                <h2>🔐 Private Room</h2>
+                
+                <!-- Time Selector (shown first) -->
+                <div id="privateRoomTimeSelector" class="time-selector-wrapper"></div>
+                
+                <!-- Room Code Display (shown after room created) -->
+                <div id="roomCodeSection" class="room-code-display hidden">
+                    <h3>Room Code:</h3>
+                    <input type="text" id="roomCodeDisplay" readonly />
+                    <button class="copy-btn" onclick="copyRoomCode()">📋 Copy</button>
+                    <p>Share this code with your friend!</p>
+                </div>
+                
+                <button onclick="backToLobby()" class="back-btn">← Back</button>
             </div>
-            <button class="btn btn-danger" onclick="cancelInvite()">Cancel</button>
         </div>
 
         <!-- Join Room Screen -->
@@ -80,9 +135,11 @@
             <h2>🔗 Join Room</h2>
             <div class="join-form">
                 <input type="text" id="roomCodeInput" placeholder="Enter room code" maxlength="6" />
-                <button onclick="joinRoom()" class="mode-btn">Join</button>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 12px;">
+                    <button onclick="joinRoom()" class="mode-btn" style="width: fit-content;">Join</button>
+                    <button onclick="backToLobby()" class="back-btn">← Back</button>
+                </div>
             </div>
-            <button onclick="backToLobby()" class="back-btn">← Back</button>
         </div>
 
         <!-- Online Users List -->
@@ -125,9 +182,15 @@
             </div>
 
             <div class="game-controls">
-                <button onclick="offerDraw()" class="control-btn" id="drawBtn">🤝 Offer Draw</button>
-                <button onclick="resign()" class="control-btn resign-btn">🏳️ Resign</button>
-                <button onclick="flipBoard()" class="control-btn">🔄 Flip</button>
+                <button onclick="offerDraw()" class="control-btn" id="drawBtn">
+                    🤝 Offer Draw
+                </button>
+                <button onclick="resign()" class="control-btn resign-btn">
+                    🏳️ Resign
+                </button>
+                <button onclick="flipBoard()" class="control-btn">
+                    🔄 Flip
+                </button>
             </div>
 
             <!-- Chat Box -->
@@ -141,174 +204,42 @@
         </div>
     </div>
 
-    <!-- ==================== SCRIPTS - LOAD IN CORRECT ORDER ==================== -->
-    
-    <!-- 0. DEBUG SCRIPT - ADD THIS FIRST -->
-    <script>
-        console.log('🔧 ========================================');
-        console.log('🔧 DEBUG: Page loading started');
-        console.log('🔧 ========================================');
-        
-        // Test function to verify onclick works
-        window.testButtonClick = function() {
-            console.log('✅ TEST: Button onclick is working!');
-            alert('Button click works!');
-        };
-        
-        // Override console.error to catch all errors
-        const originalError = console.error;
-        console.error = function(...args) {
-            originalError.apply(console, ['🚨 ERROR:', ...args]);
-            originalError.apply(console, args);
-        };
-        
-        // Catch all unhandled errors
-        window.addEventListener('error', (e) => {
-            console.error('🚨 Unhandled error:', e.message, e.filename, e.lineno, e.colno);
-        });
-        
-        // Catch all promise rejections
-        window.addEventListener('unhandledrejection', (e) => {
-            console.error('🚨 Unhandled promise rejection:', e.reason);
-        });
-        
-        console.log('🔧 Debug script loaded');
-    </script>
-    
-    <!-- 1. External libraries -->
+    <!-- Load Libraries -->
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
-    <!-- 2. Auth check -->
+    <!-- ADD AUTH CHECK BEFORE OTHER SCRIPTS -->
     <script src="./js/auth-check.js"></script>
     
-    <!-- 3. Initialize libraries -->
     <script>
-        console.log('🔧 Initializing libraries...');
-        
-        // Check auth
-        if (typeof requireAuth === 'function' && !requireAuth()) {
-            // Will redirect if not authenticated
+        // CHECK AUTH FIRST
+        if (!requireAuth()) {
+            // Will redirect to login if not authenticated
         }
         
         // Initialize Chess.js
         if (typeof Chess !== 'undefined') {
             window.Chess = Chess;
             console.log('✅ Chess.js loaded');
-        } else {
-            console.error('❌ Chess.js not loaded');
         }
         
         // Initialize Socket.IO
         if (typeof io !== 'undefined') {
             console.log('✅ Socket.IO loaded');
-        } else {
-            console.error('❌ Socket.IO not loaded');
         }
         
-        // Back to home function
+        // ADD BACK TO HOME FUNCTION
         function backToHome() {
             if (confirm('Are you sure you want to leave the game?')) {
                 window.location.href = '/index.html';
             }
         }
-        
-        console.log('🔧 Libraries initialized');
     </script>
     
-    <!-- 4. UTILITY CLASSES -->
-    <script>
-        console.log('🔧 Loading utils.js...');
-    </script>
-    <script src="./js/utils.js"></script>
-    <script>
-        console.log('🔧 Utils.js loaded, checking GameUtils:', typeof GameUtils);
-    </script>
-    
-    <script>
-        console.log('🔧 Loading ui-manager.js...');
-    </script>
-    <script src="./js/ui-manager.js"></script>
-    <script>
-        console.log('🔧 UI-manager.js loaded, checking uiManager:', typeof window.uiManager);
-    </script>
-    
-    <script>
-        console.log('🔧 Loading event-manager.js...');
-    </script>
-    <script src="./js/event-manager.js"></script>
-    <script>
-        console.log('🔧 Event-manager.js loaded, checking eventManager:', typeof window.eventManager);
-    </script>
-    
-    <!-- 5. Socket client -->
-    <script>
-        console.log('🔧 Loading socket-client.js...');
-    </script>
     <script src="./js/socket-client.js"></script>
-    <script>
-        console.log('🔧 Socket-client.js loaded, checking socketClient:', typeof window.socketClient);
-    </script>
-    
-    <!-- 6. Time control utilities -->
-    <script>
-        console.log('🔧 Loading time-controls-config.js...');
-    </script>
     <script src="./js/time-controls-config.js"></script>
-    <script>
-        console.log('🔧 Time-controls-config.js loaded, checking TIME_CONTROLS:', typeof TIME_CONTROLS);
-    </script>
-    
-    <script>
-        console.log('🔧 Loading time-selector.js...');
-    </script>
     <script src="./js/time-selector.js"></script>
-    <script>
-        console.log('🔧 Time-selector.js loaded, checking renderTimeSelector:', typeof renderTimeSelector);
-    </script>
-    
-    <!-- 7. Base chess board renderer -->
-    <script>
-        console.log('🔧 Loading chess-board-renderer.js...');
-    </script>
-    <script src="./js/chess-board-renderer.js"></script>
-    <script>
-        console.log('🔧 Chess-board-renderer.js loaded, checking ChessBoardRenderer:', typeof ChessBoardRenderer);
-    </script>
-    
-    <!-- 8. Game-specific class -->
-    <script>
-        console.log('🔧 Loading play-multiplayer.js...');
-    </script>
     <script src="./js/play-multiplayer.js"></script>
-    <script>
-        console.log('🔧 Play-multiplayer.js loaded');
-        console.log('🔧 Checking functions:');
-        console.log('   - MultiplayerChess:', typeof MultiplayerChess);
-        console.log('   - startRandomSearch:', typeof startRandomSearch);
-        console.log('   - cancelSearch:', typeof cancelSearch);
-        console.log('   - showRandomMatch:', typeof showRandomMatch);
-        console.log('🔧 ========================================');
-        console.log('🔧 All scripts loaded');
-        console.log('🔧 ========================================');
-    </script>
-    
-    <!-- TEST BUTTON INLINE -->
-    <script>
-        // Make functions globally accessible for debugging
-        if (typeof startRandomSearch !== 'undefined') {
-            window.startRandomSearch = startRandomSearch;
-            console.log('✅ startRandomSearch exposed to window');
-        } else {
-            console.error('❌ startRandomSearch not found!');
-        }
-        
-        if (typeof cancelSearch !== 'undefined') {
-            window.cancelSearch = cancelSearch;
-            console.log('✅ cancelSearch exposed to window');
-        } else {
-            console.error('❌ cancelSearch not found!');
-        }
-    </script>
+    <script src="./js/navbar.js"></script>
 </body>
 </html>

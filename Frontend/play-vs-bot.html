@@ -2,17 +2,57 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Play vs Bot - CHESSMATE</title>
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="stylesheet" href="./styles/navbar.css">
     <link rel="stylesheet" href="./styles/play-vs-bot.css">
 </head>
 <body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <span>♔</span> CHESSMATE
+            </a>
+            
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/play-vs-bot.html">Play vs Bot</a></li>
+                <li><a href="/play-multiplayer.html">Multiplayer</a></li>
+                <li><a href="/leaderboard.html">Leaderboard</a></li>
+            </ul>
+            
+            <div class="navbar-actions">
+                <!-- Show when NOT logged in -->
+                <div id="auth-buttons">
+                    <a href="/login.html" class="btn btn-secondary">Login</a>
+                    <a href="/register.html" class="btn btn-primary">Register</a>
+                </div>
+                
+                <!-- Show when logged in -->
+                <div id="user-menu">
+                    <div class="dropdown">
+                        <div class="user-info">
+                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
+                            <span id="username-display" class="username">User</span>
+                        </div>
+                        <div class="dropdown-menu">
+                            <a href="/profile.html" class="dropdown-item">👤 My Profile</a>
+                            <a href="/edit-profile.html" class="dropdown-item">⚙️ Edit Profile</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" id="logout-btn" class="dropdown-item">🚪 Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <div class="app">
         <div class="header">
             <div class="game-info">
-                <h1>♟️ Chess Game (Canvas)</h1>
-                <p id="gameStatus">Choose game mode to start</p>
+                <h1>♟️ Play vs Bot</h1>
             </div>
         </div>
 
@@ -26,7 +66,7 @@
             </div>
         </div>
 
-        <!-- Color Selection Menu -->
+        <!-- Color Selection Menu (NEW) -->
         <div id="colorMenu" class="difficulty-menu hidden">
             <h2>Choose Your Color</h2>
             <p class="difficulty-subtitle">Select which side you want to play:</p>
@@ -121,7 +161,6 @@
 
         <!-- Game Controls -->
         <div id="gameControls" class="game-controls hidden">
-            <button onclick="backToMenu()" class="back-btn">Back to Menu</button>
             <div class="bot-controls">
                 <span class="bot-info" id="botLevelInfo">Playing vs Bot Level 5 🤔</span>
                 <span class="color-info" id="playerColorInfo">You are White ♔</span>
@@ -141,30 +180,31 @@
         </div>
     </div>
 
-    <!-- ==================== SCRIPTS - LOAD IN CORRECT ORDER ==================== -->
-    
-    <!-- 1. Chess.js library -->
+    <!-- Load Chess.js only -->
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
-    
-    <!-- 2. Initialize Chess.js -->
     <script>
-        if (typeof Chess !== 'undefined') {
-            window.Chess = Chess;
-            console.log('✅ Chess.js loaded and initialized');
-        } else {
-            console.error('❌ Chess.js not found');
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Loading Canvas Chess Game...');
+            
+            if (typeof Chess !== 'undefined') {
+                window.Chess = Chess;
+                
+                try {
+                    const testGame = new Chess();
+                    console.log('✅ Chess.js working:', testGame.fen());
+                    document.getElementById('gameStatus').textContent = 'Choose game mode to start';
+                } catch (error) {
+                    console.error('❌ Chess.js test failed:', error);
+                    document.getElementById('gameStatus').textContent = '❌ Chess library error';
+                }
+            } else {
+                console.error('❌ Chess.js not found');
+                document.getElementById('gameStatus').textContent = '❌ Chess library not found';
+            }
+        });
     </script>
     
-    <!-- 3. UTILITY CLASSES (MUST load before game classes) -->
-    <script src="./js/utils.js"></script>
-    <script src="./js/ui-manager.js"></script>
-    <script src="./js/event-manager.js"></script>
-    
-    <!-- 4. Base chess board renderer -->
-    <script src="./js/chess-board-renderer.js"></script>
-    
-    <!-- 5. Game-specific class -->
     <script src="./js/play-vs-bot.js"></script>
+    <script src="./js/navbar.js"></script>
 </body>
 </html>

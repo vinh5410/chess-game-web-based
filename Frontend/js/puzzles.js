@@ -1,116 +1,221 @@
-// Frontend/js/puzzles.js - Refactored to extend ChessBoardRenderer
+// Frontend/js/puzzles.js
 
-class ChessPuzzleGame extends ChessBoardRenderer {
+class ChessPuzzleGame {
     constructor() {
-        super('puzzleCanvas'); // Call base class with canvas ID
+        // --- CẤU HÌNH CANVAS (Lấy từ play-vs-bot) ---
+        this.canvas = document.getElementById('puzzleCanvas');
+        this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+        this.canvasSize = 640;
+        this.squareSize = 80;
         
-        // --- PUZZLE-SPECIFIC STATE ---
+        // Màu sắc bàn cờ
+        this.colors = {
+            light: '#f0d9b5',
+            dark: '#b58863',
+            highlight: 'rgba(255, 255, 0, 0.4)',
+            move: 'rgba(0, 150, 0, 0.6)',
+            selected: 'rgba(255, 200, 0, 0.6)'
+        };
+
+        // --- TRẠNG THÁI GAME ---
+        this.game = new Chess();
         this.currentPuzzle = null;
         this.moveIndex = 0;
         this.isSolving = false;
         this.isUserTurn = false;
+        this.isFlipped = false; // Lật bàn cờ nếu người chơi cầm quân Đen
+
+        // --- TƯƠNG TÁC CHUỘT ---
+        this.isDragging = false;
+        this.dragPiece = null;
+        this.dragStartSquare = null;
+        this.selectedSquare = null;
+        this.mousePos = { x: 0, y: 0 };
+        this.legalMoves = [];
         this.hintSquares = null;
-        this.failed = false;
-        
+        // --- HÌNH ẢNH ---
+        this.pieceImages = {};
+        this.imagesLoaded = false;
+
         // --- TIMER ---
         this.timerInterval = null;
         this.startTime = null;
-        
-        // Initialize puzzle
-        this.initPuzzle();
+
+        // Bắt đầu
+        this.init();
     }
-    
-    async initPuzzle() {
-        console.log('🧩 Initializing Puzzle Game...');
-        
+
+    async init() {
+        if (!this.canvas) {
+            console.error("Canvas not found!");
+            return;
+        }
+
+        // 1. Load Hình ảnh quân cờ (Quan trọng để hiển thị)
         await this.loadPieceImages();
-        this.setupEventListeners();
-        this.handleResize();
         
+        // 2. Gắn sự kiện chuột
+        this.setupEventListeners();
+        
+        // 3. Load thông tin người dùng và Puzzle đầu tiên
+        this.handleResize();
         await this.loadUserStats();
         await this.loadNewPuzzle();
+    }
+
+    // ============================================================
+    // 1. PHẦN RENDERING & ASSETS (Dùng lại của play-vs-bot)
+    // ============================================================
+    
+    async loadPieceImages() {
+        const pieces = ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP', 'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'];
+        const promises = pieces.map(p => new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => {
+                // Fallback nếu ảnh lỗi (dùng Wikimedia)
+                const map = {'wP':'4/45/Chess_plt45.svg','wN':'7/70/Chess_nlt45.svg','wB':'b/b1/Chess_blt45.svg','wR':'7/72/Chess_rlt45.svg','wQ':'1/15/Chess_qlt45.svg','wK':'4/42/Chess_klt45.svg','bP':'c/c7/Chess_pdt45.svg','bN':'e/ef/Chess_ndt45.svg','bB':'9/98/Chess_bdt45.svg','bR':'f/ff/Chess_rdt45.svg','bQ':'4/47/Chess_qdt45.svg','bK':'f/f0/Chess_kdt45.svg'};
+                img.src = `https://upload.wikimedia.org/wikipedia/commons/${map[p]}`;
+                resolve();
+            };
+            img.src = `./assets/pieces/${p}.png`;
+            this.pieceImages[p] = img;
+        }));
+        await Promise.all(promises);
+        this.imagesLoaded = true;
+        this.draw();
+    }
+
+    draw() {
+        if (!this.ctx) return;
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        console.log('✅ Puzzle Game initialized');
+        this.drawBoard();
+        this.drawCoordinates();
+        this.drawHighlights();
+        this.drawPieces(); // Vẽ quân cờ đang đứng yên
+        this.drawDragPiece(); // Vẽ quân cờ đang bị kéo (nếu có)
     }
-    
-    // ==================== OVERRIDE TEMPLATE METHODS ====================
-    
-    canInteract() {
-        return this.isSolving && this.isUserTurn;
+
+    drawBoard() {
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const isLight = (r + c) % 2 === 0;
+                this.ctx.fillStyle = isLight ? this.colors.light : this.colors.dark;
+                this.ctx.fillRect(c * this.squareSize, r * this.squareSize, this.squareSize, this.squareSize);
+            }
+        }
     }
-    
-    getPlayerColor() {
-        return this.game.turn(); // User plays whoever's turn it is
+
+    drawCoordinates() {
+        this.ctx.font = "14px Arial";
+        for (let i = 0; i < 8; i++) {
+            // Vẽ chữ (a-h)
+            const letter = String.fromCharCode(97 + i);
+            this.ctx.fillStyle = (i % 2 === 1) ? this.colors.light : this.colors.dark;
+            this.ctx.fillText(letter, i * this.squareSize + 5, this.canvas.height - 5);
+            
+            // Vẽ số (1-8)
+            const num = this.isFlipped ? (i + 1) : (8 - i);
+            this.ctx.fillStyle = (i % 2 === 0) ? this.colors.light : this.colors.dark;
+            this.ctx.fillText(num, this.canvas.width - 15, i * this.squareSize + 15);
+        }
     }
-    
-    afterMove(move) {
-        // Called after successful move from base class
-        this.addMoveToHistory(move.san);
-        this.isUserTurn = false; // Lock board while verifying
-        this.hintSquares = null; // Clear hints
-        
-        // Verify move with server
-        this.verifyMove(move);
-    }
-    
-    // ==================== CUSTOM DRAWING (Override for puzzle highlights) ====================
-    
+
     drawHighlights() {
-        // Draw last move highlight
+        // Highlight nước đi vừa đi (Last Move)
         const history = this.game.history({ verbose: true });
         if (history.length > 0) {
             const last = history[history.length - 1];
-            const fromPos = this.squareToCanvas(last.from);
-            const toPos = this.squareToCanvas(last.to);
-            
-            this.ctx.fillStyle = 'rgba(155, 199, 0, 0.41)';
-            this.ctx.fillRect(fromPos.x, fromPos.y, this.squareSize, this.squareSize);
-            this.ctx.fillRect(toPos.x, toPos.y, this.squareSize, this.squareSize);
+            [last.from, last.to].forEach(sq => {
+                const pos = this.squareToCanvas(sq);
+                this.ctx.fillStyle = "rgba(155, 199, 0, 0.41)";
+                this.ctx.fillRect(pos.x, pos.y, this.squareSize, this.squareSize);
+            });
         }
-        
-        // Draw selected square
-        if (this.selectedSquare && !this.isDragging) {
+
+        // Highlight ô đang chọn
+        if (this.selectedSquare) {
             const pos = this.squareToCanvas(this.selectedSquare);
-            this.ctx.fillStyle = this.selectedColor;
+            this.ctx.fillStyle = this.colors.selected;
             this.ctx.fillRect(pos.x, pos.y, this.squareSize, this.squareSize);
         }
-        
-        // Draw legal move indicators
-        this.legalMoves.forEach(move => {
-            const pos = this.squareToCanvas(move.to);
-            const centerX = pos.x + this.squareSize / 2;
-            const centerY = pos.y + this.squareSize / 2;
-            const radius = this.squareSize * 0.15;
-            
-            this.ctx.fillStyle = move.captured ? this.captureColor : this.legalMoveColor;
+
+        // Highlight các nước đi hợp lệ (Gợi ý chấm tròn)
+        this.legalMoves.forEach(m => {
+            const pos = this.squareToCanvas(m.to);
+            this.ctx.fillStyle = this.colors.move;
             this.ctx.beginPath();
-            this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            this.ctx.arc(pos.x + this.squareSize/2, pos.y + this.squareSize/2, 12, 0, 2*Math.PI);
             this.ctx.fill();
         });
-        
-        // Draw hint squares (puzzle-specific)
         if (this.hintSquares) {
             const fromPos = this.squareToCanvas(this.hintSquares.from);
             const toPos = this.squareToCanvas(this.hintSquares.to);
-            
+
+            // Vẽ viền xanh lá đậm quanh ô đi và ô đến
             this.ctx.lineWidth = 4;
-            this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
+            this.ctx.strokeStyle = "rgba(0, 255, 0, 0.8)"; 
+            
             this.ctx.strokeRect(fromPos.x, fromPos.y, this.squareSize, this.squareSize);
             this.ctx.strokeRect(toPos.x, toPos.y, this.squareSize, this.squareSize);
-            this.ctx.lineWidth = 1;
+            
+            // Reset line width
+            this.ctx.lineWidth = 1; 
+        }        
+    }
+
+    drawPieces() {
+        const board = this.game.board();
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                // Logic vẽ đảo ngược nếu bàn cờ bị lật (isFlipped)
+                const rankIdx = this.isFlipped ? (7 - r) : r;
+                const fileIdx = this.isFlipped ? (7 - c) : c;
+                
+                const piece = board[rankIdx][fileIdx]; // Lấy quân cờ từ dữ liệu
+                if (!piece) continue;
+
+                // Tính toán tọa độ vẽ
+                // Lưu ý: Canvas vẽ từ trên xuống (rank 0 visual là rank 8 chess nếu không flip)
+                // Ta vẽ theo grid r, c của vòng lặp
+                const squareStr = this.canvasToSquare(c * this.squareSize, r * this.squareSize);
+
+                // Không vẽ quân đang bị kéo (để vẽ nó ở vị trí chuột)
+                if (this.isDragging && this.dragStartSquare === squareStr) continue;
+
+                this.drawSinglePiece(piece, c * this.squareSize, r * this.squareSize);
+            }
         }
     }
-    
-    // ==================== PUZZLE LOGIC ====================
-    
+
+    drawSinglePiece(piece, x, y) {
+        const key = piece.color + piece.type.toUpperCase(); // vd: 'wK', 'bP'
+        if (this.imagesLoaded && this.pieceImages[key]) {
+            this.ctx.drawImage(this.pieceImages[key], x + 5, y + 5, this.squareSize - 10, this.squareSize - 10);
+        }
+    }
+
+    drawDragPiece() {
+        if (this.isDragging && this.dragPiece) {
+            // Vẽ quân cờ ngay tại vị trí chuột
+            this.drawSinglePiece(this.dragPiece, this.mousePos.x - this.squareSize/2, this.mousePos.y - this.squareSize/2);
+        }
+    }
+
+    // ============================================================
+    // 2. LOGIC PUZZLE & API (Phần code cũ được tích hợp lại)
+    // ============================================================
+
+// ... code cũ ...
+
     async loadNewPuzzle() {
         try {
             this.stopTimer();
             this.hideFeedback();
             this.hintSquares = null;
-            this.failed = false;
             document.getElementById('moves-container').innerHTML = '';
-            
+
             const rating = document.getElementById('puzzle-rating').innerText || 1200;
             const token = localStorage.getItem('token');
             
@@ -118,52 +223,61 @@ class ChessPuzzleGame extends ChessBoardRenderer {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            
+
             if (data.success) {
                 this.currentPuzzle = data.puzzle;
                 
-                // Load initial position
+                // 1. Load FEN gốc
                 this.game.load(this.currentPuzzle.fen);
                 this.isSolving = true;
-                
-                // Make opponent's blunder move if provided
+
+                // --- SỬA LẠI LOGIC NÀY ---
+                // Kiểm tra xem Server có gửi initialMove không
                 if (this.currentPuzzle.initialMove) {
-                    console.log('🔴 Opponent blunder:', this.currentPuzzle.initialMove);
+                    console.log("Opponent blunder:", this.currentPuzzle.initialMove);
+                    
+                    // Thực hiện nước đi của đối thủ
                     const move = this.makeMoveInternal(this.currentPuzzle.initialMove);
+                    
                     if (move) {
                         this.addMoveToHistory(move.san);
-                        this.moveIndex = 1;
+                        // QUAN TRỌNG: User bắt đầu giải từ index 1
+                        this.moveIndex = 1; 
                     } else {
+                        // Phòng trường hợp FEN đã bao gồm nước đi này rồi (dữ liệu không đồng nhất)
                         this.moveIndex = 0;
                     }
                 } else {
+                    // Fallback cho dữ liệu cũ
                     this.moveIndex = 0;
                 }
-                
+                // --------------------------
+
                 this.isUserTurn = true;
-                
-                // Update UI
-                const difficulty = this.currentPuzzle.difficulty || 'Normal';
-                document.getElementById('puzzle-difficulty').textContent = difficulty.toUpperCase();
+
+                // Update UI Info
+                document.getElementById('puzzle-difficulty').textContent = (this.currentPuzzle.difficulty || 'Normal').toUpperCase();
                 document.getElementById('puzzle-puzzle-rating').textContent = this.currentPuzzle.rating;
                 
+                // Hiển thị lượt đi
                 const turn = this.game.turn() === 'w' ? 'White' : 'Black';
-                const emoji = turn === 'White' ? '⚪' : '⚫';
-                document.getElementById('to-move').textContent = `${emoji} ${turn} to move`;
-                
-                // Flip board if playing as black
+                document.getElementById('to-move').textContent = `${turn === 'White' ? '⚪' : '⚫'} ${turn} to move`;
+
+                // Lật bàn cờ theo phe User (người chơi luôn cầm quân vừa đến lượt)
                 this.isFlipped = (this.game.turn() === 'b');
-                
+
                 this.startTimer();
                 this.draw();
-                
-                console.log('✅ Puzzle loaded:', this.currentPuzzle.puzzleId);
             }
-        } catch (error) {
-            console.error('❌ Error loading puzzle:', error);
+        } catch (e) {
+            console.error("Error loading puzzle:", e);
         }
     }
-    
+
+
+    // ... code cũ ...
+
+    // Hàm thực hiện nước đi nội bộ (dùng cho nước đi đầu tiên của máy)
     makeMoveInternal(uci) {
         if (!uci) return null;
         const from = uci.substring(0, 2);
@@ -171,18 +285,95 @@ class ChessPuzzleGame extends ChessBoardRenderer {
         const promotion = uci.length > 4 ? uci.substring(4, 5) : undefined;
         return this.game.move({ from, to, promotion });
     }
-    
-    async verifyMove(move) {
+
+    async getHint() {
+        if (!this.isSolving || !this.isUserTurn) return;
+
+        const token = localStorage.getItem('token');
+        try {
+            // Gọi API lấy gợi ý (Backend đã có route này)
+            const res = await fetch(`/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+
+            if (data.success && data.hint) {
+                // Lưu tọa độ gợi ý vào biến state
+                this.hintSquares = {
+                    from: data.hint.from,
+                    to: data.hint.to
+                };
+                
+                // Vẽ lại bàn cờ để hiện highlight
+                this.draw();
+                
+                // Trừ điểm hoặc ghi nhận đã dùng hint (tuỳ logic game của bạn)
+                this.showFeedback('incorrect', 'Hint revealed! Try to move.'); // Dùng style incorrect để cảnh báo
+            }
+        } catch (error) {
+            console.error('Hint error:', error);
+        }
+    }
+
+    async showSolution() {
+        if (!this.isSolving) return;
+
+        // 1. Xác nhận thua cuộc
+        this.submitResult(false); // Gửi kết quả thua lên server
+        this.isSolving = false;   // Dừng game
+        this.stopTimer();
+        
+        // 2. Lấy nước đi đúng (Hack: Gọi API hint để lấy nước đi tiếp theo)
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+
+            if (data.success && data.hint) {
+                // 3. Thực hiện nước đi trên bàn cờ cho người xem
+                const move = this.game.move({
+                    from: data.hint.from,
+                    to: data.hint.to,
+                    promotion: 'q'
+                });
+
+                if (move) {
+                    this.addMoveToHistory(move.san);
+                    this.hintSquares = null; // Xóa hint cũ nếu có
+                    this.draw();
+                }
+                
+                this.showFeedback('incorrect', 'Solution shown. You failed this puzzle.');
+            }
+        } catch (error) {
+            console.error('Show solution error:', error);
+        }
+    }
+    async onDropPiece(from, to) {
+        if (!this.isUserTurn || !this.isSolving) return;
+
+        // 1. Kiểm tra nước đi hợp lệ với chess.js
+        const move = this.game.move({ from, to, promotion: 'q' });
+        if (!move) {
+            this.draw(); // Reset vị trí nếu đi lỗi
+            return; 
+        }
+
+        // 2. Cập nhật UI ngay lập tức
+        this.addMoveToHistory(move.san);
+        this.draw();
+        this.isUserTurn = false; // Khóa bàn cờ chờ server
+
+        // 3. Gửi lên Server verify
         const uci = move.from + move.to + (move.promotion || '');
         
         try {
             const token = localStorage.getItem('token');
             const res = await fetch('/api/puzzles/verify', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     puzzleId: this.currentPuzzle.puzzleId,
                     move: uci,
@@ -190,238 +381,235 @@ class ChessPuzzleGame extends ChessBoardRenderer {
                 })
             });
             const data = await res.json();
-            
+
             if (data.success && data.isCorrect) {
-                console.log('✅ Correct move!');
+                // ĐÚNG
                 this.moveIndex++;
-                
                 if (data.isComplete) {
                     this.puzzleSolved();
                 } else if (data.nextMove) {
-                    // Opponent's response
+                    // Máy đi tiếp
                     setTimeout(() => {
-                        const responseMove = this.makeMoveInternal(data.nextMove);
-                        if (responseMove) {
-                            this.addMoveToHistory(responseMove.san);
-                        }
+                        this.makeMove(data.nextMove);
                         this.moveIndex++;
                         this.isUserTurn = true;
                         this.draw();
                     }, 500);
-                } else {
-                    this.isUserTurn = true;
                 }
             } else {
-                console.log('❌ Wrong move!');
-                this.showFeedback('incorrect', '❌ Wrong move! Try again.');
+                // SAI
+                this.showFeedback('incorrect', 'Wrong move! Try again.');
                 this.submitResult(false);
-                
                 setTimeout(() => {
-                    this.game.undo();
+                    this.game.undo(); // Undo nước đi sai
                     this.removeLastHistory();
                     this.isUserTurn = true;
                     this.draw();
                 }, 1000);
             }
-        } catch (error) {
-            console.error('❌ Verify error:', error);
+        } catch (e) {
+            console.error(e);
             this.game.undo();
-            this.removeLastHistory();
             this.isUserTurn = true;
             this.draw();
         }
     }
-    
+
+    makeMove(uci) {
+        const from = uci.substring(0, 2);
+        const to = uci.substring(2, 4);
+        const promotion = uci.length > 4 ? uci.substring(4, 5) : undefined;
+        const move = this.game.move({ from, to, promotion });
+        if(move) this.addMoveToHistory(move.san);
+    }
+
     puzzleSolved() {
         this.isSolving = false;
-        this.isUserTurn = false;
         this.stopTimer();
-        this.showFeedback('correct', '✅ Puzzle Solved!');
+        this.showFeedback('correct', 'Puzzle Solved!');
         this.submitResult(true);
     }
-    
+
     async submitResult(solved) {
+        // Chỉ submit 1 lần
         if (!solved && this.failed) return;
         if (!solved) this.failed = true;
-        
+
         const timeTaken = Math.floor((Date.now() - this.startTime) / 1000);
         const token = localStorage.getItem('token');
-        
-        try {
-            const res = await fetch('/api/puzzles/submit', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify({
-                    puzzleId: this.currentPuzzle.puzzleId,
-                    solved,
-                    timeTaken,
-                    hintsUsed: this.hintSquares !== null,
-                    attempts: 1
-                })
-            });
-            const data = await res.json();
-            
+
+        await fetch('/api/puzzles/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                puzzleId: this.currentPuzzle.puzzleId,
+                solved,
+                timeTaken,
+                hintsUsed: false,
+                attempts: 1
+            })
+        }).then(res => res.json()).then(data => {
             if (data.success) {
                 document.getElementById('puzzle-rating').innerText = data.newRating;
-                if (solved) this.loadUserStats();
+                if(solved) this.loadUserStats(); // Reload stats đầy đủ
             }
-        } catch (error) {
-            console.error('❌ Submit error:', error);
-        }
+        });
     }
-    
-    async getHint() {
-        if (!this.isSolving || !this.isUserTurn) return;
-        
-        const token = localStorage.getItem('token');
-        try {
-            const res = await fetch(
-                `/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`,
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            const data = await res.json();
-            
-            if (data.success && data.hint) {
-                this.hintSquares = {
-                    from: data.hint.from,
-                    to: data.hint.to
-                };
-                this.draw();
-                this.showFeedback('incorrect', '💡 Hint revealed! Try to move.');
-            }
-        } catch (error) {
-            console.error('❌ Hint error:', error);
-        }
-    }
-    
-    async showSolution() {
-        if (!this.isSolving) return;
-        
-        this.submitResult(false);
-        this.isSolving = false;
-        this.stopTimer();
-        
-        const token = localStorage.getItem('token');
-        try {
-            const res = await fetch(
-                `/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`,
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            const data = await res.json();
-            
-            if (data.success && data.hint) {
-                const move = this.game.move({
-                    from: data.hint.from,
-                    to: data.hint.to,
-                    promotion: 'q'
-                });
-                
-                if (move) {
-                    this.addMoveToHistory(move.san);
-                    this.hintSquares = null;
-                    this.draw();
-                }
-                
-                this.showFeedback('incorrect', '📖 Solution shown. You failed this puzzle.');
-            }
-        } catch (error) {
-            console.error('❌ Solution error:', error);
-        }
-    }
-    
-    // ==================== TIMER ====================
-    
+
+    // ============================================================
+    // 3. UTILS & EVENT HANDLING (Hỗ trợ Timer, Resize, Click)
+    // ============================================================
+
     startTimer() {
         this.stopTimer();
         this.startTime = Date.now();
         this.timerInterval = setInterval(() => {
-            const seconds = Math.floor((Date.now() - this.startTime) / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            document.getElementById('timer').innerText = 
-                `${minutes}:${secs.toString().padStart(2, '0')}`;
+            const now = Math.floor((Date.now() - this.startTime) / 1000);
+            const m = Math.floor(now / 60);
+            const s = now % 60;
+            document.getElementById('timer').innerText = `${m}:${s.toString().padStart(2, '0')}`;
         }, 1000);
     }
-    
+
     stopTimer() {
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-            this.timerInterval = null;
+        if (this.timerInterval) clearInterval(this.timerInterval);
+    }
+
+    // Chuyển đổi tọa độ Canvas <-> Ô cờ (quan trọng cho Drag/Drop)
+    canvasToSquare(x, y) {
+        const c = Math.floor(x / this.squareSize);
+        const r = Math.floor(y / this.squareSize);
+        
+        // Nếu lật bàn cờ thì tính lại
+        const file = this.isFlipped ? (7 - c) : c;
+        const rank = this.isFlipped ? r : (7 - r);
+
+        if (file < 0 || file > 7 || rank < 0 || rank > 7) return null;
+        return String.fromCharCode(97 + file) + (rank + 1);
+    }
+
+    squareToCanvas(square) {
+        const file = square.charCodeAt(0) - 97;
+        const rank = parseInt(square[1]) - 1;
+
+        const c = this.isFlipped ? (7 - file) : file;
+        const r = this.isFlipped ? rank : (7 - rank);
+
+        return { x: c * this.squareSize, y: r * this.squareSize };
+    }
+
+    setupEventListeners() {
+        // Chuột
+        this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+
+        // Nút bấm
+        document.getElementById('new-puzzle-btn').addEventListener('click', () => this.loadNewPuzzle());
+        document.getElementById('hint-btn').addEventListener('click', () => this.getHint());
+        document.getElementById('solution-btn').addEventListener('click', () => this.showSolution());        
+        // Resize
+        window.addEventListener('resize', () => this.handleResize());
+    }
+
+    handleMouseDown(e) {
+        if (!this.isUserTurn) return;
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const sq = this.canvasToSquare(x, y);
+
+        if (sq) {
+            const piece = this.game.get(sq);
+            if (piece && piece.color === this.game.turn()) {
+                this.isDragging = true;
+                this.dragStartSquare = sq;
+                this.dragPiece = piece;
+                this.selectedSquare = sq;
+                this.legalMoves = this.game.moves({ square: sq, verbose: true });
+                this.mousePos = {x, y};
+                this.draw();
+            }
         }
     }
-    
-    // ==================== UI HELPERS ====================
-    
+
+    handleMouseMove(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        this.mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        if (this.isDragging) this.draw();
+    }
+
+    handleMouseUp(e) {
+        if (this.isDragging) {
+            const rect = this.canvas.getBoundingClientRect();
+            const sq = this.canvasToSquare(e.clientX - rect.left, e.clientY - rect.top);
+            
+            // Nếu thả vào ô khác ô bắt đầu -> Di chuyển
+            if (sq && sq !== this.dragStartSquare) {
+                this.onDropPiece(this.dragStartSquare, sq);
+            }
+            
+            this.isDragging = false;
+            this.dragPiece = null;
+            this.dragStartSquare = null;
+            this.legalMoves = []; // Xóa gợi ý sau khi thả
+            this.draw();
+        }
+    }
+
+    handleResize() {
+        const parent = this.canvas.parentElement;
+        if (parent) {
+            const size = Math.min(parent.clientWidth - 40, 640);
+            this.canvas.width = size;
+            this.canvas.height = size;
+            this.canvasSize = size;
+            this.squareSize = size / 8;
+            this.draw();
+        }
+    }
+
+    // Helper UI
     addMoveToHistory(san) {
         const div = document.createElement('div');
         div.className = 'move-item';
         div.innerText = san;
-        const container = document.getElementById('moves-container');
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
+        document.getElementById('moves-container').appendChild(div);
+        document.getElementById('moves-container').scrollTop = 9999;
     }
     
     removeLastHistory() {
-        const container = document.getElementById('moves-container');
-        if (container.lastChild) {
-            container.removeChild(container.lastChild);
-        }
+        const list = document.getElementById('moves-container');
+        if(list.lastChild) list.removeChild(list.lastChild);
     }
-    
+
     showFeedback(type, msg) {
-        const feedback = document.getElementById('feedback');
-        feedback.classList.remove('hidden', 'correct', 'incorrect');
-        feedback.classList.add(type);
+        const fb = document.getElementById('feedback');
+        fb.classList.remove('hidden', 'correct', 'incorrect');
+        fb.classList.add(type);
         document.getElementById('feedback-message').innerText = msg;
     }
-    
+
     hideFeedback() {
         document.getElementById('feedback').classList.add('hidden');
     }
-    
+
     async loadUserStats() {
+        // Code cũ để lấy stats
         const token = localStorage.getItem('token');
-        if (!token) return;
-        
-        try {
-            const res = await fetch('/api/puzzles/stats', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            
-            if (data.success) {
-                document.getElementById('puzzles-solved').innerText = data.stats.puzzlesSolved;
-                document.getElementById('puzzle-rating').innerText = data.stats.puzzleRating;
-                document.getElementById('current-streak').innerText = data.stats.streak.current;
-                document.getElementById('success-rate').innerText = data.stats.successRate + '%';
-            }
-        } catch (error) {
-            console.error('❌ Load stats error:', error);
+        if(!token) return;
+        const res = await fetch('/api/puzzles/stats', { headers: { 'Authorization': `Bearer ${token}` }});
+        const data = await res.json();
+        if(data.success) {
+            document.getElementById('puzzles-solved').innerText = data.stats.puzzlesSolved;
+            document.getElementById('puzzle-rating').innerText = data.stats.puzzleRating;
+            document.getElementById('current-streak').innerText = data.stats.streak.current;
+            document.getElementById('success-rate').innerText = data.stats.successRate + '%';
         }
-    }
-    
-    // ==================== SETUP EVENT LISTENERS (Override to add puzzle buttons) ====================
-    
-    setupEventListeners() {
-        // Call base class to setup canvas events (mouse + touch + resize)
-        super.setupEventListeners();
-        
-        // Puzzle-specific buttons
-        document.getElementById('new-puzzle-btn')
-            .addEventListener('click', () => this.loadNewPuzzle());
-        document.getElementById('hint-btn')
-            .addEventListener('click', () => this.getHint());
-        document.getElementById('solution-btn')
-            .addEventListener('click', () => this.showSolution());
-        
-        console.log('✅ Puzzle buttons setup');
     }
 }
 
-// Initialize
+// Khởi tạo
 document.addEventListener('DOMContentLoaded', () => {
     window.puzzleGame = new ChessPuzzleGame();
 });
