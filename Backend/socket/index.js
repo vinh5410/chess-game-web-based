@@ -87,7 +87,7 @@ module.exports = (io, userManager, gameManager) => {
         // Lưu ý: FE hiện tại đang dùng event 'game:move' hay 'make_move'?
         // Trong game-manager.js bạn gửi t, nó emit 'game:move'. 
         // Nên ở đây mình listen 'game:move' cho đồng bộ.
-        socket.on('game:move', ({ roomId, move }) => {
+        socket.on('game:move', async ({ roomId, move }) => {
             // Gọi Manager để kiểm tra và lấy kết quả
             const result = gameManager.makeMove(roomId, socket.id, move);
             
@@ -105,15 +105,22 @@ module.exports = (io, userManager, gameManager) => {
                         reason: result.reason,
                         fen: result.fen
                     });
-                    // Gọi hàm kết thúc để dọn dẹp
-                    gameManager.endGame(roomId, null, result.reason); 
+                    // Xác định ID người thắng
+                    let winnerId = null;
+                    if (result.reason === 'checkmate') {
+                        // Nếu chiếu hết, người vừa đi nước này (socket.id) là người thắng
+                        winnerId = socket.id;
+                    }
+                    
+                    // Thêm await và truyền đúng winnerId
+                    await gameManager.endGame(roomId, winnerId, result.reason); 
                 }
             } else {
                 socket.emit('game:invalid_move', { message: result.message });
             }
         });
 
-        socket.on('game:resign', ({ roomId }) => {
+        socket.on('game:resign', async ({ roomId }) => {
             const room = gameManager.getRoom(roomId);
             if (room) {
                 // Logic: Tìm người còn lại là người thắng
@@ -126,7 +133,7 @@ module.exports = (io, userManager, gameManager) => {
                 });
                 
                 // Gọi endGame có sẵn
-                gameManager.endGame(roomId, opponentId, 'resignation');
+                await gameManager.endGame(roomId, opponentId, 'resignation');
             }
         });
 

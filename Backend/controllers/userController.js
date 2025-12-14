@@ -142,28 +142,15 @@ exports.getUserStats = async (req, res) => {
 // @access  Public
 exports.getLeaderboard = async (req, res) => {
     try {
-        const limit = parseInt(req.query.limit) || 10;
-        
         const users = await User.find()
-            .select('username avatar rating gamesPlayed gamesWon')
-            .sort({ rating: -1, gamesWon: -1 })
-            .limit(limit);
-        
+            .sort({ rating: -1 })
+            .limit(10)
+            .select('username rating avatar');
+
         res.status(200).json({
             success: true,
-            count: users.length,
-            leaderboard: users.map((user, index) => ({
-                rank: index + 1,
-                id: user._id,
-                username: user.username,
-                avatar: user.avatar,
-                rating: user.rating,
-                gamesPlayed: user.gamesPlayed,
-                gamesWon: user.gamesWon,
-                winRate: user.winRate
-            }))
+            leaderboard: users
         });
-        
     } catch (error) {
         console.error('❌ Get leaderboard error:', error);
         res.status(500).json({
