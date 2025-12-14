@@ -288,9 +288,12 @@ class GameManager {
     }
     
     // Private rooms
-    createPrivateRoom(socketId) {
+    createPrivateRoom(socketId, timeControl = 300) { 
         const roomId = uuidv4();
-        const room = new GameRoom(roomId, 'private');
+        const room = new GameRoom(roomId, 'private', {  
+            initial: timeControl,
+            increment: 0
+        });
         
         room.addPlayer(socketId);
         this.rooms.set(roomId, room);
@@ -320,6 +323,14 @@ class GameManager {
             };
         }
         
+        // ✅ FIX: Kiểm tra xem user đã ở trong room chưa
+        if (room.hasPlayer(socketId)) {
+            return {
+                success: false,
+                message: 'You are already in this room'
+            };
+        }
+        
         if (room.isFull()) {
             return {
                 success: false,
@@ -342,7 +353,7 @@ class GameManager {
             room: room
         };
     }
-    
+        
     startGame(roomId) {
         const room = this.rooms.get(roomId);
         

@@ -1,18 +1,36 @@
 class UserManager {
     constructor() {
-        this.users = new Map(); // userId -> user object
+        this.users = new Map();
+        this.disconnectedUsers = new Map(); // username -> timestamp
     }
     
     addUser(socketId, username) {
-        // Check if username already exists
-        const existingUser = Array.from(this.users.values())
-            .find(u => u.username.toLowerCase() === username.toLowerCase());
+        const existingUser = Array.from(this.users.entries())
+            .find(([id, u]) => u.username.toLowerCase() === username.toLowerCase());
         
         if (existingUser) {
-            return {
-                success: false,
-                message: 'Username already taken'
-            };
+            const [oldSocketId, oldUser] = existingUser;
+            
+            if (oldSocketId === socketId) {
+                return {
+                    success: false,
+                    message: 'Already logged in'
+                };
+            }
+            
+            // Check if user disconnected recently (within 30 seconds)
+            const disconnectTime = this.disconnectedUsers.get(username.toLowerCase());
+            if (disconnectTime && (Date.now() - disconnectTime) < 30000) {
+                // Allow reconnect within 30 seconds
+                console.log(`✅ Reconnect allowed for ${username}`);
+                this.users.delete(oldSocketId);
+                this.disconnectedUsers.delete(username.toLowerCase());
+            } else {
+                return {
+                    success: false,
+                    message: 'Username already taken'
+                };
+            }
         }
         
         const user = {
@@ -33,10 +51,18 @@ class UserManager {
     
     removeUser(socketId) {
         const user = this.users.get(socketId);
+        if (user) {
+            // Mark disconnect time
+            this.disconnectedUsers.set(user.username.toLowerCase(), Date.now());
+            
+            // Auto cleanup after 30 seconds
+            setTimeout(() => {
+                this.disconnectedUsers.delete(user.username.toLowerCase());
+            }, 30000);
+        }
         this.users.delete(socketId);
         return user;
     }
-    
     getUser(socketId) {
         return this.users.get(socketId);
     }

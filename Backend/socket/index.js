@@ -31,12 +31,13 @@ module.exports = (io, userManager, gameManager) => {
         });
 
         // --- MATCHMAKING ---
-        socket.on('matchmaking:join', () => {
+        socket.on('matchmaking:join', (data) => {  // ✅ NHẬN data
             const user = userManager.getUser(socket.id);
             if (!user) return socket.emit('room:error', { message: 'Login first' });
 
-            const result = gameManager.addToMatchmaking(socket.id);
-            // Logic tìm trận đã được gameManager xử lý và tự emit sự kiện bên trong
+            const timeControl = data?.timeControl || 300;  // ✅ LẤY timeControl, default 300
+            const result = gameManager.addToMatchmaking(socket.id, timeControl);  // ✅ TRUYỀN timeControl
+            
             if (!result.matched) {
                 socket.emit('matchmaking:waiting', { 
                     queue: gameManager.getMatchmakingQueueSize() 
@@ -53,12 +54,13 @@ module.exports = (io, userManager, gameManager) => {
         });
 
         // --- PRIVATE ROOM ---
-        socket.on('room:create', () => {
+        socket.on('room:create', (data) => {  // ✅ NHẬN data
             const user = userManager.getUser(socket.id);
             if (!user) return socket.emit('room:error', { message: 'Login first' });
 
-            const room = gameManager.createPrivateRoom(socket.id);
-            socket.join(room.id); // Socket join room của socket.io
+            const timeControl = data?.timeControl || 300;  // ✅ LẤY timeControl
+            const room = gameManager.createPrivateRoom(socket.id, timeControl);  // ✅ TRUYỀN timeControl
+            socket.join(room.id);
             socket.emit('room:created', { roomId: room.id, roomCode: room.code });
         });
 
