@@ -345,20 +345,20 @@ class MultiplayerChess {
     onGameStart(data) {
         console.log('🎮 Game started!', data);
         
-        this.playerColor = data.color;
+        this.playerColor = data.color === 'white' ? 'w' : 'b';
         this.opponentName = data.opponent.username;
         this.isMyTurn = (data.color === 'white');
         this.gameStarted = true;
         this.gameOver = false;
-        this.isFlipped = (this.playerColor === 'black');
+        this.isFlipped = (this.playerColor === 'b');
         
         document.getElementById('playerName').textContent = this.socket.getUsername() || 'You';
         document.getElementById('opponentName').textContent = this.opponentName;
         
         const playerColorIcon = this.playerColor === 'white' ? '♔ White' : '♚ Black';
         const opponentColorIcon = this.playerColor === 'white' ? '♚ Black' : '♔ White';
-        document.getElementById('playerColor').textContent = playerColorIcon;
-        document.getElementById('opponentColor').textContent = opponentColorIcon;
+        GameUtils.setTextContent('playerColor', playerColorIcon);
+        GameUtils.setTextContent('opponentColor', opponentColorIcon);
         
         this.game = new window.Chess();
         this.selectedSquare = null;
@@ -369,6 +369,26 @@ class MultiplayerChess {
         this.draw();
         
         updateGameStatus(this.isMyTurn ? 'Your turn!' : 'Opponent\'s turn');
+    }
+    
+    onOpponentMove(data) {
+        console.log('♟️ Opponent move:', data.move);
+        
+        try {
+            const move = this.game.move(data.move);
+            if (move) {
+                this.lastMove = { from: move.from, to: move.to };
+                this.isMyTurn = true;
+                this.draw();
+                updateGameStatus('Your turn!');
+                
+                if (this.checkGameOver()) {
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('Error applying opponent move:', error);
+        }
     }
     
     onOpponentMove(data) {
