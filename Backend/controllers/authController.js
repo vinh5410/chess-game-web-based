@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const sendEmail = require('../utils/sendEmail');
+const crypto = require('crypto');
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -67,12 +69,41 @@ exports.register = async (req, res) => {
         const user = await User.create({
             username,
             email,
-            password
+            password,
+            isVerified: false // Mặc định chưa xác minh
         });
+
+        const token = user.generateToken('verify');
+        await user.save({ validateBeforeSave: false });
+
+        // Tạo URL kích hoạt
+        const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verify/${token}`;
+
+        try {
+            // Gửi email kích hoạt
+            await sendEmail({
+                email: user.email,
+                subject: 'Kích hoạt tài khoản Chess Game',
+                message: `Click vào link sau để kích hoạt tài khoản: \n\n${verifyUrl}`
+            });
+            
+            console.log('✅ User registered (pending verify):', username);
+            
+            // Trả về phản hồi thành công
+            res.status(200).json({ 
+                success: true, 
+                message: 'Đăng ký thành công! Hãy kiểm tra email để kích hoạt.' 
+            });
+            
+        } catch (err) {
+            // Nếu gửi mail thất bại, xóa user vừa tạo
+            await User.findByIdAndDelete(user._id);
+            res.status(500).json({ success: false, message: 'Lỗi gửi mail' });
+        }
         
         console.log('✅ User registered:', username);
         
-        sendTokenResponse(user, 201, res);
+        //sendTokenResponse(user, 201, res);
         
     } catch (error) {
         console.error('❌ Register error:', error);
@@ -89,6 +120,32 @@ exports.register = async (req, res) => {
             success: false,
             message: error.message || 'Server error'
         });
+    }
+};
+
+// @desc    Kích hoạt tài khoản
+// @route   GET /api/auth/verify/:token
+exports.verifyAccount = async (req, res) => {
+    try {
+        // Hash token từ URL để so sánh với DB
+        const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+        
+        // Tìm user có token đó
+        const user = await User.findOne({ verificationToken: hashedToken });
+
+        if (!user) {
+            return res.status(400).send('<h1>Link không hợp lệ hoặc đã được sử dụng.</h1>');
+        }
+
+        // Kích hoạt user
+        user.isVerified = true;
+        user.verificationToken = undefined; // Xóa token sau khi dùng
+        await user.save({ validateBeforeSave: false });
+
+        // Redirect về trang Login của FE (Sửa đường dẫn '/login.html' nếu FE ông khác)
+        res.redirect('/login.html?message=verified_success');
+    } catch (error) {
+        res.status(500).send('Server Error');
     }
 };
 
@@ -127,6 +184,14 @@ exports.login = async (req, res) => {
             });
         }
         
+        // Check if verified
+        if (!user.isVerified) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Tài khoản chưa kích hoạt. Vui lòng kiểm tra email.' 
+            });
+        }
+
         // Update last seen
         user.lastSeen = Date.now();
         user.isOnline = true;
@@ -142,6 +207,61 @@ exports.login = async (req, res) => {
             success: false,
             message: 'Server error'
         });
+    }
+};
+
+// @desc    Quên mật khẩu (Gửi link reset)
+// @route   POST /api/auth/forgotpassword
+exports.forgotPassword = async (req, res) => {
+    try {
+        const user = await User.findOne({ email: req.body.email });
+        if (!user) return res.status(404).json({ success: false, message: 'Email không tồn tại' });
+
+        // Tạo token reset
+        const resetToken = user.generateToken('reset');
+        await user.save({ validateBeforeSave: false });
+
+        // Link trỏ về trang Reset của FE (Port 3000 là ví dụ, ông sửa lại theo đúng port FE)
+        const resetUrl = `${req.protocol}://${req.get('host').split(':')[0]}:3000/reset-password.html?token=${resetToken}`;
+
+        try {
+            await sendEmail({ 
+                email: user.email, 
+                subject: 'Đặt lại mật khẩu', 
+                message: `Click link để đổi mật khẩu: \n\n${resetUrl}` 
+            });
+            res.status(200).json({ success: true, data: 'Đã gửi email hướng dẫn' });
+        } catch (err) {
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpire = undefined;
+            await user.save({ validateBeforeSave: false });
+            return res.status(500).json({ success: false, message: 'Lỗi gửi mail' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+// @desc    Đặt lại mật khẩu mới
+// @route   PUT /api/auth/resetpassword/:token
+exports.resetPassword = async (req, res) => {
+    try {
+        const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpire: { $gt: Date.now() } // Check xem token còn hạn không
+        });
+
+        if (!user) return res.status(400).json({ success: false, message: 'Link hết hạn hoặc không đúng' });
+
+        user.password = req.body.password;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Đổi mật khẩu thành công. Hãy đăng nhập lại.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
 
