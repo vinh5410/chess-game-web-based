@@ -4,30 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess Puzzles - CHESSMATE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="stylesheet" href="./styles/index.css">
     <link rel="stylesheet" href="./styles/puzzles.css">
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
 </head>
 <body>
-    <!-- Navbar -->
+    <div class="bg-gradient"></div>
+    <div class="bg-blur"></div>
+
     <nav class="navbar">
         <div class="navbar-container">
             <a href="/" class="navbar-brand">
-                <span>♔</span> CHESSMATE
+                <i class="fa-solid fa-chess-king"></i> CHESSMATE
             </a>
             
             <ul class="navbar-menu">
-                <li><a href="/">Home</a></li>
-                <li><a href="/play-vs-bot.html">Play vs Bot</a></li>
-                <li><a href="/play-multiplayer.html">Multiplayer</a></li>
-                <li><a href="/puzzles.html">Puzzles</a></li>
-                <li><a href="/puzzle-leaderboard.html">Leaderboard</a></li>
+                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i> Multiplayer</a></li>
+                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i> VS Bot</a></li>
+                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i> Puzzles</a></li>
+                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i> Rankings</a></li>
             </ul>
             
             <div class="navbar-actions">
                 <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Login</a>
-                    <a href="/register.html" class="btn btn-primary">Register</a>
+                    <a href="/login.html" class="btn btn-secondary">Log In</a>
+                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
                 </div>
                 
                 <div id="user-menu">
@@ -35,12 +43,13 @@
                         <div class="user-info">
                             <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
                             <span id="username-display" class="username">User</span>
+                            <i class="fa-solid fa-chevron-down"></i>
                         </div>
                         <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item">👤 My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item">⚙️ Edit Profile</a>
+                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
+                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
                             <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item">🚪 Logout</a>
+                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
                         </div>
                     </div>
                 </div>

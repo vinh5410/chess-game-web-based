@@ -4,44 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Play vs Bot - CHESSMATE</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+    
     <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="stylesheet" href="./styles/index.css">
     <link rel="stylesheet" href="./styles/play-vs-bot.css">
+    <link rel="stylesheet" href="./styles/basic.css">
 </head>
 <body>
-    <!-- Navbar -->
+    <div class="bg-gradient"></div>
+    <div class="bg-blur"></div>
+
     <nav class="navbar">
         <div class="navbar-container">
             <a href="/" class="navbar-brand">
-                <span>♔</span> CHESSMATE
+                <i class="fa-solid fa-chess-king"></i> CHESSMATE
             </a>
             
             <ul class="navbar-menu">
-                <li><a href="/">Home</a></li>
-                <li><a href="/play-vs-bot.html">Play vs Bot</a></li>
-                <li><a href="/play-multiplayer.html">Multiplayer</a></li>
-                <li><a href="/leaderboard.html">Leaderboard</a></li>
+                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i> Multiplayer</a></li>
+                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i> VS Bot</a></li>
+                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i> Puzzles</a></li>
+                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i> Rankings</a></li>
             </ul>
             
             <div class="navbar-actions">
-                <!-- Show when NOT logged in -->
                 <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Login</a>
-                    <a href="/register.html" class="btn btn-primary">Register</a>
+                    <a href="/login.html" class="btn btn-secondary">Log In</a>
+                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
                 </div>
                 
-                <!-- Show when logged in -->
                 <div id="user-menu">
                     <div class="dropdown">
                         <div class="user-info">
                             <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
                             <span id="username-display" class="username">User</span>
+                            <i class="fa-solid fa-chevron-down"></i>
                         </div>
                         <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item">👤 My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item">⚙️ Edit Profile</a>
+                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
+                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
                             <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item">🚪 Logout</a>
+                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
                         </div>
                     </div>
                 </div>
@@ -50,161 +60,191 @@
     </nav>
 
     <div class="app">
+        
         <div class="header">
             <div class="game-info">
-                <h1>♟️ Play vs Bot</h1>
+                <h1><i class="fa-solid fa-robot"></i> PvE Arena</h1>
+                <p class="subtitle">Challenge the Artificial Intelligence</p>
             </div>
         </div>
 
-        <!-- Main Menu -->
-        <div id="mainMenu" class="menu">
+        <div id="mainMenu" class="menu glass-panel hidden">
             <h2>Choose Game Mode</h2>
             <div class="menu-buttons">
                 <button onclick="showDifficultyMenu()" class="mode-btn">
-                    🤖 Play vs AI Bot
+                    <span class="icon"><i class="fa-solid fa-brain"></i></span>
+                    <span class="text">Play vs AI Bot</span>
+                    <span class="sub">Challenge Engine Stockfish</span>
                 </button>
             </div>
         </div>
 
-        <!-- Color Selection Menu (NEW) -->
-        <div id="colorMenu" class="difficulty-menu hidden">
-            <h2>Choose Your Color</h2>
-            <p class="difficulty-subtitle">Select which side you want to play:</p>
-            <div class="color-grid">
-                <div class="color-card">
-                    <button onclick="selectColor('white')" class="color-btn">
-                        <div class="color-icon">♔</div>
-                        <div class="color-name">White</div>
-                        <div class="color-desc">You play first</div>
-                    </button>
-                </div>
-                <div class="color-card">
-                    <button onclick="selectColor('black')" class="color-btn">
-                        <div class="color-icon">♚</div>
-                        <div class="color-name">Black</div>
-                        <div class="color-desc">Bot plays first</div>
-                    </button>
-                </div>
-                <div class="color-card">
-                    <button onclick="selectColor('random')" class="color-btn">
-                        <div class="color-icon">🎲</div>
-                        <div class="color-name">Random</div>
-                        <div class="color-desc">50/50 chance</div>
-                    </button>
-                </div>
-            </div>
-            <button onclick="backToMenu()" class="back-btn">← Back to Menu</button>
-        </div>
-
-        <!-- Difficulty Selection Menu -->
-        <div id="difficultyMenu" class="difficulty-menu hidden">
-            <h2>Choose Bot Difficulty</h2>
-            <p class="difficulty-subtitle">Select your challenge level:</p>
+        <div id="difficultyMenu" class="difficulty-menu glass-panel hidden">
+            <h2>Select Difficulty</h2>
+            <p class="difficulty-subtitle">Choose your opponent's ELO rating</p>
+            
             <div class="difficulty-grid">
-                <div class="difficulty-card">
+                <div class="difficulty-card tier-1">
                     <button onclick="startBotGame(1)" class="difficulty-btn">
-                        <div class="difficulty-level">
-                            <span class="level-emoji">😊</span>
-                            <span class="level-number">Level 1</span>
-                        </div>
-                        <div class="difficulty-desc">Beginner - Random</div>
+                        <div class="level-badge">LVL 1</div>
+                        <div class="difficulty-desc">Rookie</div>
+                        <div class="difficulty-icon">👶</div>
                     </button>
                 </div>
-                <div class="difficulty-card">
+                <div class="difficulty-card tier-2">
                     <button onclick="startBotGame(3)" class="difficulty-btn">
-                        <div class="difficulty-level">
-                            <span class="level-emoji">🙂</span>
-                            <span class="level-number">Level 3</span>
-                        </div>
-                        <div class="difficulty-desc">Easy - Rule-based</div>
+                        <div class="level-badge">LVL 3</div>
+                        <div class="difficulty-desc">Casual</div>
+                        <div class="difficulty-icon">🙂</div>
                     </button>
                 </div>
-                <div class="difficulty-card">
+                <div class="difficulty-card tier-3">
                     <button onclick="startBotGame(5)" class="difficulty-btn">
-                        <div class="difficulty-level">
-                            <span class="level-emoji">🤔</span>
-                            <span class="level-number">Level 5</span>
-                        </div>
-                        <div class="difficulty-desc">Medium - Lichess API</div>
+                        <div class="level-badge">LVL 5</div>
+                        <div class="difficulty-desc">Intermediate</div>
+                        <div class="difficulty-icon">🤔</div>
                     </button>
                 </div>
-                <div class="difficulty-card">
+                <div class="difficulty-card tier-4">
                     <button onclick="startBotGame(8)" class="difficulty-btn">
-                        <div class="difficulty-level">
-                            <span class="level-emoji">😤</span>
-                            <span class="level-number">Level 8</span>
-                        </div>
-                        <div class="difficulty-desc">Hard - Lichess API</div>
+                        <div class="level-badge">LVL 8</div>
+                        <div class="difficulty-desc">Advanced</div>
+                        <div class="difficulty-icon">😤</div>
                     </button>
                 </div>
-                <div class="difficulty-card">
+                <div class="difficulty-card tier-5">
                     <button onclick="startBotGame(10)" class="difficulty-btn">
-                        <div class="difficulty-level">
-                            <span class="level-emoji">🔥</span>
-                            <span class="level-number">Level 10</span>
-                        </div>
-                        <div class="difficulty-desc">Expert - Lichess API</div>
+                        <div class="level-badge">LVL 10</div>
+                        <div class="difficulty-desc">Expert</div>
+                        <div class="difficulty-icon">🔥</div>
                     </button>
                 </div>
-                <div class="difficulty-card">
+                <div class="difficulty-card tier-6">
                     <button onclick="startBotGame(15)" class="difficulty-btn">
-                        <div class="difficulty-level">
-                            <span class="level-emoji">🔥</span>
-                            <span class="level-number">Level 15</span>
-                        </div>
-                        <div class="difficulty-desc">Master - Lichess API</div>
+                        <div class="level-badge">LVL 15</div>
+                        <div class="difficulty-desc">Grandmaster</div>
+                        <div class="difficulty-icon">💀</div>
                     </button>
                 </div>
             </div>
-            <button onclick="backToDifficultyMenu()" class="back-btn">← Back</button>
+            
+            <button onclick="backToMenu()" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back</button>
         </div>
 
-        <!-- Game Controls -->
-        <div id="gameControls" class="game-controls hidden">
-            <div class="bot-controls">
-                <span class="bot-info" id="botLevelInfo">Playing vs Bot Level 5 🤔</span>
-                <span class="color-info" id="playerColorInfo">You are White ♔</span>
-                <button onclick="restartGame()" class="restart-btn">🔄 New Game</button>
-                <button onclick="flipBoard()" class="flip-btn">🔄 Flip Board</button>
+        <div id="colorMenu" class="difficulty-menu glass-panel">
+    <h2>Choose Your Side</h2>
+    <p class="difficulty-subtitle">Who makes the first move?</p>
+    
+    <div class="color-grid">
+        <div class="color-card">
+            <button onclick="selectColor('white')" class="color-btn white-side">
+                <div class="color-icon"><i class="fa-solid fa-chess-king"></i></div>
+                <div class="color-details">
+                    <div class="color-name">White</div>
+                    <div class="color-desc">First Move</div>
+                </div>
+            </button>
+        </div>
+        <div class="color-card">
+            <button onclick="selectColor('random')" class="color-btn random-side">
+                <div class="color-icon"><i class="fa-solid fa-shuffle"></i></div>
+                <div class="color-details">
+                    <div class="color-name">Random</div>
+                    <div class="color-desc">50 / 50</div>
+                </div>
+            </button>
+        </div>
+        <div class="color-card">
+            <button onclick="selectColor('black')" class="color-btn black-side">
+                <div class="color-icon"><i class="fa-regular fa-chess-king"></i></div>
+                <div class="color-details">
+                    <div class="color-name">Black</div>
+                    <div class="color-desc">Second Move</div>
+                </div>
+            </button>
+        </div>
+    </div>
+    </div>
+
+        <div class="left-sidebar">
+            <div id="gameControls" class="game-controls glass-panel hidden">
+                <div class="bot-controls">
+                    <div class="info-group">
+                        <span class="bot-info" id="botLevelInfo"><i class="fa-solid fa-robot"></i> Bot Level 5</span>
+                        <span class="color-info" id="playerColorInfo">Playing White</span>
+                    </div>
+                    <div class="action-group">
+                        <button onclick="restartGame()" class="control-btn restart"><i class="fa-solid fa-rotate-right"></i> New Game</button>
+                        <button onclick="flipBoard()" class="control-btn flip"><i class="fa-solid fa-arrows-rotate"></i> Flip</button>
+                    </div>
+                </div>
+                
+                <div class="status-divider"></div>
+                
+                <div class="status-section">
+                    <div class="status-label"><i class="fa-solid fa-hourglass-end"></i> Status</div>
+                    <div class="status-value" id="gameStatus">Waiting for your move...</div>
+                    
+                    <div class="status-info-row">
+                        <div class="info-item">
+                            <span class="info-label"><i class="fa-solid fa-user"></i> Turn:</span>
+                            <span class="info-value" id="currentTurn">White</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fa-solid fa-calculator"></i> Move:</span>
+                            <span class="info-value" id="moveCount">1</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Canvas Chessboard -->
         <div id="chessboardContainer" class="chessboard-container hidden">
+            <!-- Bot Info (Top) -->
+            <div class="player-info player-top">
+                <div class="player-avatar">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div class="player-details">
+                    <div class="player-name" id="botNameTop">Chess Bot</div>
+                    <div class="player-rating" id="botRatingTop">ELO: 1500</div>
+                </div>
+            </div>
+            
             <canvas id="chessCanvas" width="640" height="640"></canvas>
+            
+            <!-- Player Info (Bottom) -->
+            <div class="player-info player-bottom">
+                <div class="player-avatar">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="player-details">
+                    <div class="player-name" id="playerNameBottom">You</div>
+                    <div class="player-rating" id="playerRatingBottom">ELO: 1200</div>
+                </div>
+            </div>
+            
             <div id="gameOverOverlay" class="game-over hidden">
-                <p>Game Over</p>
-                <p id="winnerText">Winner: White</p>
-                <p>Press Enter to restart</p>
+                <div class="overlay-content">
+                    <h2>Game Over</h2>
+                    <p id="winnerText">Winner: White</p>
+                    <button onclick="restartGame()" class="btn btn-primary">Play Again</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Load Chess.js only -->
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
     <script>
+        // Inline check script (Keep original logic)
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Loading Canvas Chess Game...');
-            
-            if (typeof Chess !== 'undefined') {
-                window.Chess = Chess;
-                
-                try {
-                    const testGame = new Chess();
-                    console.log('✅ Chess.js working:', testGame.fen());
-                    document.getElementById('gameStatus').textContent = 'Choose game mode to start';
-                } catch (error) {
-                    console.error('❌ Chess.js test failed:', error);
-                    document.getElementById('gameStatus').textContent = '❌ Chess library error';
-                }
-            } else {
-                console.error('❌ Chess.js not found');
-                document.getElementById('gameStatus').textContent = '❌ Chess library not found';
-            }
+            if (typeof Chess !== 'undefined') { window.Chess = Chess; } 
+            else { console.error('❌ Chess.js not found'); }
         });
     </script>
     
     <script src="./js/play-vs-bot.js"></script>
     <script src="./js/navbar.js"></script>
+    <script src="./js/auth-check.js"></script>
 </body>
 </html>

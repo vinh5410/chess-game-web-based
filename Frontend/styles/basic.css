@@ -1,0 +1,194 @@
+/* =========================
+   RESET & VARIABLES
+========================= */
+:root {
+    --bg-dark: #0f172a;
+    --bg-card: rgba(30, 41, 59, 0.6);
+    --primary: #d4af37;
+    --primary-hover: #f1c40f;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+    --glow-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+    --font-heading: 'Cinzel', serif;
+    --font-body: 'Inter', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: 0.3s;
+}
+
+ul {
+    list-style: none;
+}
+
+/* =========================
+   BODY / GLOBAL LAYOUT
+========================= */
+body {
+    font-family: var(--font-body);
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+}
+
+/* =========================
+   BACKGROUND EFFECTS
+========================= */
+.bg-gradient,
+.bg-blur {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.bg-gradient {
+    background:
+        radial-gradient(circle at 80% 20%, #1e3a8a, transparent 50%),
+        radial-gradient(circle at 20% 80%, #331d2c, transparent 50%);
+}
+
+.bg-blur {
+    backdrop-filter: blur(80px);
+}
+
+/* =========================
+   BUTTONS (GLOBAL)
+========================= */
+.btn {
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), #b8860b);
+    color: #0f172a;
+    border: none;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-shadow);
+}
+
+.btn-secondary {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text-main);
+}
+
+.btn-secondary:hover {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: var(--text-main);
+}
+
+/* =========================
+   HERO SECTION
+========================= */
+#hero {
+    min-height: calc(100vh - 70px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.hero-content {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.hero-content h1 {
+    font-family: var(--font-heading);
+    font-size: 3rem;
+    background: linear-gradient(to right, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-content .tagline {
+    font-size: 1rem;
+    color: var(--primary);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+}
+
+/* =========================
+   CARDS (GLOBAL)
+========================= */
+.card-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    width: 100%;
+    max-height: 550px;
+}
+
+.card {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    border: var(--glass-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    gap: 1.5rem;
+    transition: 0.3s;
+}
+
+.card:hover {
+    background: rgba(30, 41, 59, 0.8);
+    transform: scale(1.02);
+}
+
+.card-icon {
+    font-size: 2.5rem;
+    min-width: 60px;
+    color: var(--text-muted);
+}
+
+.card:hover .card-icon {
+    color: var(--primary);
+    transform: rotate(10deg);
+}
+
+.card h3 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+}
+
+.card p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 768px) {
+    .card-container {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-content h1 {
+        font-size: 2.2rem;
+    }
+}

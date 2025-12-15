@@ -1,453 +1,747 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* =========================================
+   1. VARIABLES & RESET
+   ========================================= */
+:root {
+    --bg-dark: #0f172a;
+    --primary: #d4af37;
+    --primary-hover: #f1c40f;
+    --secondary: #3b82f6;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --glass-bg: rgba(30, 41, 59, 0.75);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+    --font-heading: 'Cinzel', serif;
+    --font-body: 'Inter', sans-serif;
+    --nav-height: 70px;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #2c2c2c;
+    font-family: var(--font-body);
+    background-color: var(--bg-dark);
+    color: var(--text-main);
     min-height: 100vh;
-    color: white;
+    overflow-x: hidden;
+    margin: 0;
 }
 
+/* =========================================
+   2. BACKGROUND
+   ========================================= */
+.bg-gradient, .bg-blur {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+}
+.bg-gradient {
+    background: radial-gradient(circle at 20% 20%, #1e3a8a, transparent 40%),
+                radial-gradient(circle at 80% 80%, #331d2c, transparent 40%);
+}
+.bg-blur { backdrop-filter: blur(60px); }
+
+/* =========================================
+   3. APP LAYOUT (MOBILE FIRST)
+   ========================================= */
 .app {
+    /* Đã sửa: Xóa padding-top lớn, dùng flex để căn giữa dọc */
+    padding: 2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-/* Header Styles */
-.header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 30px;
-    text-align: center;
-    position: relative;
+    justify-content: center; /* Căn giữa nội dung theo chiều dọc */
+    min-height: 100vh;
+    box-sizing: border-box;
     width: 100%;
 }
 
-.game-info {
-    flex: 1;
+.header { text-align: center; margin-bottom: 0.25rem; width: 100%; position: relative; z-index: 200;}
+.header h1 {
+    font-family: var(--font-heading); font-size: 1.8rem; color: var(--primary);
+    text-shadow: 0 0 15px rgba(212, 175, 55, 0.3); margin: 0; line-height: 1.2;
 }
+.subtitle { color: var(--text-muted); font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
 
-.game-info h1 {
-    font-size: 36px;
-    margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-}
-
-.game-info p {
-    margin: 5px 0;
-    font-size: 16px;
-}
-
-.back-home-btn {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    padding: 0.5rem 1rem;
-    background: #f44336;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-
-.back-home-btn:hover {
-    background: #da190b;
-    transform: translateY(-50%) translateY(-2px);
-}
-
-/* Menu Styles */
-.menu, .difficulty-menu {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+/* =========================================
+   4. GLASS PANELS (MENUS)
+   ========================================= */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: var(--glass-border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 90%;
+    max-width: 800px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     text-align: center;
-    color: #333;
-    animation: fadeIn 0.5s ease;
+    animation: fadeInUp 0.5s ease-out;
+    z-index: 5;
+    position: absolute; /* Cố định vị trí */
+    top: 50%; 
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
-.menu h2, .difficulty-menu h2 {
-    font-size: 32px;
-    margin-bottom: 10px;
-    color: #333;
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.difficulty-subtitle {
-    margin-bottom: 30px;
-    color: #666;
-    font-size: 18px;
-}
+.hidden { display: none !important; }
 
-.menu-buttons {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
+/* =========================================
+   5. MENU ELEMENT STYLES
+   ========================================= */
+h2 { font-family: var(--font-heading); margin-bottom: 1rem; color: var(--text-main); }
+.difficulty-subtitle { color: var(--text-muted); margin-bottom: 2rem; }
 
+/* Mode Button */
 .mode-btn {
-    padding: 20px 40px;
-    font-size: 20px;
-    background: linear-gradient(45deg, #4CAF50, #45a049);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 200px;
-    font-weight: bold;
+    width: 100%; max-width: 400px; padding: 2rem;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border: 1px solid var(--primary); border-radius: 12px;
+    color: var(--text-main); cursor: pointer; transition: 0.3s;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    margin: 0 auto; /* Căn giữa nút */
 }
+.mode-btn:hover { background: rgba(212, 175, 55, 0.1); transform: translateY(-5px); box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
+.mode-btn .icon { font-size: 3rem; color: var(--primary); }
+.mode-btn .text { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; }
+.mode-btn .sub { color: var(--text-muted); font-size: 0.9rem; }
 
-.mode-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-}
-
-/* Difficulty Menu Styles */
+/* Difficulty Grid */
 .difficulty-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
-    margin-bottom: 30px;
-    max-width: 800px;
-}
-
-.difficulty-card {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.difficulty-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .difficulty-btn {
-    width: 100%;
-    padding: 20px 15px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    text-align: center;
-    transition: background-color 0.3s ease;
+    width: 100%; padding: 1.5rem 1rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; cursor: pointer; transition: 0.3s;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--text-main);
+    box-sizing: border-box;
 }
-
 .difficulty-btn:hover {
-    background-color: rgba(76, 175, 80, 0.1);
+    background: rgba(255,255,255,0.1); transform: translateY(-5px); border-color: var(--primary);
 }
 
-.difficulty-level {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
+.level-badge { font-family: var(--font-heading); font-weight: 700; color: var(--primary); }
+.difficulty-desc { font-size: 0.85rem; color: var(--text-muted); }
+.difficulty-icon { font-size: 2rem; margin-top: 5px; }
 
-.level-emoji {
-    font-size: 28px;
-}
-
-.level-number {
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
-}
-
-.difficulty-desc {
-    font-size: 13px;
-    color: #666;
-    line-height: 1.4;
-}
-
-/* Color Grid */
+/* Color Selection */
 .color-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.color-card {
-    background: white;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.color-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.2);
+    display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap;
 }
 
 .color-btn {
-    width: 100%;
-    padding: 30px 20px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    text-align: center;
-    transition: background-color 0.3s ease;
+    width: 160px; height: 180px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; cursor: pointer; transition: 0.3s;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; color: var(--text-main);
 }
 
-.color-btn:hover {
-    background-color: rgba(76, 175, 80, 0.1);
-}
+.color-btn:hover { transform: scale(1.05); border-color: var(--primary); }
+.color-icon { font-size: 3.5rem; }
+.color-name { font-family: var(--font-heading); font-size: 1.2rem; font-weight: 700; }
+.color-desc { font-size: 0.8rem; color: var(--text-muted); }
 
-.color-icon {
-    font-size: 60px;
-    margin-bottom: 15px;
-}
+/* Specific Colors */
+.white-side:hover { background: rgba(255,255,255,0.15); }
+.black-side:hover { background: rgba(0,0,0,0.5); }
+.random-side:hover { background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.3)); }
 
-.color-name {
-    font-size: 24px;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 8px;
+/* Back Button */
+.back-btn {
+    background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted);
+    padding: 0.5rem 1.5rem; border-radius: 20px; cursor: pointer; transition: 0.3s; 
 }
+.back-btn:hover { border-color: var(--text-main); color: var(--text-main); }
 
-.color-desc {
-    font-size: 14px;
-    color: #666;
-}
-
-/* Game Controls Styles */
+/* =========================================
+   6. GAME CONTROLS (IN-GAME)
+   ========================================= */
 .game-controls {
+    margin-bottom: 1rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 1rem 2rem;
+    width: auto;
+    max-width: 800px;
     display: flex;
     justify-content: center;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: rgba(255,255,255,0.15);
-    border-radius: 12px;
-    flex-wrap: wrap;
-}
-
-.back-btn, .restart-btn, .flip-btn {
-    padding: 10px 20px;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
     transition: all 0.3s ease;
 }
+.bot-controls { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+.info-group { display: flex; gap: 20px; font-weight: 600; color: var(--primary); }
+.action-group { display: flex; gap: 10px; }
 
-.back-btn {
-    background-color: #f44336;
+.control-btn {
+    padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: 0.3s; display: flex; align-items: center; gap: 6px;
 }
+.control-btn.restart { background: var(--primary); color: #000; }
+.control-btn.restart:hover { background: var(--primary-hover); }
+.control-btn.flip { background: rgba(255,255,255,0.1); color: var(--text-main); border: 1px solid rgba(255,255,255,0.2); }
+.control-btn.flip:hover { background: rgba(255,255,255,0.2); }
 
-.back-btn:hover {
-    background-color: #da190b;
-    transform: translateY(-2px);
-}
-
-.restart-btn {
-    background-color: #2196F3;
-}
-
-.restart-btn:hover {
-    background-color: #1976D2;
-    transform: translateY(-2px);
-}
-
-.flip-btn {
-    background-color: #FF9800;
-}
-
-.flip-btn:hover {
-    background-color: #F57C00;
-    transform: translateY(-2px);
-}
-
-.bot-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    color: white;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.bot-info {
-    font-size: 16px;
-    font-weight: 500;
-}
-
-/* Canvas Chessboard Styles */
+/* =========================================
+   7. CHESSBOARD
+   ========================================= */
 .chessboard-container {
     position: relative;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    display: inline-block;
+    padding: 10px;
+    background: #302e2b;
+    border-radius: 4px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
     width: 100%;
-    max-width: 680px;
+    max-width: 640px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    z-index: 10;
 }
 
-#chessCanvas {
-    display: block;
-    cursor: pointer;
+/* Player Info Cards */
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.player-info.player-bottom {
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+.player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #f4d03f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #1a1a2e;
+    flex-shrink: 0;
+}
+
+.player-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.player-name {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-rating {
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+canvas {
+    display: block;
     width: 100%;
     height: auto;
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
 }
 
+/* Game Over Overlay */
 .game-over {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.9);
-    padding: 30px;
-    border-radius: 12px;
-    text-align: center;
-    color: white;
-    min-width: 300px;
-    z-index: 1000;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 10;
+    backdrop-filter: blur(5px);
 }
 
-.game-over p {
-    margin: 10px 0;
-    font-size: 20px;
+.overlay-content {
+    background: var(--bg-dark); border: 1px solid var(--primary);
+    padding: 2rem; border-radius: 12px; text-align: center;
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
 }
 
-.game-over p:first-child {
-    font-size: 28px;
-    font-weight: bold;
-}
+.overlay-content h2 { color: var(--primary); font-size: 2rem; }
+.overlay-content p { color: var(--text-main); font-size: 1.2rem; margin-bottom: 1.5rem; }
+.btn-primary { background: var(--primary); color: #000; padding: 10px 20px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; }
 
-/* Utility Classes */
-.hidden {
-    display: none !important;
-}
+/* =========================================
+   8. RESPONSIVE & LAYOUT ADJUSTMENTS
+   ========================================= */
 
-/* Animation Effects */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
+/* Mobile adjustments */
+@media (max-width: 700px) {
+    .app {
+        padding: 1rem;
+        min-height: 100vh;
+        justify-content: flex-start;
+        padding-top: 2rem;
+        width: 100%;
+        box-sizing: border-box;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    
+    .header {
+        margin-bottom: 1.5rem;
+        position: static;
+        width: 100%;
     }
-}
-
-.menu, .difficulty-menu, .chessboard-container {
-    animation: fadeIn 0.5s ease-out;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .game-topbar {
+    
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .subtitle {
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+    }
+    
+    .glass-panel {
+        width: 100%;
+        max-width: 100%;
+        padding: 1.5rem;
+        position: static;
+        transform: none;
+        margin: 0 0 1.5rem 0;
+        animation: fadeInMobile 0.4s ease-out;
+        box-sizing: border-box;
+        left: auto;
+        right: auto;
+    }
+    
+    @keyframes fadeInMobile {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .difficulty-subtitle {
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .game-controls {
+        min-width: 100%;
+        width: 100%;
+        flex-direction: column;
+        gap: 10px;
+        padding: 1rem;
+        margin: 0 0 1rem 0;
+        box-sizing: border-box;
+        max-width: 100%;
+    }
+    
+    .bot-controls {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+        min-height: auto;
+    }
+    
+    .info-group {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+        width: 100%;
+    }
+    
+    .action-group {
+        flex-direction: row;
+        justify-content: center;
+        gap: 0.75rem;
+        width: 100%;
+    }
+    
+    .control-btn {
+        flex: 1;
+        max-width: 150px;
+        justify-content: center;
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+    
+    .difficulty-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    /* Fix color selection cards for mobile */
+    .color-grid {
         flex-direction: column;
         gap: 1rem;
         align-items: stretch;
     }
     
-    .back-home-btn {
-        position: static;
-        transform: none;
+    .color-card {
         width: 100%;
     }
     
-    .back-home-btn:hover {
-        transform: translateY(-2px);
-    }
-    
-    .difficulty-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .color-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    
-    .game-meta h1 {
-        font-size: 28px;
-    }
-    
-    #chessCanvas {
+    .color-btn {
+        width: 100%;
         max-width: 100%;
+        height: auto;
+        min-height: 100px;
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 1.25rem;
+        gap: 1.25rem;
     }
     
-    .menu, .difficulty-menu {
-        padding: 20px;
-    }
-    
-    .mode-btn {
-        padding: 15px 25px;
-        font-size: 18px;
-        min-width: 180px;
-    }
-    
-    .game-actions {
+    .color-icon {
+        font-size: 2.5rem;
+        flex-shrink: 0;
+        width: 60px;
+        display: flex;
+        align-items: center;
         justify-content: center;
-        gap: 10px;
     }
     
-    .chessboard-container {
-        padding: 15px;
-    }
-}
-
-@media (max-width: 480px) {
-    .app {
-        padding: 10px;
-    }
-    
-    .difficulty-grid {
-        grid-template-columns: 1fr;
+    .color-details {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        flex: 1;
+        gap: 0.25rem;
     }
     
-    .menu, .difficulty-menu {
-        padding: 15px;
-        margin: 10px;
+    .color-name {
+        font-size: 1.15rem;
+        line-height: 1.3;
     }
     
-    .game-info h1 {
-        font-size: 24px;
-    }
-    
-    .mode-btn {
-        padding: 12px 20px;
-        font-size: 16px;
-        min-width: 150px;
-    }
-    
-    .chessboard-container {
-        padding: 10px;
+    .color-desc {
+        font-size: 0.8rem;
+        line-height: 1.4;
     }
     
     .back-btn {
-        width: 100%;
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
     }
-    .game-actions .restart-btn, .game-actions .flip-btn {
-        width: auto;
+    
+    .mode-btn {
+        padding: 1.5rem;
+        font-size: 0.95rem;
     }
 }
+
+/* --- DESKTOP LAYOUT (NEW: Bàn cờ sang phải, Menu giữa) --- */
+@media (min-width: 1024px) {
+    .app {
+        /* Chuyển sang Grid Layout */
+        display: grid;
+        grid-template-columns: 350px auto; /* Cột trái 350px, Cột phải tự động theo bàn cờ */
+        grid-template-rows: auto auto;
+        grid-template-areas: 
+            "sidebar board"
+            "sidebar board";
+        row-gap: 0.3rem;
+        column-gap: 0.3rem;
+        align-items: start;
+        justify-content: center;
+        padding-bottom: 0.75rem;
+        padding-top: 140px;
+        max-width: 1400px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    /* Header luôn ở trên cùng và trải dài */
+    .header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        margin-bottom: 0;
+        width: 100%;
+        z-index: 50;
+    }
+
+    /* Menu (Glass Panel) - Khi hiện phải đè lên grid và nằm giữa */
+    #difficultyMenu,
+    #colorMenu {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        z-index: 100;
+        margin: 0 !important;
+    }
+    
+    /* Left Sidebar Container */
+    .left-sidebar {
+        grid-area: sidebar;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        width: 100%;
+        max-width: 350px;
+    }
+
+    /* Game Controls - Nằm trong grid layout */
+    #gameControls {
+        width: 100%;
+        padding: 0;
+        margin: 0;
+        margin-top: 300px;
+        box-sizing: border-box;
+    }
+
+    .status-content {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 1.5rem;
+        background: rgba(255,255,255,0.03);
+        border-radius: 12px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .status-label {
+        color: #d4af37;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-value {
+        color: #fff;
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-left: 28px;
+        padding: 8px 0;
+    }
+
+    .status-info-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-top: 8px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px;
+        border: none;
+    }
+
+    .info-label {
+        color: #d4af37;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .info-value {
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    /* Chuyển Game Controls sang cột bên TRÁI */
+    .game-controls {
+        flex-direction: column; /* Xếp dọc các nút */
+        min-width: unset;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+    }
+
+    .bot-controls {
+        flex-direction: column; /* Xếp thông tin và nút bấm dọc */
+        gap: 2rem;
+        width: 100%;
+        padding: 1.5rem;
+        background: rgba(255,255,255,0.03);
+        border-radius: 0;
+        border: none;
+        box-sizing: border-box;
+        min-height: auto;
+    }
+    
+    .status-divider {
+        height: 0;
+        background: transparent;
+        margin: 0;
+    }
+    
+    .status-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .info-group {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.2rem;
+    }
+
+    .action-group {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .control-btn {
+        padding: 12px 24px; /* Nút to hơn trên PC */
+    }
+
+    /* Đặt Bàn cờ sang cột bên PHẢI */
+    .chessboard-container {
+        grid-area: board;
+        margin: 0;
+        justify-self: start;
+        max-width: 580px;
+        width: 100%;
+    }
+
+    .chessboard-container canvas {
+        max-height: 62vh;
+        width: 100%;
+        height: auto;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* Chỉ làm rộng menu chọn độ khó */
+#difficultyMenu {
+    max-width: 1100px;   /* hoặc 1200px nếu muốn rất rộng */
+    width: 95%;
+}
+
+/* FIX: Game controls không được absolute */
+#gameControls {
+    position: relative;
+    z-index: 1;
+}
+
+/* Đẩy */
+@media (min-width: 1024px) {
+    /* Khi vào game */
+    .app:has(#gameControls:not(.hidden)) .header {
+        grid-column: 1;        /* Cột bên trái */
+        grid-row: 1;
+        justify-self: start;
+        text-align: left;
+        padding-left: 1rem;
+    }
+
+    .app:has(#gameControls:not(.hidden)) .header h1 {
+        font-size: 2rem;
+    }
+
+    .app:has(#gameControls:not(.hidden)) .subtitle {
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+    }
+}
+
+
+body:has(#gameControls:not(.hidden)) .app {
+    min-height: 100vh;
+    padding-top: 1rem;
+}
+
+
+@media (min-width: 1024px) {
+    .app:has(#gameControls:not(.hidden)) .chessboard-container {
+        margin-left: 0;
+    }
+}
+
+@media (min-width: 1024px) {
+    /* Khi đang chơi game */
+    .app:has(#gameControls:not(.hidden)) .action-group {
+        flex-wrap: wrap;            /* cho phép xuống dòng */
+    }
+
+    .app:has(#gameControls:not(.hidden)) .control-btn.back {
+        width: 100%;                /* chiếm cả hàng */
+        justify-content: center;
+        margin-top: 0.5rem;
+    }
+}
+
+
+@media (min-width: 1024px) {
+    /* Khi đang chơi game */
+    .app:has(#gameControls:not(.hidden)) .action-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* 2 nút bằng nhau */
+        gap: 10px;
+    }
+
+    /* Back vẫn xuống hàng riêng */
+    .app:has(#gameControls:not(.hidden)) .control-btn.back {
+        grid-column: 1 / -1;
+        margin-top: 0.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    /* Khi đang chơi game */
+    .app:has(#gameControls:not(.hidden)) .action-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        justify-items: center; /* ⬅ QUAN TRỌNG */
+    }
+
+    /* Ép tất cả nút căn giữa nội dung */
+    .app:has(#gameControls:not(.hidden)) .control-btn {
+        justify-content: center; /* flex nội bộ */
+        align-items: center;
+        text-align: center;
+        width: 100%;
+    }
+
+
+

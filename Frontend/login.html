@@ -4,43 +4,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - CHESSMATE</title>
-    <link rel="stylesheet" href="./styles/auth.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="./styles/login.css">
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
 </head>
 <body>
-    <div class="auth-container">
-        <div class="logo" style="cursor: pointer;" onclick="window.location.href='index.html'">
-            <h1>♔ CHESSMATE</h1>
-        </div>
-        <h2>Welcome Back</h2>
-        
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required 
-                       placeholder="Enter your email">
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required 
-                       placeholder="Enter your password">
-            </div>
-            
-            <button type="submit" class="btn-submit">Login</button>
-        </form>
-        
-        <div id="message" class="message"></div>
-        
-        <div class="auth-links">
-            Don't have an account? <a href="register.html">Register here</a>
-            <br>
-            <a href="forgetpass.html">Forgot password?</a>
-        </div>
-    </div>
     
-    <!-- ADD AUTH CHECK -->
+    <div class="bg-gradient"></div>
+    <div class="bg-blur"></div>
+
+    <main class="split-container">
+        
+        <section class="brand-panel">
+            <div class="brand-content">
+                <div class="huge-logo">
+                    <i class="fa-solid fa-chess-king"></i>
+                </div>
+                <h1>CHESSMATE</h1>
+                <p class="tagline">Master the Game. Anytime. Anywhere.</p>
+            </div>
+            <div class="brand-background-graphic">
+                <i class="fa-solid fa-chess-knight"></i>
+            </div>
+        </section>
+
+        <section class="form-panel">
+            <div class="auth-card">
+                
+                <a href="index.html" class="btn-back">
+                    <i class="fa-solid fa-arrow-left-long"></i> Back to Home
+                </a>
+
+                <div class="auth-header">
+                    <div class="mobile-logo" onclick="window.location.href='index.html'">
+                         <i class="fa-solid fa-chess-king"></i> CHESSMATE
+                    </div>
+                    <h2> Welcome </h2>
+                    <p>Sign in to continue your conquest</p>
+                </div>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email"><i class="fa-solid fa-envelope"></i> Email</label>
+                        <input type="email" id="email" name="email" required 
+                               placeholder="grandmaster@example.com" autocomplete="off">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+                        <input type="password" id="password" name="password" required 
+                               placeholder="••••••••">
+                    </div>
+                    
+                    <button type="submit" class="btn-submit">
+                        Login <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    </button>
+                </form>
+                
+                <div id="message" class="message"></div>
+                
+                <div class="auth-links">
+                    <a href="register.html">Create Account</a>
+                    <span class="divider">•</span>
+                    <a href="forgetpass.html">Forgot Password?</a>
+                </div>
+            </div>
+        </section>
+    </main>
+    
     <script src="./js/auth-check.js"></script>
+    <script src="./js/navbar.js"></script>
     <script src="./js/login.js"></script>
 </body>
 </html>
