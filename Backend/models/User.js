@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -24,6 +25,13 @@ const userSchema = new mongoose.Schema({
         minlength: [6, 'Password must be at least 6 characters'],
         select: false
     },
+
+    isVerified: { type: Boolean, default: false },
+    verificationToken: String, // Token kích hoạt tài khoản
+    
+    resetPasswordToken: String, // Token quên mật khẩu
+    resetPasswordExpire: Date,
+
     avatar: {
         type: String,
         default: function() {
@@ -87,10 +95,33 @@ userSchema.methods.comparePassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// Generate and hash token
+userSchema.methods.generateToken = function(type) {
+    const token = crypto.randomBytes(20).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    if (type === 'verify') {
+        this.verificationToken = hashedToken;
+    } else if (type === 'reset') {
+        this.resetPasswordToken = hashedToken;
+        this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 phút
+    }
+    return token;
+};
+
 // Win rate virtual field
 userSchema.virtual('winRate').get(function() {
     if (this.gamesPlayed === 0) return 0;
     return Math.round((this.gamesWon / this.gamesPlayed) * 100);
 });
+
+userSchema.methods.getRating = function() {
+    return this.rating;
+};
+
+userSchema.methods.updateRating = function(newRating) {
+    this.rating = newRating;
+    return this.save();
+};
 
 module.exports = mongoose.model('User', userSchema);

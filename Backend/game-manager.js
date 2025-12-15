@@ -2,6 +2,8 @@ const { Chess } = require('chess.js');
 const { v4: uuidv4 } = require('uuid');
 const GameHistory = require('./models/GameHistory');
 const User = require('./models/User');
+const { calculateElo } = require('./services/elo/eloCalculator');
+
 class GameRoom {
     constructor(id, type = 'private', timeControl = null) {
         this.id = id;
@@ -311,23 +313,23 @@ class GameManager {
     
     joinPrivateRoom(socketId, userId, roomCode) {
         const roomId = this.roomCodes.get(roomCode.toUpperCase());
-        
+       
         if (!roomId) {
             return {
                 success: false,
                 message: 'Room not found'
             };
         }
-        
+       
         const room = this.rooms.get(roomId);
-        
+       
         if (!room) {
             return {
                 success: false,
                 message: 'Room not found'
             };
         }
-        
+       
         // ✅ FIX: Kiểm tra xem user đã ở trong room chưa
         if (room.hasPlayer(socketId)) {
             return {
@@ -335,14 +337,14 @@ class GameManager {
                 message: 'You are already in this room'
             };
         }
-        
+       
         if (room.isFull()) {
             return {
                 success: false,
                 message: 'Room is full'
             };
         }
-        
+       
         if (room.status !== 'waiting') {
             return {
                 success: false,
@@ -352,13 +354,14 @@ class GameManager {
         
         room.addPlayer(socketId, userId);
         this.userManager.setUserInGame(socketId, true, roomId);
-        
+       
         return {
             success: true,
             room: room
         };
     }
-        
+       
+    
     startGame(roomId) {
         const room = this.rooms.get(roomId);
         
@@ -426,10 +429,49 @@ class GameManager {
     }
     
     async endGame(roomId, winnerId = null, reason = 'unknown') {
+        console.log(`🏁 END GAME: Room ${roomId}, Winner: ${winnerId}, Reason: ${reason}`);
+        
         const room = this.rooms.get(roomId);
 
         if (room) {
             room.end(winnerId, reason);
+            const [p1, p2] = room.players;
+
+            // Tính Elo nếu đủ 2 người
+            if (p1 && p2) {
+                try {
+                    // Lấy Elo hiện tại từ DB
+                    const r1 = await this.userManager.getUserRating(p1);
+                    const r2 = await this.userManager.getUserRating(p2);
+
+                    const isDraw = ['draw', 'stalemate', 'repetition', 'insufficient_material'].includes(reason);
+
+                    if (isDraw) {
+                        const newR1 = calculateElo(r1, r2, 0.5);
+                        const newR2 = calculateElo(r2, r1, 0.5);
+                        await this.userManager.updateUserRating(p1, newR1);
+                        await this.userManager.updateUserRating(p2, newR2);
+                        console.log(`✅ Draw Elo: ${r1}->${newR1}, ${r2}->${newR2}`);
+                    } else if (winnerId) {
+                        const isP1Winner = (winnerId === p1);
+                        const winnerRating = isP1Winner ? r1 : r2;
+                        const loserRating = isP1Winner ? r2 : r1;
+                        const loserId = isP1Winner ? p2 : p1;
+
+                        const newWinnerR = calculateElo(winnerRating, loserRating, 1);
+                        const newLoserR = calculateElo(loserRating, winnerRating, 0);
+
+                        await this.userManager.updateUserRating(winnerId, newWinnerR);
+                        await this.userManager.updateUserRating(loserId, newLoserR);
+                        console.log(`✅ Win/Loss Elo: Winner(${newWinnerR}), Loser(${newLoserR})`);
+                    }
+                } catch (err) {
+                    console.error("❌ Elo Error:", err);
+                }
+            }
+            
+            // Clear status
+            room.players.forEach(pid => this.userManager.setUserInGame(pid, false, null));
 
             // Update user status
             room.players.forEach(playerObj => {
