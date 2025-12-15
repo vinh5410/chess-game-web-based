@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password - CHESSMATE</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="./styles/login.css">
+    <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+</head>
+<body>
+    
+    <div class="bg-gradient"></div>
+    <div class="bg-blur"></div>
+
+    <main class="split-container">
+        
+        <section class="brand-panel">
+            <div class="brand-content">
+                <div class="huge-logo">
+                    <i class="fa-solid fa-chess-king"></i>
+                </div>
+                <h1>CHESSMATE</h1>
+                <p class="tagline">Recover your account. Resume the game.</p>
+            </div>
+            <div class="brand-background-graphic">
+                <i class="fa-solid fa-chess-rook"></i> </div>
+        </section>
+
+        <section class="form-panel">
+            <div class="auth-card">
+                
+                <a href="login.html" class="btn-back">
+                    <i class="fa-solid fa-arrow-left-long"></i> Back to Login
+                </a>
+
+                <div class="auth-header">
+                    <div class="mobile-logo" onclick="window.location.href='index.html'">
+                         <i class="fa-solid fa-chess-king"></i> CHESSMATE
+                    </div>
+                    <h2>Reset Password</h2>
+                    <p>Enter your email to receive a verification code</p>
+                </div>
+                
+                <form id="getotp">
+                    <div class="form-group">
+                        <label for="user_email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                        <input type="email" name="user_email" id="user_email" 
+                               placeholder="Enter your registered email" required>
+                    </div>
+                    
+                    <button type="submit" id="submitOTP" class="btn-submit">
+                        Send OTP <i class="fa-regular fa-paper-plane"></i>
+                    </button>
+                </form>
+
+                <div id="otp-block" class="hidden" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
+                    <div class="auth-header" style="margin-bottom: 1rem;">
+                        <h2 style="font-size: 1.2rem; color: var(--primary);">Verify OTP</h2>
+                        <p style="font-size: 0.85rem;">Check your email for the code</p>
+                    </div>
+
+                    <form id="verifyOTP">
+                        <div class="form-group">
+                            <label for="otp"><i class="fa-solid fa-key"></i> Enter OTP</label>
+                            <input type="text" name="otp" id="otp" 
+                                   placeholder="e.g. 123456" autocomplete="off">
+                        </div>
+                        <button type="submit" id="submit" class="btn-submit">
+                            Verify & Proceed <i class="fa-solid fa-check"></i>
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="auth-links">
+                    New here? <a href="register.html">Create an Account</a>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="./js/forgetpass.js"></script> 
+</body>
+</html>

@@ -4,45 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multiplayer - CHESSMATE</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="stylesheet" href="./styles/index.css">
     <link rel="stylesheet" href="./styles/navbar.css">
     <link rel="stylesheet" href="./styles/play-multiplayer.css">
     <link rel="stylesheet" href="./styles/promote-ui.css">
 </head>
 <body>
-    <!-- Navbar -->
+    
+    <div class="bg-gradient"></div>
+    <div class="bg-blur"></div>
+
     <nav class="navbar">
         <div class="navbar-container">
             <a href="/" class="navbar-brand">
-                <span>♔</span> CHESSMATE
+                <i class="fa-solid fa-chess-king"></i> CHESSMATE
             </a>
             
             <ul class="navbar-menu">
-                <li><a href="/">Home</a></li>
-                <li><a href="/play-vs-bot.html">Play vs Bot</a></li>
-                <li><a href="/play-multiplayer.html">Multiplayer</a></li>
-                <li><a href="/leaderboard.html">Leaderboard</a></li>
+                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i> Multiplayer</a></li>
+                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i> VS Bot</a></li>
+                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i> Puzzles</a></li>
+                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i> Rankings</a></li>
             </ul>
             
             <div class="navbar-actions">
-                <!-- Show when NOT logged in -->
                 <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Login</a>
-                    <a href="/register.html" class="btn btn-primary">Register</a>
+                    <a href="/login.html" class="btn btn-secondary">Log In</a>
+                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
                 </div>
                 
-                <!-- Show when logged in -->
                 <div id="user-menu">
                     <div class="dropdown">
                         <div class="user-info">
                             <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
                             <span id="username-display" class="username">User</span>
+                            <i class="fa-solid fa-chevron-down"></i>
                         </div>
                         <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item">👤 My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item">⚙️ Edit Profile</a>
+                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
+                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
                             <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item">🚪 Logout</a>
+                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
                         </div>
                     </div>
                 </div>
@@ -51,95 +60,111 @@
     </nav>
 
     <div class="app">
-        <div class="header">
+        <div class="header" id="mainHeader">
             <div class="game-info">
-                <h1>♟️ Multiplayer Chess</h1>
-                <p id="gameStatus">Connecting to server...</p>
-                <p id="onlineUsers" class="online-users">👥 Online: 0</p>
-            </div>
-            
-
-        </div>
-
-        <!-- Login Screen -->
-        <div id="loginScreen" class="menu hidden">
-            <h2>Enter Your Name</h2>
-            <div class="login-form">
-                <input type="text" id="usernameInput" placeholder="Your name" maxlength="20" />
-                <button onclick="login()" class="mode-btn">Join Game</button>
+                <h1><i class="fa-solid fa-users"></i> PvP Arena</h1>
+                <p class="subtitle">Challenge Players Worldwide</p>
             </div>
         </div>
 
         <!-- Lobby Screen -->
-        <div id="lobbyScreen" class="menu hidden">
+        <div id="lobbyScreen" class="lobby-menu glass-panel">
             <h2>Choose Game Mode</h2>
-            <div class="menu-buttons">
-                <button onclick="showRandomMatch()" class="mode-btn">
-                    🎲 Random Match
-                    <span class="btn-desc">Find random opponent</span>
-                </button>
-                <button onclick="showInviteFriend()" class="mode-btn">
-                    👥 Invite Friend
-                    <span class="btn-desc">Create private room</span>
-                </button>
-                <button onclick="showJoinRoom()" class="mode-btn">
-                    🔗 Join Room
-                    <span class="btn-desc">Enter room code</span>
-                </button>
+            <p class="menu-subtitle">How do you want to play?</p>
+            
+            <div class="mode-grid">
+                <div class="mode-card">
+                    <button onclick="showRandomMatch()" class="mode-btn-new">
+                        <div class="mode-icon"><i class="fa-solid fa-dice"></i></div>
+                        <div class="mode-details">
+                            <div class="mode-name">Random Match</div>
+                            <div class="mode-desc">Find random opponent</div>
+                        </div>
+                    </button>
+                </div>
+                <div class="mode-card">
+                    <button onclick="showInviteFriend()" class="mode-btn-new">
+                        <div class="mode-icon"><i class="fa-solid fa-user-plus"></i></div>
+                        <div class="mode-details">
+                            <div class="mode-name">Invite Friend</div>
+                            <div class="mode-desc">Create private room</div>
+                        </div>
+                    </button>
+                </div>
+                <div class="mode-card">
+                    <button onclick="showJoinRoom()" class="mode-btn-new">
+                        <div class="mode-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+                        <div class="mode-details">
+                            <div class="mode-name">Join Room</div>
+                            <div class="mode-desc">Enter room code</div>
+                        </div>
+                    </button>
+                </div>
             </div>
-
+            
+            <p id="gameStatus" class="status-text">Connecting to server...</p>
+            <p id="onlineUsers" class="online-users"><i class="fa-solid fa-circle"></i> Online: 0</p>
         </div>
 
         <!-- Random Match Screen -->
-        <!-- Random Match Screen -->
-        <div id="randomMatchScreen" class="screen hidden">
-            <div class="menu">
-                <h2>🎲 Random Match</h2>
-
-                <!-- Time Selector -->
-                <div id="randomMatchTimeSelector" class="time-selector-wrapper"></div>
-
-                <div id="searchStatus">Click button to start searching</div>
-
-                <div class="menu-buttons">
-                    <button onclick="backToLobby()" class="back-btn">← Back</button>
-                    <button id="findMatchBtn" class="mode-btn small" onclick="startRandomSearch()">
-                        <span class="mode-icon">🔍</span>
-                        Find Match
-                    </button>
-                </div>
+        <div id="randomMatchScreen" class="glass-panel hidden">
+            <h2><i class="fa-solid fa-dice"></i> Random Match</h2>
+            <p class="menu-subtitle"><i class="fa-solid fa-clock"></i> Select Time Control</p>
+            
+            <!-- Time Selector -->
+            <div id="randomMatchTimeSelector"></div>
+            
+            <p id="searchStatus" class="status-text">Click button to start searching</p>
+            
+            <div class="action-buttons">
+                <button class="action-btn primary" onclick="startRandomSearch()">
+                    <i class="fa-solid fa-magnifying-glass"></i> Find Match
+                </button>
+                <button class="action-btn danger" onclick="backToLobby()">
+                    <i class="fa-solid fa-arrow-left"></i> Back
+                </button>
             </div>
         </div>
 
         <!-- Invite Friend Screen -->
-        <div id="inviteFriendScreen" class="screen hidden">
-            <div class="menu">
-                <h2>🔐 Private Room</h2>
-                
-                <!-- Time Selector (shown first) -->
-                <div id="privateRoomTimeSelector" class="time-selector-wrapper"></div>
-                
-                <!-- Room Code Display (shown after room created) -->
-                <div id="roomCodeSection" class="room-code-display hidden">
-                    <h3>Room Code:</h3>
-                    <input type="text" id="roomCodeDisplay" readonly />
-                    <button class="copy-btn" onclick="copyRoomCode()">📋 Copy</button>
-                    <p>Share this code with your friend!</p>
-                </div>
-                
-                <button onclick="backToLobby()" class="back-btn">← Back</button>
+        <div id="inviteFriendScreen" class="glass-panel hidden">
+            <h2><i class="fa-solid fa-lock"></i> Private Room</h2>
+            <p class="menu-subtitle">Create a room and invite your friend</p>
+            
+            <!-- Time Selector (shown first) -->
+            <div id="privateRoomTimeSelector" class="time-selector-wrapper"></div>
+            
+            <!-- Room Code Display (shown after room created) -->
+            <div id="roomCodeSection" class="room-code-display hidden">
+                <h3>Room Code:</h3>
+                <input type="text" id="roomCodeDisplay" readonly />
+                <button class="copy-btn" onclick="copyRoomCode()">📋 Copy</button>
+                <p>Share this code with your friend!</p>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-btn danger" onclick="backToLobby()">
+                    <i class="fa-solid fa-arrow-left"></i> Back
+                </button>
             </div>
         </div>
 
         <!-- Join Room Screen -->
-        <div id="joinRoomScreen" class="menu hidden">
-            <h2>🔗 Join Room</h2>
+        <div id="joinRoomScreen" class="glass-panel hidden">
+            <h2><i class="fa-solid fa-link"></i> Join Room</h2>
+            <p class="menu-subtitle">Enter the room code from your friend</p>
+            
             <div class="join-form">
                 <input type="text" id="roomCodeInput" placeholder="Enter room code" maxlength="6" />
-                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 12px;">
-                    <button onclick="joinRoom()" class="mode-btn" style="width: fit-content;">Join</button>
-                    <button onclick="backToLobby()" class="back-btn">← Back</button>
-                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-btn primary" onclick="joinRoom()">
+                    <i class="fa-solid fa-right-to-bracket"></i> Join
+                </button>
+                <button class="action-btn danger" onclick="backToLobby()">
+                    <i class="fa-solid fa-arrow-left"></i> Back
+                </button>
             </div>
         </div>
 
@@ -151,16 +176,88 @@
 
         <!-- Game Screen -->
         <div id="gameScreen" class="game-screen hidden">
-            <div class="game-header">
-                <div class="player-info opponent-info">
-                    <span class="player-avatar">👤</span>
-                    <div class="player-details">
-                        <span class="player-name" id="opponentName">Opponent</span>
-                        <span class="player-color" id="opponentColor">⚫</span>
+            
+            <!-- Left Sidebar: Header + Controls -->
+            <div class="game-sidebar-left">
+                <!-- Header in left column -->
+                <div class="game-header-info">
+                    <h1><i class="fa-solid fa-users"></i> PvP Arena</h1>
+                    <p class="subtitle">Challenge Players Worldwide</p>
+                </div>
+                
+                <div class="game-info-panel glass-panel">
+                    <h3 class="panel-title">Playing vs <span id="opponentNameDisplay">Opponent</span></h3>
+                    <p class="panel-subtitle">You are <span id="yourColorDisplay">White</span> <i class="fa-solid fa-chess-king"></i></p>
+                    
+                    <div class="game-actions">
+                        <button onclick="offerDraw()" class="action-btn gold" id="drawBtn">
+                            <i class="fa-solid fa-handshake"></i> Offer Draw
+                        </button>
+                        <button onclick="resign()" class="action-btn dark">
+                            <i class="fa-solid fa-flag"></i> Resign
+                        </button>
+                        <button onclick="flipBoard()" class="action-btn dark">
+                            <i class="fa-solid fa-arrows-rotate"></i> Flip
+                        </button>
                     </div>
-                    <div class="player-timer" id="opponentTimer">5:00</div>
+                    
+                    <div class="game-status-section">
+                        <h4><i class="fa-solid fa-hourglass-half"></i> STATUS</h4>
+                        <p id="turnStatus" class="status-message">Waiting for game...</p>
+                    </div>
+                    
+                    <div class="game-stats">
+                        <div class="stat-item">
+                            <span class="stat-label"><i class="fa-solid fa-user"></i> Turn:</span>
+                            <span class="stat-value" id="currentTurn">White</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label"><i class="fa-solid fa-list-ol"></i> Move:</span>
+                            <span class="stat-value" id="moveCount">1</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+            
+            <!-- Center: Chessboard -->
+            <div class="game-center">
+                <div class="chessboard-container">
+                    <!-- Opponent Info (Top) -->
+                    <div class="player-info-bar">
+                        <div class="player-avatar">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div class="player-details">
+                            <span class="player-name" id="opponentName">Opponent</span>
+                            <span class="player-rating" id="opponentElo">ELO: 1200</span>
+                        </div>
+                        <div class="player-timer" id="opponentTimer">5:00</div>
+                    </div>
+                    
+                    <!-- Chessboard Canvas -->
+                    <canvas id="chessCanvas" width="440" height="440"></canvas>
+                    
+                    <!-- Player Info (Bottom) -->
+                    <div class="player-info-bar player-bottom">
+                        <div class="player-avatar">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div class="player-details">
+                            <span class="player-name" id="playerName">You</span>
+                            <span class="player-rating" id="playerElo">ELO: 1200</span>
+                        </div>
+                        <div class="player-timer" id="playerTimer">5:00</div>
+                    </div>
+                    
+                    <!-- Game Over Overlay -->
+                    <div id="gameOverOverlay" class="game-over hidden">
+                        <div class="overlay-content">
+                            <h2>Game Over</h2>
+                            <p id="winnerText">Winner: White</p>
+                            <button onclick="backToLobby()" class="btn-primary">
+                                <i class="fa-solid fa-arrow-left"></i> Back to Lobby
+                            </button>
+                        </div>
 
             <div class="chessboard-container">
                 <canvas id="chessCanvas" width="640" height="640"></canvas>
@@ -184,30 +281,20 @@
                         <span class="player-name" id="playerName">You</span>
                         <span class="player-color" id="playerColor">⚪</span>
                     </div>
-                    <span class="player-avatar">👤</span>
                 </div>
             </div>
-
-            <div class="game-controls">
-                <button onclick="offerDraw()" class="control-btn" id="drawBtn">
-                    🤝 Offer Draw
-                </button>
-                <button onclick="resign()" class="control-btn resign-btn">
-                    🏳️ Resign
-                </button>
-                <button onclick="flipBoard()" class="control-btn">
-                    🔄 Flip
-                </button>
-            </div>
-
-            <!-- Chat Box -->
-            <div class="chat-box">
-                <div class="chat-messages" id="chatMessages"></div>
-                <div class="chat-input-container">
-                    <input type="text" id="chatInput" placeholder="Type a message..." maxlength="200" />
-                    <button onclick="sendMessage()">Send</button>
+            
+            <!-- Right Sidebar: Chat -->
+            <div class="game-sidebar-right">
+                <div class="chat-panel glass-panel">
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-input-wrapper">
+                        <input type="text" id="chatInput" placeholder="Type a message..." maxlength="200" />
+                        <button onclick="sendMessage()" class="send-btn">Send</button>
+                    </div>
                 </div>
             </div>
+            
         </div>
     </div>
 
@@ -235,20 +322,13 @@
         if (typeof io !== 'undefined') {
             console.log('✅ Socket.IO loaded');
         }
-        
-        // ADD BACK TO HOME FUNCTION
-        function backToHome() {
-            if (confirm('Are you sure you want to leave the game?')) {
-                window.location.href = '/index.html';
-            }
-        }
     </script>
     
+    <script src="./js/navbar.js"></script>
     <script src="./js/socket-client.js"></script>
     <script src="./js/time-controls-config.js"></script>
     <script src="./js/time-selector.js"></script>
     <script src="./js/utils.js"></script>   
     <script src="./js/play-multiplayer.js"></script>
-    <script src="./js/navbar.js"></script>
 </body>
 </html>

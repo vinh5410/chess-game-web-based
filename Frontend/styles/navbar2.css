@@ -47,12 +47,15 @@
 }
 
 .navbar-menu a {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     color: var(--text-muted);
     font-weight: 500;
-    display: flex; align-items: center; gap: 7px;
 }
-.navbar-menu a:hover { color: var(--text-main); text-shadow: 0 0 8px rgba(255,255,255,0.3); }
+
+.navbar-menu a:hover {
+    color: var(--text-main);
+    text-shadow: 0 0 8px rgba(255,255,255,0.3);
+}
 
 /* Actions */
 .navbar-actions {
@@ -161,3 +164,4 @@
     align-items: center;
     gap: 0.75rem; /* chỉnh khoảng cách tại đây */
 }
+
