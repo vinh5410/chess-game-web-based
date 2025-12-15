@@ -41,7 +41,7 @@ class ChessCanvasVsBot {
         // API Cache
         this.apiCache = new Map();
         this.maxCacheSize = 100;
-        
+        this.viewStep = 0;
         this.initPromise = this.init();
     }
     
@@ -172,6 +172,7 @@ class ChessCanvasVsBot {
     
     // Mouse event handlers
     onMouseDown(e) {
+        console.log('isPlayerTurn:', this.isPlayerTurn, 'gameStarted:', this.gameStarted, 'gameOver:', this.gameOver);
         if (!this.gameStarted || this.gameOver || !this.isPlayerTurn || this.isThinking) return;
         
         const rect = this.canvas.getBoundingClientRect();
@@ -227,6 +228,7 @@ class ChessCanvasVsBot {
     }
     
     onClick(e) {
+        if (this.viewStep !== this.game.history({ verbose: true }).length) return;
         if (this.isDragging) return;
         
         const rect = this.canvas.getBoundingClientRect();
@@ -261,6 +263,7 @@ class ChessCanvasVsBot {
     }
     
     tryMove(from, to) {
+        if (this.viewStep !== this.game.history({ verbose: true }).length) return false;
         try {
             const move = this.game.move({
                 from,
@@ -282,7 +285,7 @@ class ChessCanvasVsBot {
     onMove(move) {
         this.draw();
         this.updateGameStatus();
-        
+        this.viewStep = this.game.history({ verbose: true }).length;
         if (this.checkGameOver()) {
             return;
         }
@@ -473,6 +476,7 @@ class ChessCanvasVsBot {
             
             this.draw();
             this.updateGameStatus();
+            this.viewStep = this.game.history({ verbose: true }).length;
             
             if (this.checkGameOver()) {
                 return;
@@ -680,7 +684,7 @@ class ChessCanvasVsBot {
         this.selectedSquare = null;
         this.legalMoves = [];
         this.apiCache.clear();
-        
+        this.viewStep = 0;
         // FIX: Flip khi player chọn BLACK (để quân đen xuống dưới)
         // Không flip khi player chọn WHITE (quân trắng đã ở dưới mặc định)
         this.isFlipped = (playerColor === 'black');

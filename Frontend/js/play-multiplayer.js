@@ -57,7 +57,11 @@ class MultiplayerChess {
         
         // Socket client
         this.socket = window.socketClient;
-        
+        this.replayMode = false;
+        this.replayIndex = 0;
+        this.replayHistory = []; // Lưu lịch sử các trạng thái bàn cờ 
+        this.viewStep = 0; // Số bước đang xem lại (0 = bàn cờ ban đầu) 
+        this.fullMoveHistory = [];     
     }
     
     async init() {
@@ -78,6 +82,7 @@ class MultiplayerChess {
         this.game = new window.Chess();
         
         await this.loadPieceImages();
+        this.promotionUI = new PromotionUI(this.game, this.pieceImages, this.isFlipped);
         this.setupEventListeners();
         // Make canvas responsive to viewport
         this.resizeCanvas();
@@ -457,8 +462,8 @@ class MultiplayerChess {
         document.getElementById('playerName').textContent = this.socket.getUsername() || 'You';
         document.getElementById('opponentName').textContent = this.opponentName;
         
-        const playerColorIcon = this.playerColor === 'white' ? '♔ White' : '♚ Black';
-        const opponentColorIcon = this.playerColor === 'white' ? '♚ Black' : '♔ White';
+        const playerColorIcon = this.playerColor === 'w' ? '♔ White' : '♚ Black';
+        const opponentColorIcon = this.playerColor === 'w' ? '♚ Black' : '♔ White';
         GameUtils.setTextContent('playerColor', playerColorIcon);
         GameUtils.setTextContent('opponentColor', opponentColorIcon);
         
@@ -480,26 +485,9 @@ class MultiplayerChess {
         try {
             const move = this.game.move(data.move);
             if (move) {
-                this.lastMove = { from: move.from, to: move.to };
-                this.isMyTurn = true;
-                this.draw();
-                updateGameStatus('Your turn!');
-                
-                if (this.checkGameOver()) {
-                    return;
-                }
-            }
-        } catch (error) {
-            console.error('Error applying opponent move:', error);
-        }
-    }
-    
-    onOpponentMove(data) {
-        console.log('♟️ Opponent move:', data.move);
-        
-        try {
-            const move = this.game.move(data.move);
-            if (move) {
+                this.fullMoveHistory = this.game.history({ verbose: true });
+                this.viewStep = this.fullMoveHistory.length;
+                this.updateBoardView();              
                 this.lastMove = { from: move.from, to: move.to };
                 this.isMyTurn = true;
                 this.draw();
@@ -656,26 +644,49 @@ class MultiplayerChess {
     }
     
     tryMove(from, to) {
+        // Kiểm tra nếu là nước phong cấp
+        const moves = this.game.moves({ square: from, verbose: true });
+        const promotionMove = moves.find(m => m.to === to && m.promotion);
+
+        if (promotionMove) {
+            // Hiển thị UI chọn quân phong cấp
+            this.promotionUI.showPromotionDialog(from, to, this.playerColor, (selectedPiece) => {
+                const moveObj = this.game.move({
+                    from,
+                    to,
+                    promotion: selectedPiece
+                });
+                if (moveObj) {
+                    this.fullMoveHistory = this.game.history({ verbose: true });
+                    this.viewStep = this.fullMoveHistory.length;
+                    this.updateBoardView();
+                    this.lastMove = { from: moveObj.from, to: moveObj.to };
+                    this.isMyTurn = false;
+                    this.socket.makeMove(moveObj.san);
+                    this.draw();
+                    updateGameStatus('Opponent\'s turn');
+                    if (this.checkGameOver()) return true;
+                }
+            });
+            return true; // Đợi callback, không thực hiện tiếp
+        }
+
+        // Xử lý nước đi bình thường (không phong cấp)
         try {
             const moveObj = this.game.move({
                 from,
-                to,
-                promotion: 'q'
+                to
             });
-            
             if (moveObj) {
-                console.log('✅ Valid move:', moveObj.san);
+                this.fullMoveHistory = this.game.history({ verbose: true });
+                this.viewStep = this.fullMoveHistory.length;
+                this.updateBoardView();
                 this.lastMove = { from: moveObj.from, to: moveObj.to };
                 this.isMyTurn = false;
-                
                 this.socket.makeMove(moveObj.san);
-                
                 this.draw();
                 updateGameStatus('Opponent\'s turn');
-                
-                if (this.checkGameOver()) {
-                    return true;
-                }
+                if (this.checkGameOver()) return true;
             }
         } catch (error) {
             console.log('❌ Invalid move');
@@ -935,6 +946,54 @@ class MultiplayerChess {
         this.isFlipped = !this.isFlipped;
         this.draw();
     }
+    enterReplayMode() {
+        this.replayMode = true;
+        this.replayHistory = this.game.history({ verbose: true });
+        this.replayIndex = 0;
+        document.getElementById('replayControls').style.display = '';
+        document.getElementById('enterReplayBtn').style.display = 'none';
+        this.showReplayStep(0);
+    }
+
+    exitReplayMode() {
+        this.replayMode = false;
+        document.getElementById('replayControls').style.display = 'none';
+        document.getElementById('enterReplayBtn').style.display = '';
+        // Khôi phục trạng thái hiện tại
+        this.game.reset();
+        for (const move of this.replayHistory) {
+            this.game.move(move);
+        }
+        this.draw();
+    }
+    showReplayStep(index) {
+    if (!this.replayMode) return;
+    if (index < 0) index = 0;
+    if (index > this.replayHistory.length) index = this.replayHistory.length;
+    this.game.reset();
+    for (let i = 0; i < index; i++) {
+        this.game.move(this.replayHistory[i]);
+    }
+    this.replayIndex = index;
+    this.draw();
+    const info = document.getElementById('replayStepInfo');
+    if (info) {
+        info.textContent = index === 0 ? 'Bàn cờ ban đầu' : `Nước đi: ${index}/${this.replayHistory.length}`;
+    }
+}
+    updateBoardView() {
+        const history = this.fullMoveHistory;
+        this.game.reset();
+        for (let i = 0; i < this.viewStep; i++) {
+            this.game.move(history[i]);
+        }
+        this.draw();
+        // Cập nhật thông tin bước
+        const info = document.getElementById('stepInfo');
+        if (info) {
+            info.textContent = this.viewStep === 0 ? 'Bàn cờ ban đầu' : `Nước đi: ${this.viewStep}/${history.length}`;
+        }
+    }
 }
 
 // Global instance
@@ -1154,7 +1213,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('⏳ Initializing game...');
     await gameInstance.init();
     console.log('✅ Game initialized');
-    
+    document.getElementById('prevStepBtn').onclick = () => {
+        if (gameInstance.viewStep > 0) {
+            gameInstance.viewStep--;
+            gameInstance.updateBoardView();
+        }
+    };
+    document.getElementById('nextStepBtn').onclick = () => {
+        const maxStep = gameInstance.fullMoveHistory.length;
+        if (gameInstance.viewStep < maxStep) {
+            gameInstance.viewStep++;
+            gameInstance.updateBoardView();
+        }
+    };   
     // Ẩn ngay loginScreen để tránh nhấp nháy
     const loginScreen = document.getElementById('loginScreen');
     if (loginScreen) loginScreen.classList.add('hidden');
