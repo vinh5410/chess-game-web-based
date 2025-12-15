@@ -4,44 +4,53 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CHESSMATE - Home</title>
+    <title>CHESSMATE - Master the Game</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <link rel="stylesheet" href="./styles/navbar.css">
     <link rel="stylesheet" href="./styles/index.css">
 </head>
 <body>
-    <!-- Navbar -->
+    
+    <div class="bg-gradient"></div>
+    <div class="bg-blur"></div>
+
     <nav class="navbar">
         <div class="navbar-container">
             <a href="/" class="navbar-brand">
-                <span>♔</span> CHESSMATE
+                <i class="fa-solid fa-chess-king"></i> CHESSMATE
             </a>
             
             <ul class="navbar-menu">
-                <li><a href="/">Home</a></li>
-                <li><a href="/play-vs-bot.html">Play vs Bot</a></li>
-                <li><a href="/play-multiplayer.html">Multiplayer</a></li>
-                <li><a href="/leaderboard.html">Leaderboard</a></li>
+                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i> Multiplayer</a></li>
+                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i> VS Bot</a></li>
+                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i> Puzzles</a></li>
+                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i> Rankings</a></li>
             </ul>
             
             <div class="navbar-actions">
-                <!-- Show when NOT logged in -->
                 <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Login</a>
-                    <a href="/register.html" class="btn btn-primary">Register</a>
+                    <a href="/login.html" class="btn btn-secondary">Log In</a>
+                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
                 </div>
                 
-                <!-- Show when logged in -->
                 <div id="user-menu">
                     <div class="dropdown">
                         <div class="user-info">
                             <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
                             <span id="username-display" class="username">User</span>
+                            <i class="fa-solid fa-chevron-down"></i>
                         </div>
                         <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item">👤 My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item">⚙️ Edit Profile</a>
+                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
+                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
                             <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item">🚪 Logout</a>
+                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
                         </div>
                     </div>
                 </div>
@@ -49,24 +58,55 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <section id="team">
-        <h1>Welcome to CHESSMATE</h1>
+    <section id="hero">
+        <div class="hero-content">
+            <h1>CHESSMATE</h1>
+            <p class="tagline">Master the Game. Anytime. Anywhere.</p>
+        </div>
+
         <div class="card-container">
             <div class="card">
-                <h3>Play vs Bot</h3>
-                <p>Test your skills against AI</p>
-                <a href="/play-vs-bot.html" class="btn btn-primary">Play Now</a>
+                <div class="card-icon">
+                    <i class="fa-solid fa-chess-board"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Multiplayer</h3>
+                    <p>Challenge opponents worldwide in real-time ranked matches.</p>
+                    <a href="/play-multiplayer.html" class="btn btn-card">Find Match <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
             </div>
+
             <div class="card">
-                <h3>Multiplayer</h3>
-                <p>Challenge players online</p>
-                <a href="/play-multiplayer.html" class="btn btn-primary">Find Match</a>
+                <div class="card-icon">
+                    <i class="fa-solid fa-chess-knight"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Play vs Bot</h3>
+                    <p>Sharpen your strategy against AI engines from Beginner to Grandmaster.</p>
+                    <a href="/play-vs-bot.html" class="btn btn-card">Play Now <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
             </div>
+
             <div class="card">
-                <h3>Leaderboard</h3>
-                <p>See top players</p>
-                <a href="/leaderboard.html" class="btn btn-primary">View Rankings</a>
+                <div class="card-icon">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Daily Puzzles</h3>
+                    <p>Enhance your tactical vision with daily scenarios and mate-in-X challenges.</p>
+                    <a href="/puzzles.html" class="btn btn-card">Solve Now <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Leaderboard</h3>
+                    <p>Track your progress and see where you stand among the elite.</p>
+                    <a href="/leaderboard.html" class="btn btn-card">View Rankings <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
             </div>
         </div>
     </section>

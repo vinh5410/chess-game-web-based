@@ -4,13 +4,6 @@
     padding: 0 1rem;
 }
 
-body {
-    background: #2c2c2c;
-    min-height: 100vh;
-    color: white;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
 .profile-header {
     background: white;
     border-radius: 16px;
