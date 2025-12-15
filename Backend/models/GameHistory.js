@@ -204,16 +204,13 @@ gameHistorySchema.methods.getResultString = function() {
 };
 
 // Update PGN before saving
-gameHistorySchema.pre('save', function(next) {
+gameHistorySchema.pre('save', function() {
     if (this.isModified('moves') || this.isModified('result')) {
         this.pgn = this.generatePGN();
     }
-    
     if (this.endedAt && this.startedAt) {
         this.duration = Math.floor((this.endedAt - this.startedAt) / 1000);
     }
-    
-    next();
 });
 
 module.exports = mongoose.model('GameHistory', gameHistorySchema);

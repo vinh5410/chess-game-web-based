@@ -33,7 +33,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             // Save token and user data
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
-            
+            localStorage.setItem('userId', data.user._id);
             // Redirect to home page after 1 second
             setTimeout(() => {
                 window.location.href = 'index.html';

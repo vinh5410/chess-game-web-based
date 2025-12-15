@@ -4,14 +4,20 @@ module.exports = (io, userManager, gameManager) => {
         console.log(`🔌 Client connected: ${socket.id}`);
 
         // --- AUTH ---
-        socket.on('user:login', ({ username }) => {
+        socket.on('user:login', async ({ username }) => {
             const existingUser = userManager.getUser(socket.id);
             if (existingUser) return; // Đã login rồi
 
-            // Hàm addUser của bạn trả về object { success, user, message }
             const result = userManager.addUser(socket.id, username);
-            
+
             if (result.success) {
+                // Cập nhật socketId vào DB
+                const userDB = await User.findOne({ username });
+                if (userDB) {
+                    userDB.socketId = socket.id;
+                    await userDB.save();
+                }
+
                 socket.emit('user:login_success', { 
                     userId: socket.id, 
                     username: result.user.username 
@@ -33,10 +39,10 @@ module.exports = (io, userManager, gameManager) => {
         // --- MATCHMAKING ---
         socket.on('matchmaking:join', (data) => {  // ✅ NHẬN data
             const user = userManager.getUser(socket.id);
+            const userId = user?.userId || user?._id; // hoặc trường phù hợp
             if (!user) return socket.emit('room:error', { message: 'Login first' });
-
             const timeControl = data?.timeControl || 300;  // ✅ LẤY timeControl, default 300
-            const result = gameManager.addToMatchmaking(socket.id, timeControl);  // ✅ TRUYỀN timeControl
+            const result = gameManager.addToMatchmaking(socket.id, userId, timeControl);  // ✅ TRUYỀN timeControl
             
             if (!result.matched) {
                 socket.emit('matchmaking:waiting', { 
@@ -57,9 +63,9 @@ module.exports = (io, userManager, gameManager) => {
         socket.on('room:create', (data) => {  // ✅ NHẬN data
             const user = userManager.getUser(socket.id);
             if (!user) return socket.emit('room:error', { message: 'Login first' });
-
+            const userId = user.userId || user._id;
             const timeControl = data?.timeControl || 300;  // ✅ LẤY timeControl
-            const room = gameManager.createPrivateRoom(socket.id, timeControl);  // ✅ TRUYỀN timeControl
+            const room = gameManager.createPrivateRoom(socket.id, userId, timeControl);  // ✅ TRUYỀN timeControl
             socket.join(room.id);
             socket.emit('room:created', { roomId: room.id, roomCode: room.code });
         });
@@ -67,14 +73,14 @@ module.exports = (io, userManager, gameManager) => {
         socket.on('room:join', ({ roomCode }) => {
             const user = userManager.getUser(socket.id);
             if (!user) return socket.emit('room:error', { message: 'Login first' });
-
-            const result = gameManager.joinPrivateRoom(socket.id, roomCode);
+            const userId = user.userId || user._id;
+            const result = gameManager.joinPrivateRoom(socket.id, userId, roomCode);
             if (result.success) {
                 socket.join(result.room.id);
                 socket.emit('room:joined', { roomId: result.room.id, roomCode: result.room.code });
                 
                 // Báo cho chủ phòng
-                const creatorId = result.room.players[0];
+                const creatorId = result.room.players[0]?.socketId;
                 io.to(creatorId).emit('room:opponent_joined', { 
                     opponent: { id: user.id, username: user.username } 
                 });

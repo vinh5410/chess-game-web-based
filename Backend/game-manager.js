@@ -1,6 +1,7 @@
 const { Chess } = require('chess.js');
 const { v4: uuidv4 } = require('uuid');
-
+const GameHistory = require('./models/GameHistory');
+const User = require('./models/User');
 class GameRoom {
     constructor(id, type = 'private', timeControl = null) {
         this.id = id;
@@ -29,18 +30,15 @@ class GameRoom {
         return code;
     }
     
-    addPlayer(socketId) {
-        if (this.players.length >= 2) {
-            return false;
-        }
-        
-        this.players.push(socketId);
+    addPlayer(socketId, userId) {
+        if (this.players.length >= 2) return false;
+        this.players.push({ socketId, userId });
         
         // Assign colors
         if (this.players.length === 1) {
             this.playerColors[socketId] = Math.random() < 0.5 ? 'white' : 'black';
         } else {
-            const firstPlayerColor = this.playerColors[this.players[0]];
+            const firstPlayerColor = this.playerColors[this.players[0].socketId];
             this.playerColors[socketId] = firstPlayerColor === 'white' ? 'black' : 'white';
         }
         
@@ -48,7 +46,7 @@ class GameRoom {
     }
     
     removePlayer(socketId) {
-        const index = this.players.indexOf(socketId);
+        const index = this.players.findIndex(p => p.socketId === socketId);
         if (index > -1) {
             this.players.splice(index, 1);
             delete this.playerColors[socketId];
@@ -60,15 +58,15 @@ class GameRoom {
     }
     
     hasPlayer(socketId) {
-        return this.players.includes(socketId);
+        return this.players.some(p => p.socketId === socketId);
     }
-    
     getPlayerColor(socketId) {
         return this.playerColors[socketId];
     }
     
     getOpponent(socketId) {
-        return this.players.find(p => p !== socketId);
+        const opponent = this.players.find(p => p.socketId !== socketId);
+        return opponent ? opponent.socketId : null;
     }
     
     isPlayerTurn(socketId) {
@@ -89,8 +87,13 @@ class GameRoom {
             if (moveResult) {
                 this.moves.push({
                     player: socketId,
-                    move: move,
                     san: moveResult.san,
+                    from: moveResult.from,
+                    to: moveResult.to,
+                    piece: moveResult.piece,
+                    captured: moveResult.captured,
+                    promotion: moveResult.promotion,
+                    flags: moveResult.flags,
                     timestamp: Date.now()
                 });
                 
@@ -164,7 +167,7 @@ class GameManager {
     }
     
     // Matchmaking
-    addToMatchmaking(socketId, timeControl = 300) {
+    async addToMatchmaking(socketId, userId, timeControl = 300) {
         // Check if already in queue
         const existingIndex = this.matchmakingQueue.findIndex(entry => 
             (entry.socketId === socketId) || (entry === socketId)
@@ -216,8 +219,10 @@ class GameManager {
                     increment: 0
                 });
                 
-                room.addPlayer(player1Id);
-                room.addPlayer(player2Id);
+                const player1Db = await User.findOne({ username: player1.username });
+                const player2Db = await User.findOne({ username: player2.username });
+                room.addPlayer(player1Id, player1Db ? player1Db._id : undefined);
+                room.addPlayer(player2Id, player2Db ? player2Db._id : undefined);
                 
                 this.rooms.set(roomId, room);
                 
@@ -288,14 +293,14 @@ class GameManager {
     }
     
     // Private rooms
-    createPrivateRoom(socketId, timeControl = 300) { 
+    createPrivateRoom(socketId, userId, timeControl = 300) { 
         const roomId = uuidv4();
         const room = new GameRoom(roomId, 'private', {  
             initial: timeControl,
             increment: 0
         });
         
-        room.addPlayer(socketId);
+        room.addPlayer(socketId,userId);
         this.rooms.set(roomId, room);
         this.roomCodes.set(room.code, roomId);
         
@@ -304,7 +309,7 @@ class GameManager {
         return room;
     }
     
-    joinPrivateRoom(socketId, roomCode) {
+    joinPrivateRoom(socketId, userId, roomCode) {
         const roomId = this.roomCodes.get(roomCode.toUpperCase());
         
         if (!roomId) {
@@ -345,7 +350,7 @@ class GameManager {
             };
         }
         
-        room.addPlayer(socketId);
+        room.addPlayer(socketId, userId);
         this.userManager.setUserInGame(socketId, true, roomId);
         
         return {
@@ -367,24 +372,25 @@ class GameManager {
         console.log(`🎮 Starting game in room ${roomId} with timeControl:`, room.timeControl);
         
         // Notify both players
-        room.players.forEach(playerId => {
+        room.players.forEach(playerObj => {
+            const playerId = playerObj.socketId;
             const player = this.userManager.getUser(playerId);
-            const opponent = this.userManager.getUser(room.getOpponent(playerId));
-            
+            const opponentObj = room.players.find(p => p.socketId !== playerId);
+            const opponent = this.userManager.getUser(opponentObj?.socketId);
+
             const socket = this.io.sockets.sockets.get(playerId);
             if (socket) {
                 socket.emit('game:start', {
                     roomId: roomId,
                     color: room.getPlayerColor(playerId),
                     opponent: {
-                        id: opponent.id,
-                        username: opponent.username,
-                        color: room.getPlayerColor(opponent.id)
+                        id: opponent?.id,
+                        username: opponent?.username,
+                        color: room.getPlayerColor(opponentObj?.socketId)
                     },
-                    timeControl: room.timeControl,  // ✅ THÊM DÒNG NÀY
+                    timeControl: room.timeControl,
                     fen: room.game.fen()
                 });
-                console.log(`   ✉️ Sent game:start to ${player.username} (${room.getPlayerColor(playerId)})`);
             }
         });
         
@@ -419,16 +425,114 @@ class GameManager {
         return room.makeMove(socketId, move);
     }
     
-    endGame(roomId, winnerId = null, reason = 'unknown') {
+    async endGame(roomId, winnerId = null, reason = 'unknown') {
         const room = this.rooms.get(roomId);
-        
+
         if (room) {
             room.end(winnerId, reason);
-            
+
             // Update user status
-            room.players.forEach(playerId => {
-                this.userManager.setUserInGame(playerId, false, null);
+            room.players.forEach(playerObj => {
+                this.userManager.setUserInGame(playerObj.socketId, false, null);
             });
+
+            // Lưu lịch sử ván cờ vào DB
+            try {
+                // Lấy user info
+                const playerIds = room.players;
+                const white = room.players.find(p => room.playerColors[p.socketId] === 'white');
+                const black = room.players.find(p => room.playerColors[p.socketId] === 'black');
+                const whiteUser = await User.findOne({ socketId: white.socketId }) || {};
+                const blackUser = await User.findOne({ socketId: black.socketId }) || {};
+
+                // Chuyển moves sang dạng moveSchema
+                let moves = [];
+                let moveNumber = 1;
+                for (let i = 0; i < room.moves.length; i += 2) {
+                    const whiteMove = room.moves[i] || {};
+                    const blackMove = room.moves[i + 1] || {};
+                    moves.push({
+                        moveNumber,
+                        white: whiteMove.san ? {
+                            san: whiteMove.san,
+                            from: whiteMove.from,
+                            to: whiteMove.to,
+                            piece: whiteMove.piece,
+                            captured: whiteMove.captured,
+                            promotion: whiteMove.promotion,
+                            flags: whiteMove.flags,
+                            timestamp: new Date(whiteMove.timestamp)
+                        } : undefined,
+                        black: blackMove.san ? {
+                            san: blackMove.san,
+                            from: blackMove.from,
+                            to: blackMove.to,
+                            piece: blackMove.piece,
+                            captured: blackMove.captured,
+                            promotion: blackMove.promotion,
+                            flags: blackMove.flags,
+                            timestamp: new Date(blackMove.timestamp)
+                        } : undefined
+                    });
+                    moveNumber++;
+                }
+
+                // Xác định kết quả
+                let result = 'ongoing';
+                let winner = null;
+                if (room.status === 'finished') {
+                    if (reason === 'checkmate' || reason === 'resignation' || reason === 'timeout') {
+                        winner = room.playerColors[winnerId];
+                        result = winner === 'white' ? 'white-win' : 'black-win';
+                    } else if (reason === 'draw' || reason === 'stalemate' || reason === 'insufficient_material' || reason === 'repetition') {
+                        winner = 'draw';
+                        result = 'draw';
+                    }
+                }
+
+                // Tạo bản ghi lịch sử
+                const gameHistory = new GameHistory({
+                    gameType: 'pvp',
+                    whitePlayer: {
+                        userId: white ? white.userId : undefined,
+                        username: white ? (this.userManager.getUser(white.socketId)?.username || 'White') : 'White',
+                        rating: whiteUser.rating,
+                        isBot: false
+                    },
+                    blackPlayer: {
+                        userId: black ? black.userId : undefined,
+                        username: black ? (this.userManager.getUser(black.socketId)?.username || 'Black') : 'Black',
+                        rating: blackUser.rating,
+                        isBot: false
+                    },
+                    result,
+                    winner,
+                    terminationReason: reason,
+                    moves,
+                    fen: {
+                        initial: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+                        final: room.game.fen()
+                    },
+                    timeControl: room.timeControl,
+                    startedAt: new Date(room.startedAt || room.createdAt),
+                    endedAt: new Date(room.finishedAt || Date.now()),
+                    roomId,
+                    rated: false
+                });
+
+                await gameHistory.save();
+                console.log('✅ Game history saved:', gameHistory._id);
+            } catch (err) {
+                console.error('❌ Failed to save game history:', err);
+            }
+                await User.updateOne(
+        { _id: white.userId },
+        { $push: { gameIds: gameHistory._id }, $inc: { gamesPlayed: 1 } }
+    );
+                await User.updateOne(
+                    { _id: black.userId },
+                    { $push: { gameIds: gameHistory._id }, $inc: { gamesPlayed: 1 } }
+                );
         }
     }
     
@@ -443,8 +547,8 @@ class GameManager {
             this.roomCodes.delete(room.code);
             
             // Update user status
-            room.players.forEach(playerId => {
-                this.userManager.setUserInGame(playerId, false, null);
+            room.players.forEach(playerObj => {
+                this.userManager.setUserInGame(playerObj.socketId, false, null);
             });
             
             this.rooms.delete(roomId);

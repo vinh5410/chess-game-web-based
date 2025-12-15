@@ -9,7 +9,7 @@ const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const botController = require('./controllers/botController');
-
+const historyRoutes = require('./routes/history');
 // Load env vars
 dotenv.config();
 
@@ -90,6 +90,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/puzzles', puzzleRoutes);
+app.use('/api/history', historyRoutes);
 // Stockfish API endpoint
 app.post('/api/bot/best-move', botController.getBestMove);
 
@@ -101,7 +102,12 @@ app.get('/assets/*', (req, res) => {
     console.log(`⚠️ Missing asset: ${req.path}`);
     res.status(404).send('Asset not found');
 });
-
+app.get('/history', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'history.html'));
+});
+app.get('/history.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'history.html'));
+});
 // Specific routes (BEFORE catch-all)
 app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, '../Frontend', 'register.html'));

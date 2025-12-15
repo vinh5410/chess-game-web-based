@@ -11,7 +11,7 @@ const passport = require("passport")
 const socketio = require('socket.io');
 const { lboardRouter } = require("./routes/leaderboard.route");
 const { userRouter } = require("./routes/user.route");
-
+const historyRoutes = require('./routes/history');
 
 
 
@@ -46,7 +46,7 @@ app.get("/", (req, res) => {
 
 
 app.use("/leaderboard",lboardRouter)
-
+app.use('/api/history', historyRoutes);
 app.use("/user", userRouter);
 
 app.use("/auth",authRouter)

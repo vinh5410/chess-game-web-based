@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lịch sử ván đấu</title>
+    <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="stylesheet" href="./styles/index.css">
+    <style>
+        .history-item { margin-bottom: 8px; }
+        #board { width: 400px; height: 400px; border: 1px solid #333; }
+        #replayArea { margin-top: 24px; }
+    </style>
+</head>
+<body>
+    <h1>Lịch sử ván đấu</h1>
+    <div id="historyList"></div>
+    <div id="replayArea" style="display:none;">
+        <div id="chessboardContainer" class="chessboard-container">
+        <canvas id="chessCanvas" width="640" height="640"></canvas>
+        </div>
+        <button id="prevBtn">⬅️</button>
+        <button id="nextBtn">➡️</button>
+        <div id="moveInfo"></div>
+    </div>
+    <!-- Nạp chess.js đúng như các file khác -->
+    <script src="./libs/chess.js/dist/cjs/chess.js"></script> <!-- UMD/IIFE, không phải CJS/ESM -->
+    <script>
+        if (typeof Chess !== 'undefined') window.Chess = Chess;
+    </script>
+    <script src="js/chess-board-renderer.js"></script>
+    <script src="js/history.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+        const userStr = localStorage.getItem('user');
+        let userId = null;
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                userId = user._id || user.id; // Thử cả hai trường
+            } catch {}
+        }
+        if (!userId) {
+            alert('Bạn chưa đăng nhập!');
+            window.location.href = 'login.html';
+        } else {
+            fetchUserHistory(userId);
+        }
+            window.renderBoard = function(fen) {
+                document.getElementById('board').innerText = fen;
+            };
+        });
+    </script>
+</body>
+</html>

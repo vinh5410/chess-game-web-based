@@ -62,7 +62,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
             // Save to localStorage
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
-            
+            localStorage.setItem('userId', data.user._id);
             messageEl.textContent = 'Registration successful! Redirecting...';
             messageEl.className = 'message success';
             
