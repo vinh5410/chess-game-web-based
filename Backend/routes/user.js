@@ -3,9 +3,9 @@ const router = express.Router();
 const {
     getUserProfile,
     updateProfile,
-    getUserStats,
-    getLeaderboard
+    getUserStats
 } = require('../controllers/userController');
+const { getLeaderboard } = require('../controllers/leaderboardController');
 const { protect } = require('../middleware/auth');
 
 // Public routes
