@@ -1,31 +1,43 @@
 const User = require('../models/User');
 module.exports = (io, userManager, gameManager) => {
     io.on('connection', (socket) => {
-        console.log(`🔌 Client connected: ${socket.id}`);
+        console.log(` Client connected: ${socket.id}`);
 
         // --- AUTH ---
         socket.on('user:login', async ({ username }) => {
             const existingUser = userManager.getUser(socket.id);
             if (existingUser) return; // Đã login rồi
 
-            const result = userManager.addUser(socket.id, username);
+            // WAIT for async addUser
+            let result;
+            try {
+                result = await userManager.addUser(socket.id, username);
+            } catch (e) {
+                console.error('Error adding user:', e);
+                return socket.emit('user:login_error', { message: 'Internal server error' });
+            }
 
             if (result.success) {
-                // Cập nhật socketId vào DB
-                const userDB = await User.findOne({ username });
-                if (userDB) {
-                    userDB.socketId = socket.id;
-                    await userDB.save();
+                // Cập nhật socketId vào DB (an toàn: try/catch)
+                try {
+                    const userDB = await User.findOne({ username });
+                    if (userDB) {
+                        userDB.socketId = socket.id;
+                        await userDB.save();
+                    }
+                } catch (dbErr) {
+                    console.warn(' DB update skipped:', dbErr.message);
+                    // không trả lỗi login cho client — login đã thành công trong memory
                 }
 
-                socket.emit('user:login_success', { 
-                    userId: socket.id, 
-                    username: result.user.username 
+                socket.emit('user:login_success', {
+                    userId: socket.id,
+                    username: result.user.username
                 });
                 io.emit('users:update', { users: userManager.getAllUsers() });
-                console.log(`✅ User logged in: ${username}`);
+                console.log(`User logged in: ${username}`);
             } else {
-                socket.emit('user:login_error', { message: result.message });
+                socket.emit('user:login_error', { message: result.message || 'Login failed' });
             }
         });
 
@@ -37,11 +49,11 @@ module.exports = (io, userManager, gameManager) => {
         });
 
         // --- MATCHMAKING ---
-        socket.on('matchmaking:join', (data) => {  // ✅ NHẬN data
+        socket.on('matchmaking:join', (data) => {  //  NHẬN data
             const user = userManager.getUser(socket.id);
             const userId = user?.userId || user?._id; // hoặc trường phù hợp
             if (!user) return socket.emit('room:error', { message: 'Login first' });
-            const timeControl = data?.timeControl || 300;  // ✅ LẤY timeControl, default 300
+            const timeControl = data?.timeControl || 300;  // LẤY timeControl, default 300
             const result = gameManager.addToMatchmaking(socket.id, userId, timeControl);  // ✅ TRUYỀN timeControl
             
             if (!result.matched) {
@@ -60,11 +72,11 @@ module.exports = (io, userManager, gameManager) => {
         });
 
         // --- PRIVATE ROOM ---
-        socket.on('room:create', (data) => {  // ✅ NHẬN data
+        socket.on('room:create', (data) => {  //  NHẬN data
             const user = userManager.getUser(socket.id);
             if (!user) return socket.emit('room:error', { message: 'Login first' });
             const userId = user.userId || user._id;
-            const timeControl = data?.timeControl || 300;  // ✅ LẤY timeControl
+            const timeControl = data?.timeControl || 300;  //  LẤY timeControl
             const room = gameManager.createPrivateRoom(socket.id, userId, timeControl);  // ✅ TRUYỀN timeControl
             socket.join(room.id);
             socket.emit('room:created', { roomId: room.id, roomCode: room.code });

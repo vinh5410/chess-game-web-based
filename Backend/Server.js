@@ -18,16 +18,16 @@ const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET', 'SESSION_SECRET'];
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
-    console.error('❌ Missing required environment variables:');
+    console.error('Missing required environment variables:');
     missingEnvVars.forEach(envVar => console.error(`   - ${envVar}`));
-    console.error('\n💡 Please create .env file in Backend folder with:');
+    console.error('\n Please create .env file in Backend folder with:');
     console.error('   MONGODB_URI=your_mongodb_uri');
     console.error('   JWT_SECRET=your_jwt_secret');
     console.error('   SESSION_SECRET=your_session_secret\n');
     process.exit(1);
 }
 
-console.log('✅ Environment variables loaded');
+console.log(' Environment variables loaded');
 
 const UserManager = require('./user-manager');
 const GameManager = require('./game-manager');
@@ -38,7 +38,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server, {
     cors: {
-        origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        origin: '*',
         credentials: true,
         methods: ['GET', 'POST']
     }
@@ -52,7 +52,7 @@ const gameManager = new GameManager(io, userManager);
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -99,7 +99,7 @@ require('./socket/index')(io, userManager, gameManager);
 
 // Handle missing assets
 app.get('/assets/*', (req, res) => {
-    console.log(`⚠️ Missing asset: ${req.path}`);
+    console.log(`Missing asset: ${req.path}`);
     res.status(404).send('Asset not found');
 });
 app.get('/history', (req, res) => {
@@ -165,10 +165,10 @@ server.listen(PORT, () => {
 ╔══════════════════════════════════════════════════════════╗
 ║         🎮 CHESS GAME SERVER STARTED 🎮                  ║
 ╠══════════════════════════════════════════════════════════╣
-║  🚀 Server: http://localhost:${PORT}                       ║
-║  📁 Frontend: ${path.join(__dirname, '../Frontend')}     
+║   Server: http://localhost:${PORT}                       ║
+║  Frontend: ${path.join(__dirname, '../Frontend')}     
 ║                                                          ║
-║  🏠 Routes:                                              ║
+║  Routes:                                              ║
 ║     • Home:           http://localhost:${PORT}/           ║
 ║     • Register:       http://localhost:${PORT}/register.html
 ║     • Login:          http://localhost:${PORT}/login.html 
@@ -183,6 +183,6 @@ server.listen(PORT, () => {
 
 // Handle unhandled rejections
 process.on('unhandledRejection', (err) => {
-    console.error('❌ Unhandled Promise Rejection:', err);
+    console.error('Unhandled Promise Rejection:', err);
     server.close(() => process.exit(1));
 });

@@ -9,7 +9,7 @@ class SocketClient {
         this.eventHandlers = new Map();
         
         // Server URL - Change this to your server address
-        this.serverUrl = 'http://localhost:3000';
+        this.serverUrl = window.location.origin;
     }
     
     connect() {
