@@ -450,8 +450,7 @@ class GameManager {
         };
     }
        
-    
-    startGame(roomId) {
+    async startGame(roomId) {
         const room = this.rooms.get(roomId);
         
         if (!room || !room.isFull()) {
@@ -461,6 +460,23 @@ class GameManager {
         
         room.start();
         room.initTimers();
+
+        // Lấy thông tin 2 người chơi để log
+        const p1Obj = room.players[0];
+        const p2Obj = room.players[1];
+        const p1 = this.userManager.getUser(p1Obj.socketId);
+        const p2 = this.userManager.getUser(p2Obj.socketId);
+
+        // Lấy Elo hiện tại
+        const elo1 = await this.userManager.getUserRating(p1Obj.socketId);
+        const elo2 = await this.userManager.getUserRating(p2Obj.socketId);
+
+        // --- LOG YÊU CẦU: HIỆN ELO LÚC VÀO TRẬN ---
+        console.log('\n⚔️  ================ MATCH START ================');
+        console.log(`⚔️  Room: ${roomId}`);
+        console.log(`⚔️  ${p1 ? p1.username : 'Unknown'} (${elo1})  VS  ${p2 ? p2.username : 'Unknown'} (${elo2})`);
+        console.log('⚔️  =============================================\n');
+
         // Determine which socketId has the current turn
         const currentPlayerObj = room.players.find(p => room.playerColors[p.socketId] === room.currentTurn);
         const currentTurnSocketId = currentPlayerObj ? currentPlayerObj.socketId : null;
@@ -480,6 +496,9 @@ class GameManager {
             const opponentObj = room.players.find(p => p.socketId !== playerId);
             const opponent = this.userManager.getUser(opponentObj?.socketId);
 
+            // Gửi kèm Elo của đối thủ xuống client luôn
+            const opponentElo = (opponentObj.socketId === p1Obj.socketId) ? elo1 : elo2;
+
             const socket = this.io.sockets.sockets.get(playerId);
             if (socket) {
                 socket.emit('game:start', {
@@ -488,7 +507,8 @@ class GameManager {
                     opponent: {
                         id: opponent?.id,
                         username: opponent?.username,
-                        color: room.getPlayerColor(opponentObj?.socketId)
+                        color: room.getPlayerColor(opponentObj?.socketId),
+                        elo: opponentElo // Gửi Elo xuống FE
                     },
                     timeControl: room.timeControl,
                     fen: room.game.fen()
@@ -534,45 +554,76 @@ class GameManager {
 
         if (room) {
             room.end(winnerId, reason);
-            const [p1, p2] = room.players;
+            
+            // Store ELO changes to save in history later
+            const eloChanges = {}; // socketId -> { oldRating, change }
 
-            // Tính Elo nếu đủ 2 người
-            if (p1 && p2) {
-                try {
-                    // Lấy Elo hiện tại từ DB
-                    const r1 = await this.userManager.getUserRating(p1);
-                    const r2 = await this.userManager.getUserRating(p2);
+            // Update ratings if it's a matchmaking game or private
+            if (room.type === 'matchmaking' || room.type === 'private') {
+                const [p1Obj, p2Obj] = room.players; // p1Obj = { socketId, userId }
+                
+                if (p1Obj && p2Obj) {
+                    const p1SocketId = p1Obj.socketId;
+                    const p2SocketId = p2Obj.socketId;
 
-                    const isDraw = ['draw', 'stalemate', 'repetition', 'insufficient_material'].includes(reason);
+                    try {
+                        // 1. Lấy Elo CŨ
+                        const oldR1 = await this.userManager.getUserRating(p1SocketId);
+                        const oldR2 = await this.userManager.getUserRating(p2SocketId);
+                        
+                        // Lấy username để log cho đẹp
+                        const name1 = this.userManager.getUser(p1SocketId)?.username || 'P1';
+                        const name2 = this.userManager.getUser(p2SocketId)?.username || 'P2';
 
-                    if (isDraw) {
-                        const newR1 = calculateElo(r1, r2, 0.5);
-                        const newR2 = calculateElo(r2, r1, 0.5);
-                        await this.userManager.updateUserRating(p1, newR1);
-                        await this.userManager.updateUserRating(p2, newR2);
-                        console.log(`✅ Draw Elo: ${r1}->${newR1}, ${r2}->${newR2}`);
-                    } else if (winnerId) {
-                        const isP1Winner = (winnerId === p1);
-                        const winnerRating = isP1Winner ? r1 : r2;
-                        const loserRating = isP1Winner ? r2 : r1;
-                        const loserId = isP1Winner ? p2 : p1;
+                        let newR1 = oldR1;
+                        let newR2 = oldR2;
 
-                        const newWinnerR = calculateElo(winnerRating, loserRating, 1);
-                        const newLoserR = calculateElo(loserRating, winnerRating, 0);
+                        const isDraw = ['draw', 'stalemate', 'repetition', 'insufficient_material'].includes(reason);
 
-                        await this.userManager.updateUserRating(winnerId, newWinnerR);
-                        await this.userManager.updateUserRating(loserId, newLoserR);
-                        console.log(`✅ Win/Loss Elo: Winner(${newWinnerR}), Loser(${newLoserR})`);
+                        // 2. Tính toán Elo MỚI
+                        if (isDraw) {
+                            newR1 = calculateElo(oldR1, oldR2, 0.5);
+                            newR2 = calculateElo(oldR2, oldR1, 0.5);
+                        } else if (winnerId) {
+                            // Xác định ai thắng
+                            const isP1Winner = (winnerId === p1SocketId);
+                            
+                            // Tính toán
+                            if (isP1Winner) {
+                                newR1 = calculateElo(oldR1, oldR2, 1); // P1 thắng
+                                newR2 = calculateElo(oldR2, oldR1, 0); // P2 thua
+                            } else {
+                                newR1 = calculateElo(oldR1, oldR2, 0); // P1 thua
+                                newR2 = calculateElo(oldR2, oldR1, 1); // P2 thắng
+                            }
+                        }
+
+                        // 3. Cập nhật vào DB & Memory
+                        await this.userManager.updateUserRating(p1SocketId, newR1);
+                        await this.userManager.updateUserRating(p2SocketId, newR2);
+
+                        // 4. LOG CHI TIẾT SỰ THAY ĐỔI (YÊU CẦU CỦA BẠN)
+                        const diff1 = newR1 - oldR1;
+                        const diff2 = newR2 - oldR2;
+                        const sign1 = diff1 >= 0 ? '+' : '';
+                        const sign2 = diff2 >= 0 ? '+' : '';
+
+                        console.log('\n📊 ================ ELO UPDATE ================');
+                        console.log(`👤 ${name1}: ${oldR1} -> ${newR1} (${sign1}${diff1})`);
+                        console.log(`👤 ${name2}: ${oldR2} -> ${newR2} (${sign2}${diff2})`);
+                        console.log('📊 ============================================\n');
+
+                        // Store for history
+                        eloChanges[p1SocketId] = { oldRating: oldR1, change: diff1 };
+                        eloChanges[p2SocketId] = { oldRating: oldR2, change: diff2 };
+
+                    } catch (err) {
+                        console.error("❌ Elo Error:", err);
                     }
-                } catch (err) {
-                    console.error("❌ Elo Error:", err);
                 }
             }
             
-            // Clear status
-            room.players.forEach(pid => this.userManager.setUserInGame(pid, false, null));
-
-            // Update user status
+            // Update user status (Clear status)
             room.players.forEach(playerObj => {
                 this.userManager.setUserInGame(playerObj.socketId, false, null);
             });
@@ -585,6 +636,10 @@ class GameManager {
                 const black = room.players.find(p => room.playerColors[p.socketId] === 'black');
                 const whiteUser = await User.findOne({ socketId: white?.socketId }) || {};
                 const blackUser = await User.findOne({ socketId: black?.socketId }) || {};
+
+                // Get ELO data
+                const whiteElo = eloChanges[white?.socketId] || { oldRating: whiteUser.rating, change: 0 };
+                const blackElo = eloChanges[black?.socketId] || { oldRating: blackUser.rating, change: 0 };
 
                 // Chuyển moves sang dạng moveSchema
                 let moves = [];
@@ -637,13 +692,15 @@ class GameManager {
                     whitePlayer: {
                         userId: white ? white.userId : undefined,
                         username: white ? (this.userManager.getUser(white.socketId)?.username || 'White') : 'White',
-                        rating: whiteUser.rating,
+                        rating: whiteElo.oldRating,
+                        ratingChange: whiteElo.change,
                         isBot: false
                     },
                     blackPlayer: {
                         userId: black ? black.userId : undefined,
                         username: black ? (this.userManager.getUser(black.socketId)?.username || 'Black') : 'Black',
-                        rating: blackUser.rating,
+                        rating: blackElo.oldRating,
+                        ratingChange: blackElo.change,
                         isBot: false
                     },
                     result,

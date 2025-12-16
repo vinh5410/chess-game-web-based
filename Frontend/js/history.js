@@ -17,8 +17,21 @@ function renderHistoryList(games) {
     games.forEach(game => {
         const div = document.createElement('div');
         div.className = 'history-item';
+
+        // Helper to format player string with ELO
+        const formatPlayer = (p) => {
+            if (p.rating !== undefined && p.ratingChange !== undefined) {
+                const sign = p.ratingChange >= 0 ? '+' : '';
+                return `${p.username} (${p.rating} ${sign}${p.ratingChange})`;
+            }
+            return p.username;
+        };
+
+        const whiteStr = formatPlayer(game.whitePlayer);
+        const blackStr = formatPlayer(game.blackPlayer);
+
         div.innerHTML = `
-            <span>${game.whitePlayer.username} vs ${game.blackPlayer.username}</span>
+            <span>${whiteStr} vs ${blackStr}</span>
             <span>${game.result}</span>
             <button onclick="viewGameDetail('${game._id}')">Xem lại</button>
         `;

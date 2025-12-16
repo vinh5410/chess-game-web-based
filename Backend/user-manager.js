@@ -6,7 +6,7 @@ class UserManager {
 
     }
    
-    addUser(socketId, username) {
+    async addUser(socketId, username) {
         const existingUser = Array.from(this.users.entries())
             .find(([id, u]) => u.username.toLowerCase() === username.toLowerCase());
        
@@ -35,12 +35,25 @@ class UserManager {
             }
         }
        
+        // ⭐ Load rating từ DB khi user login
+        let dbRating = 1200;
+        try {
+            const dbUser = await User.findOne({ username });
+            if (dbUser) {
+                dbRating = dbUser.rating;
+                console.log(`📊 Loaded rating for ${username}: ${dbRating}`);
+            }
+        } catch (e) {
+            console.error('❌ Error loading user rating:', e);
+        }
+
         const user = {
             id: socketId,
             username: username.trim(),
             connectedAt: Date.now(),
             inGame: false,
-            currentRoom: null
+            currentRoom: null,
+            rating: dbRating  // ⭐ Lưu rating vào memory ngay khi login
         };
        
         this.users.set(socketId, user);
@@ -93,27 +106,49 @@ class UserManager {
         return this.users.has(socketId);
     }
 
-    // Lấy rating của user từ database dựa trên socketId
+    // Lấy rating của user từ bộ nhớ (ưu tiên) hoặc database
     async getUserRating(socketId) {
         const user = this.users.get(socketId);
         if (!user) return 1200;
+        
+        // ⭐ Nếu có rating trong memory, dùng luôn (đã được update mới nhất)
+        if (user.rating && user.rating !== 1200) {
+            return user.rating;
+        }
+
+        // Fallback: Lấy từ DB nếu memory chưa có
         try {
             const dbUser = await User.findOne({ username: user.username });
-            return dbUser ? dbUser.rating : 1200;
+            if (dbUser) {
+                // ⭐ Lưu lại vào memory để lần sau dùng
+                user.rating = dbUser.rating;
+                this.users.set(socketId, user);
+                return dbUser.rating;
+            }
+            return 1200;
         } catch (e) {
-            console.error(e);
+            console.error('❌ Error getting user rating:', e);
             return 1200;
         }
     }
 
-    // Cập nhật rating của user trong database dựa trên socketId
+    // Cập nhật rating của user trong database & memory
     async updateUserRating(socketId, newRating) {
         const user = this.users.get(socketId);
         if (!user) return;
+        
         try {
+            // 1. Cập nhật vào Database
             await User.findOneAndUpdate({ username: user.username }, { rating: newRating });
+            
+            // 2. ⭐ QUAN TRỌNG: Cập nhật ngay vào bộ nhớ (Memory)
+            // Nếu không có dòng này, ván sau vẫn dùng rating cũ để tính ELO
+            user.rating = newRating;
+            this.users.set(socketId, user);
+
+            console.log(`✅ Updated rating for ${user.username}: ${newRating} (Saved to DB & Memory)`);
         } catch (e) {
-            console.error(e);
+            console.error('❌ Error updating user rating:', e);
         }
     }
     
