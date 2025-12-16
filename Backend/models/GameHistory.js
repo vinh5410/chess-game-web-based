@@ -47,6 +47,7 @@ const gameHistorySchema = new mongoose.Schema({
             required: true
         },
         rating: Number,
+        ratingChange: Number,
         isBot: {
             type: Boolean,
             default: false
@@ -63,6 +64,7 @@ const gameHistorySchema = new mongoose.Schema({
             required: true
         },
         rating: Number,
+        ratingChange: Number,
         isBot: {
             type: Boolean,
             default: false

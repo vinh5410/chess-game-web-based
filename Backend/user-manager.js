@@ -7,6 +7,7 @@ class UserManager {
     }
    
     async addUser(socketId, username) {
+    async addUser(socketId, username) {
         const existingUser = Array.from(this.users.entries())
             .find(([id, u]) => u.username.toLowerCase() === username.toLowerCase());
        
@@ -54,6 +55,8 @@ class UserManager {
             inGame: false,
             currentRoom: null,
             rating: dbRating  // ⭐ Lưu rating vào memory ngay khi login
+            currentRoom: null,
+            rating: dbRating  // ⭐ Lưu rating vào memory ngay khi login
         };
        
         this.users.set(socketId, user);
@@ -63,6 +66,7 @@ class UserManager {
             user: user
         };
     }
+}
    
     removeUser(socketId) {
         const user = this.users.get(socketId);
@@ -126,7 +130,15 @@ class UserManager {
                 return dbUser.rating;
             }
             return 1200;
+            if (dbUser) {
+                // ⭐ Lưu lại vào memory để lần sau dùng
+                user.rating = dbUser.rating;
+                this.users.set(socketId, user);
+                return dbUser.rating;
+            }
+            return 1200;
         } catch (e) {
+            console.error('❌ Error getting user rating:', e);
             console.error('❌ Error getting user rating:', e);
             return 1200;
         }
@@ -139,6 +151,7 @@ class UserManager {
        
         try {
             // 1. Cập nhật vào Database
+            // 1. Cập nhật vào Database
             await User.findOneAndUpdate({ username: user.username }, { rating: newRating });
            
             // 2. ⭐ QUAN TRỌNG: Cập nhật ngay vào bộ nhớ (Memory)
@@ -148,6 +161,7 @@ class UserManager {
  
             console.log(`✅ Updated rating for ${user.username}: ${newRating} (Saved to DB & Memory)`);
         } catch (e) {
+            console.error('❌ Error updating user rating:', e);
             console.error('❌ Error updating user rating:', e);
         }
     }

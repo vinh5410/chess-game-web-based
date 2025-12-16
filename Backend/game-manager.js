@@ -576,6 +576,7 @@ class GameManager {
                         let newR2 = oldR2;
 
                         const isDraw = ['draw', 'stalemate', 'repetition', 'insufficient_material'].includes(reason);
+                        const isDraw = ['draw', 'stalemate', 'repetition', 'insufficient_material'].includes(reason);
 
                         // 2. Tính toán Elo MỚI
                         if (isDraw) {
@@ -630,6 +631,10 @@ class GameManager {
                 const whiteUser = await User.findOne({ socketId: white?.socketId }) || {};
                 const blackUser = await User.findOne({ socketId: black?.socketId }) || {};
 
+                // Get ELO data
+                const whiteElo = eloChanges[white?.socketId] || { oldRating: whiteUser.rating, change: 0 };
+                const blackElo = eloChanges[black?.socketId] || { oldRating: blackUser.rating, change: 0 };
+
                 // Chuyển moves sang dạng moveSchema
                 let moves = [];
                 let moveNumber = 1;
@@ -681,13 +686,15 @@ class GameManager {
                     whitePlayer: {
                         userId: white ? white.userId : undefined,
                         username: white ? (this.userManager.getUser(white.socketId)?.username || 'White') : 'White',
-                        rating: whiteUser.rating,
+                        rating: whiteElo.oldRating,
+                        ratingChange: whiteElo.change,
                         isBot: false
                     },
                     blackPlayer: {
                         userId: black ? black.userId : undefined,
                         username: black ? (this.userManager.getUser(black.socketId)?.username || 'Black') : 'Black',
-                        rating: blackUser.rating,
+                        rating: blackElo.oldRating,
+                        ratingChange: blackElo.change,
                         isBot: false
                     },
                     result,
