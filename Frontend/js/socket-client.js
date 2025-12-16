@@ -187,7 +187,9 @@ class SocketClient {
     getUsername() {
         return this.username;
     }
-    
+    getCurrentRoom() {
+    return this.currentRoom;
+}
     setCurrentRoom(roomId) {
         this.currentRoom = roomId;
     }

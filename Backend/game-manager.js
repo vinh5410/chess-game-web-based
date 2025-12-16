@@ -4,12 +4,13 @@ const GameHistory = require('./models/GameHistory');
 const User = require('./models/User');
 const { calculateElo } = require('./services/elo/eloCalculator');
 
+// --- GameRoom with server-side timers ---
 class GameRoom {
     constructor(id, type = 'private', timeControl = null) {
         this.id = id;
         this.type = type; // 'private' or 'matchmaking'
         this.code = this.generateRoomCode();
-        this.players = []; // [socketId1, socketId2]
+        this.players = []; // [{ socketId, userId }]
         this.playerColors = {}; // socketId -> 'white' | 'black'
         this.game = new Chess();
         this.status = 'waiting'; // 'waiting', 'playing', 'finished'
@@ -20,7 +21,13 @@ class GameRoom {
         this.winner = null;
         this.moves = [];
         this.chatHistory = [];
-        this.timeControl = timeControl;
+        this.timeControl = timeControl; // { initial, increment }
+        
+        // Timer related (server-side)
+        // timers: socketId -> secondsLeft
+        this.timers = {};
+        this.lastUpdate = null; // timestamp ms
+        this.timerInterval = null; // Node interval reference
     }
     
     generateRoomCode() {
@@ -52,6 +59,7 @@ class GameRoom {
         if (index > -1) {
             this.players.splice(index, 1);
             delete this.playerColors[socketId];
+            delete this.timers[socketId];
         }
     }
     
@@ -72,10 +80,84 @@ class GameRoom {
     }
     
     isPlayerTurn(socketId) {
-        return this.playerColors[socketId] === this.currentTurn;
+        const color = this.playerColors[socketId];
+        return color === this.currentTurn;
+    }
+    
+    // Initialize timers when the game starts
+    initTimers() {
+        const initial = (this.timeControl && this.timeControl.initial) ? this.timeControl.initial : 300;
+        for (const p of this.players) {
+            this.timers[p.socketId] = initial;
+        }
+        this.lastUpdate = Date.now();
+    }
+    
+    // Start server tick for this room
+    startTimers(io) {
+        // guard
+        if (this.timerInterval) return;
+        this.lastUpdate = Date.now();
+        this.timerInterval = setInterval(() => {
+            const now = Date.now();
+            const elapsedSec = Math.floor((now - this.lastUpdate) / 1000);
+            if (elapsedSec <= 0) return;
+            this.lastUpdate = now;
+            // determine current player socketId
+            const currentPlayer = this.players.find(p => this.playerColors[p.socketId] === this.currentTurn);
+            if (!currentPlayer) return;
+            const curId = currentPlayer.socketId;
+            this.timers[curId] = Math.max(0, (this.timers[curId] || 0) - elapsedSec);
+            // emit timer snapshot to room
+            io.to(this.id).emit('game:timer_update', {
+                timers: { ...this.timers },
+                currentTurnSocketId: curId
+            });
+            // handle timeout
+            if (this.timers[curId] <= 0) {
+                // current player lost by timeout
+                clearInterval(this.timerInterval);
+                this.timerInterval = null;
+                // determine winner socketId
+                const winner = this.getOpponent(curId);
+                // emit game over to room
+                io.to(this.id).emit('game:over', {
+                    winner: this.playerColors[winner] || null,
+                    reason: 'timeout',
+                    fen: this.game.fen()
+                });
+                // mark finished
+                this.status = 'finished';
+                this.finishedAt = Date.now();
+                this.winner = winner;
+            }
+        }, 1000);
+    }
+    
+    stopTimers() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+    }
+    
+    // Called before applying a move, subtract elapsed seconds from current player
+    applyElapsedBeforeMove() {
+        if (!this.lastUpdate) this.lastUpdate = Date.now();
+        const now = Date.now();
+        const elapsed = Math.floor((now - this.lastUpdate) / 1000);
+        if (elapsed <= 0) return;
+        const currentPlayer = this.players.find(p => this.playerColors[p.socketId] === this.currentTurn);
+        if (!currentPlayer) return;
+        const curId = currentPlayer.socketId;
+        this.timers[curId] = Math.max(0, (this.timers[curId] || 0) - elapsed);
+        this.lastUpdate = now;
     }
     
     makeMove(socketId, move) {
+        // Before doing move, deduct elapsed seconds from the player who had the turn
+        this.applyElapsedBeforeMove();
+        
         if (!this.isPlayerTurn(socketId)) {
             return {
                 success: false,
@@ -87,6 +169,12 @@ class GameRoom {
             const moveResult = this.game.move(move);
             
             if (moveResult) {
+                // apply increment (if any) to player who moved
+                const increment = (this.timeControl && this.timeControl.increment) ? this.timeControl.increment : 0;
+                if (increment > 0) {
+                    this.timers[socketId] = (this.timers[socketId] || 0) + increment;
+                }
+                
                 this.moves.push({
                     player: socketId,
                     san: moveResult.san,
@@ -113,7 +201,6 @@ class GameRoom {
                     this.finishedAt = Date.now();
                     
                     if (this.game.isCheckmate()) {
-                        // Winner is player who just moved
                         result.winner = this.playerColors[socketId];
                         result.reason = 'checkmate';
                         this.winner = socketId;
@@ -156,6 +243,8 @@ class GameRoom {
         this.status = 'finished';
         this.finishedAt = Date.now();
         this.winner = winner;
+        // stop timers if running
+        this.stopTimers();
     }
 }
 
@@ -371,7 +460,17 @@ class GameManager {
         }
         
         room.start();
-        
+        room.initTimers();
+        // Determine which socketId has the current turn
+        const currentPlayerObj = room.players.find(p => room.playerColors[p.socketId] === room.currentTurn);
+        const currentTurnSocketId = currentPlayerObj ? currentPlayerObj.socketId : null;
+        // Emit initial timer snapshot
+        this.io.to(roomId).emit('game:timer_update', {
+            timers: { ...room.timers },
+            currentTurnSocketId
+        });
+        // Start server-side tick for countdown
+        room.startTimers(this.io);        
         console.log(`🎮 Starting game in room ${roomId} with timeControl:`, room.timeControl);
         
         // Notify both players
@@ -484,8 +583,8 @@ class GameManager {
                 const playerIds = room.players;
                 const white = room.players.find(p => room.playerColors[p.socketId] === 'white');
                 const black = room.players.find(p => room.playerColors[p.socketId] === 'black');
-                const whiteUser = await User.findOne({ socketId: white.socketId }) || {};
-                const blackUser = await User.findOne({ socketId: black.socketId }) || {};
+                const whiteUser = await User.findOne({ socketId: white?.socketId }) || {};
+                const blackUser = await User.findOne({ socketId: black?.socketId }) || {};
 
                 // Chuyển moves sang dạng moveSchema
                 let moves = [];
@@ -564,17 +663,23 @@ class GameManager {
 
                 await gameHistory.save();
                 console.log('✅ Game history saved:', gameHistory._id);
+
+                // Cập nhật gameIds và gamesPlayed cho 2 người nếu tồn tại userId
+                if (white && white.userId) {
+                    await User.updateOne(
+                        { _id: white.userId },
+                        { $push: { gameIds: gameHistory._id }, $inc: { gamesPlayed: 1 } }
+                    );
+                }
+                if (black && black.userId) {
+                    await User.updateOne(
+                        { _id: black.userId },
+                        { $push: { gameIds: gameHistory._id }, $inc: { gamesPlayed: 1 } }
+                    );
+                }
             } catch (err) {
-                console.error('❌ Failed to save game history:', err);
+                console.error('❌ Failed to save game history or update users:', err);
             }
-                await User.updateOne(
-        { _id: white.userId },
-        { $push: { gameIds: gameHistory._id }, $inc: { gamesPlayed: 1 } }
-    );
-                await User.updateOne(
-                    { _id: black.userId },
-                    { $push: { gameIds: gameHistory._id }, $inc: { gamesPlayed: 1 } }
-                );
         }
     }
     

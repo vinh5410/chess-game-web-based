@@ -224,32 +224,34 @@
                 <div class="chessboard-container">
                     <!-- Opponent Info (Top) -->
                     <div class="player-info-bar">
-                        <div class="player-avatar">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
+                        <div class="player-avatar"><i class="fa-solid fa-user"></i></div>
                         <div class="player-details">
-                            <span class="player-name" id="opponentName">Opponent</span>
-                            <span class="player-rating" id="opponentElo">ELO: 1200</span>
+                            <span class="player-name"></span>
+                            <span class="player-rating"></span>
                         </div>
-                        <div class="player-timer" id="opponentTimer">5:00</div>
+                        <div class="player-timer"></div>
                     </div>
-                    
+
                     <!-- Chessboard Canvas -->
                     <canvas id="chessCanvas" width="440" height="440"></canvas>
-                    
+
                     <!-- Player Info (Bottom) -->
                     <div class="player-info-bar player-bottom">
-                        <div class="player-avatar">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
+                        <div class="player-avatar"><i class="fa-solid fa-user"></i></div>
                         <div class="player-details">
-                            <span class="player-name" id="playerName">You</span>
-                            <span class="player-rating" id="playerElo">ELO: 1200</span>
+                            <span class="player-name"></span>
+                            <span class="player-rating"></span>
                         </div>
-                        <div class="player-timer" id="playerTimer">5:00</div>
+                        <div class="player-timer"></div>
                     </div>
-                    
-                    <!-- Game Over Overlay -->
+
+                    <!-- Replay Controls -->
+                    <div id="replayControls" style="display:block; margin-top:10px; text-align:center;">
+                        <button id="prevStepBtn" class="control-btn">⬅️</button>
+                        <span id="stepInfo">Bàn cờ ban đầu</span>
+                        <button id="nextStepBtn" class="control-btn">➡️</button>
+                    </div>
+                    <!-- Game Over Overlay (single instance) -->
                     <div id="gameOverOverlay" class="game-over hidden">
                         <div class="overlay-content">
                             <h2>Game Over</h2>
@@ -258,28 +260,17 @@
                                 <i class="fa-solid fa-arrow-left"></i> Back to Lobby
                             </button>
                         </div>
-
-            <div class="chessboard-container">
-                <canvas id="chessCanvas" width="640" height="640"></canvas>
-                <div id="replayStepControls" style="margin: 10px 0; text-align: center;">
-                    <button id="prevStepBtn">⬅️</button>
-                    <span id="stepInfo">Bàn cờ ban đầu</span>
-                    <button id="nextStepBtn">➡️</button>
+                    </div>
                 </div>
-                <button id="enterReplayBtn" class="control-btn" style="margin-top:10px;">Replay</button>                
-                <div id="gameOverOverlay" class="game-over hidden">
-                    <p>Game Over</p>
-                    <p id="winnerText">Winner: White</p>
-                    <button onclick="backToLobby()" class="restart-btn">Back to Lobby</button>
-                </div>
-            </div>
 
-            <div class="game-footer">
-                <div class="player-info current-player-info">
-                    <div class="player-timer" id="playerTimer">5:00</div>
-                    <div class="player-details">
-                        <span class="player-name" id="playerName">You</span>
-                        <span class="player-color" id="playerColor">⚪</span>
+                <!-- Optional footer with current player quick info (keep or remove as you like) -->
+                <div class="game-footer">
+                    <div class="player-info current-player-info">
+                        <div class="player-timer small-timer"></div>
+                        <div class="player-details">
+                            <span class="player-name small-name"></span>
+                            <span class="player-color small-color"></span>
+                        </div>
                     </div>
                 </div>
             </div>

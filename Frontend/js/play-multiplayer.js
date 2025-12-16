@@ -158,7 +158,20 @@ class MultiplayerChess {
         this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
         this.canvas.addEventListener('click', this.onClick.bind(this));
         this.canvas.addEventListener('contextmenu', e => e.preventDefault());
-        
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Tab bị ẩn, tạm dừng timer
+                this.stopTimer();
+                this._hiddenAt = Date.now();
+            } else {
+                // Tab hiện lại, yêu cầu backend gửi lại thời gian thực tế
+                if (this.gameStarted && !this.gameOver) {
+                    this.socket.socket.emit('game:request_time_sync', {
+                        roomId: this.socket.getCurrentRoom()
+                    });
+                }
+            }
+        });        
         const chatInput = document.getElementById('chatInput');
         if (chatInput) {
             chatInput.addEventListener('keypress', (e) => {
@@ -211,7 +224,36 @@ class MultiplayerChess {
             console.log('🎉 Match found!', data);
             this.onMatchFound(data);
         });
-        
+        io.on('game:timer_update', (data) => {
+            // data.timers: { socketId: secondsLeft }
+            // data.currentTurnSocketId: socketId of player whose turn it is
+            try {
+                const myId = this.socket.getUserId();
+                // Map timers -> player/opponent based on my socket id
+                if (data && data.timers) {
+                    if (myId && data.timers[myId] !== undefined) {
+                        this.playerTime = data.timers[myId];
+                        // find opponent id
+                        const opponentId = Object.keys(data.timers).find(id => id !== myId);
+                        if (opponentId) this.opponentTime = data.timers[opponentId];
+                    } else {
+                        // fallback: try to map by player colors if timers keyed by socketId not present
+                        // leave current values unchanged
+                    }
+                }
+                // Update turn status based on currentTurnSocketId
+                if (data && data.currentTurnSocketId) {
+                    const yourColor = this.playerColor;
+                    // set isMyTurn by checking socket id equality
+                    this.isMyTurn = (data.currentTurnSocketId === this.socket.getUserId());
+                }
+                this.updateTimerDisplay();
+                // keep UI refresh running (doesn't decrement times, just redraw)
+                this.startTimer();
+            } catch (err) {
+                console.warn('Timer update error', err);
+            }
+        });        
         io.on('matchmaking:waiting', (data) => {
             console.log('⏳ Waiting for match...', data);
             const statusEl = document.getElementById('searchStatus');
@@ -251,10 +293,25 @@ class MultiplayerChess {
         });
         
         io.on('game:move', (data) => {
+            // Ignore moves emitted by ourselves (defensive)
+            try {
+                if (data && data.by && data.by === this.socket.getUserId()) {
+                    console.log('♟️ Ignoring own move broadcast (by):', data.move);
+                    return;
+                }
+            } catch (e) {
+                // continue if any error reading id
+            }
             console.log('♟️ Move received:', data);
             this.onOpponentMove(data);
         });
         
+        io.on('game:sync_time', (data) => {
+            if (data.playerTime !== undefined) this.playerTime = data.playerTime;
+            if (data.opponentTime !== undefined) this.opponentTime = data.opponentTime;
+            this.updateTimerDisplay();
+            this.startTimer();
+        });        
         io.on('game:invalid_move', (data) => {
             console.error('❌ Invalid move:', data);
             alert('Invalid move!');
@@ -399,14 +456,14 @@ class MultiplayerChess {
     
     onGameStart(data) {
         console.log('🎮 Game started!', data);
-        
+
         this.playerColor = data.color;
         this.opponentName = data.opponent.username;
         this.isMyTurn = (data.color === 'white');
         this.gameStarted = true;
         this.gameOver = false;
         this.isFlipped = (this.playerColor === 'black');
-        
+
         // Capture ELO if provided
         if (data.opponent && data.opponent.elo) {
             this.opponentElo = data.opponent.elo;
@@ -414,7 +471,7 @@ class MultiplayerChess {
         if (data.playerElo) {
             this.playerElo = data.playerElo;
         }
-        
+
         // Reset timer từ timeControl
         if (data.timeControl) {
             this.playerTime = data.timeControl.initial;
@@ -424,24 +481,34 @@ class MultiplayerChess {
             this.playerTime = 300;
             this.opponentTime = 300;
         }
-        
+
         // Hide game over overlay
         const gameOverOverlay = document.getElementById('gameOverOverlay');
         if (gameOverOverlay) {
             gameOverOverlay.classList.add('hidden');
         }
-        
-        document.getElementById('playerName').textContent = this.socket.getUsername() || 'You';
-        document.getElementById('opponentName').textContent = this.opponentName;
-        
-        // Update ELO displays
-        document.getElementById('playerElo').textContent = `ELO: ${this.playerElo}`;
-        document.getElementById('opponentElo').textContent = `ELO: ${this.opponentElo}`;
-        
+
+// ensure player/opponent info bars in container are correct
+        this.updatePlayerInfoPosition();
+
+        // scope selectors inside chessboardContainerEl
+        const c = this.chessboardContainerEl || document.querySelector('.chessboard-container');
+
+        if (c) {
+            const playerNameEl = c.querySelector('.player-info-bar.player-bottom .player-name');
+            const playerEloEl = c.querySelector('.player-info-bar.player-bottom .player-rating');
+            const opponentNameEl = c.querySelector('.player-info-bar:not(.player-bottom) .player-name');
+            const opponentEloEl = c.querySelector('.player-info-bar:not(.player-bottom) .player-rating');
+
+            if (playerNameEl) playerNameEl.textContent = this.socket.getUsername() || 'You';
+            if (playerEloEl) playerEloEl.textContent = `ELO: ${this.playerElo}`;
+            if (opponentNameEl) opponentNameEl.textContent = this.opponentName;
+            if (opponentEloEl) opponentEloEl.textContent = `ELO: ${this.opponentElo}`;
+        }
         // Update left sidebar info
         const opponentNameDisplay = document.getElementById('opponentNameDisplay');
         if (opponentNameDisplay) opponentNameDisplay.textContent = this.opponentName;
-        
+
         const yourColorDisplay = document.getElementById('yourColorDisplay');
         if (yourColorDisplay) {
             yourColorDisplay.textContent = this.playerColor === 'white' ? 'White' : 'Black';
@@ -450,22 +517,22 @@ class MultiplayerChess {
         const opponentColorIcon = this.playerColor === 'w' ? '♚ Black' : '♔ White';
         GameUtils.setTextContent('playerColor', playerColorIcon);
         GameUtils.setTextContent('opponentColor', opponentColorIcon);
-        
+
         this.game = new window.Chess();
         this.selectedSquare = null;
         this.legalMoves = [];
         this.lastMove = null;
-        
+
         // Update player info position FIRST if playing black (before timer starts)
         if (this.isFlipped) {
             this.updatePlayerInfoPosition();
         }
-        
+
         this.updateTimerDisplay();
         this.updateGameInfo();
         this.startTimer();
         this.draw();
-        
+
         updateGameStatus(this.isMyTurn ? 'Your turn!' : 'Opponent\'s turn');
     }
     
@@ -502,7 +569,22 @@ class MultiplayerChess {
     
     onOpponentMove(data) {
         console.log('♟️ Opponent move:', data.move);
-        
+        if (data.timers) {
+            try {
+                const myId = this.socket.getUserId();
+                if (myId && data.timers[myId] !== undefined) {
+                    this.playerTime = data.timers[myId];
+                    const opponentId = Object.keys(data.timers).find(id => id !== myId);
+                    if (opponentId) this.opponentTime = data.timers[opponentId];
+                }
+                if (data.currentTurnSocketId) {
+                    this.isMyTurn = (data.currentTurnSocketId === this.socket.getUserId());
+                }
+                this.updateTimerDisplay();
+            } catch (err) {
+                console.warn('Error applying timers from move', err);
+            }
+        }        
         try {
             const move = this.game.move(data.move);
             if (move) {
@@ -939,27 +1021,18 @@ class MultiplayerChess {
     }
     
     startTimer() {
+        // UI refresh only; times are server authoritative
         this.stopTimer();
-        
         this.timerInterval = setInterval(() => {
-            if (this.isMyTurn) {
-                this.playerTime--;
-                if (this.playerTime <= 0) {
-                    this.playerTime = 0;
-                    this.stopTimer();
-                }
-                this.updateTimerDisplay();
-            } else {
-                this.opponentTime--;
-                if (this.opponentTime <= 0) {
-                    this.opponentTime = 0;
-                    this.stopTimer();
-                }
-                this.updateTimerDisplay();
+            if (!this.gameStarted || this.gameOver) {
+                this.stopTimer();
+                return;
             }
+            // simply refresh display; don't mutate times here
+            this.updateTimerDisplay();
         }, 1000);
     }
-    
+
     stopTimer() {
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
@@ -970,74 +1043,68 @@ class MultiplayerChess {
     updateTimerDisplay() {
         const formatTime = (seconds) => {
             const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
+            const secs = Math.max(0, seconds % 60);
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         };
-        
-        const playerTimer = document.getElementById('playerTimer');
-        const opponentTimer = document.getElementById('opponentTimer');
-        
+
+        const playerTimer = document.querySelector('.player-info-bar.player-bottom .player-timer');
+        const opponentTimer = document.querySelector('.player-info-bar:not(.player-bottom) .player-timer');
+
         if (playerTimer) {
-            playerTimer.textContent = formatTime(this.playerTime);
-            // Add low-time warning
-            if (this.playerTime <= 30) {
-                playerTimer.classList.add('low-time');
-            } else {
-                playerTimer.classList.remove('low-time');
-            }
+            playerTimer.textContent = formatTime(this.playerTime || 0);
+            if ((this.playerTime || 0) <= 30) playerTimer.classList.add('low-time');
+            else playerTimer.classList.remove('low-time');
         }
         if (opponentTimer) {
-            opponentTimer.textContent = formatTime(this.opponentTime);
-            if (this.opponentTime <= 30) {
-                opponentTimer.classList.add('low-time');
-            } else {
-                opponentTimer.classList.remove('low-time');
-            }
+            opponentTimer.textContent = formatTime(this.opponentTime || 0);
+            if ((this.opponentTime || 0) <= 30) opponentTimer.classList.add('low-time');
+            else opponentTimer.classList.remove('low-time');
         }
     }
-    
+        
     // Update player info bar positions based on isFlipped state
     updatePlayerInfoPosition() {
-        // Re-cache DOM elements if not found (in case they weren't available during init)
-        if (!this.chessboardContainerEl || !this.playerTopInfoEl || !this.playerBottomInfoEl) {
-            this.chessboardContainerEl = document.querySelector('.chessboard-container');
-            if (this.chessboardContainerEl) {
-                // Get all player-info-bar elements
-                const infoBars = this.chessboardContainerEl.querySelectorAll('.player-info-bar');
-                if (infoBars.length >= 2) {
-                    // First one is top (opponent), second one is bottom (player)
-                    this.playerTopInfoEl = infoBars[0];
-                    this.playerBottomInfoEl = infoBars[1];
-                }
-            }
+        // Ensure cached refs exist and are current
+        this.chessboardContainerEl = this.chessboardContainerEl || document.querySelector('.chessboard-container');
+        if (!this.chessboardContainerEl) {
+            console.warn('⚠️ chessboard container not found');
+            return;
         }
-        
-        const topEl = this.playerTopInfoEl;
-        const bottomEl = this.playerBottomInfoEl;
-        const container = this.chessboardContainerEl;
-        const canvas = this.canvas;
 
-        if (topEl && bottomEl && container && canvas) {
-            if (this.isFlipped) {
-                // Show player's info on top (when flipped)
-                container.insertBefore(bottomEl, canvas);
-                bottomEl.classList.remove('player-bottom');
+        // Re-find info bars in container to avoid stale references
+        const infoBars = Array.from(this.chessboardContainerEl.querySelectorAll('.player-info-bar'));
+        if (infoBars.length < 2) {
+            console.warn('⚠️ Not enough player-info-bar elements found');
+            return;
+        }
 
-                container.appendChild(topEl);
-                topEl.classList.add('player-bottom');
-            } else {
-                // Restore opponent on top, player at bottom
-                container.insertBefore(topEl, canvas);
-                topEl.classList.remove('player-bottom');
+        // Identify bottom (player) and top (opponent) elements reliably:
+        // Prefer the element that currently has .player-bottom as the player bottom.
+        let bottomEl = this.chessboardContainerEl.querySelector('.player-info-bar.player-bottom');
+        let topEl = this.chessboardContainerEl.querySelector('.player-info-bar:not(.player-bottom)');
 
-                container.appendChild(bottomEl);
-                bottomEl.classList.add('player-bottom');
-            }
-        } else {
-            console.warn('⚠️ Could not find player info elements for swap');
+        // If not found, fallback to first/second
+        if (!bottomEl || !topEl) {
+            bottomEl = infoBars.find((el, idx) => idx === 1) || infoBars[1];
+            topEl = infoBars.find((el, idx) => idx === 0) || infoBars[0];
+        }
+
+        const canvas = this.chessboardContainerEl.querySelector('canvas');
+
+        // Ensure topEl is before canvas and bottomEl is after canvas
+        try {
+            // remove player-bottom from all then add only to bottomEl
+            infoBars.forEach(el => el.classList.remove('player-bottom'));
+
+            if (topEl && canvas) this.chessboardContainerEl.insertBefore(topEl, canvas);
+            if (bottomEl && canvas) this.chessboardContainerEl.insertBefore(bottomEl, canvas.nextSibling);
+
+            // Mark bottomEl as player-bottom
+            if (bottomEl) bottomEl.classList.add('player-bottom');
+        } catch (err) {
+            console.warn('⚠️ updatePlayerInfoPosition failed:', err);
         }
     }
-    
     flipBoard() {
         this.isFlipped = !this.isFlipped;
         this.draw();
@@ -1074,7 +1141,7 @@ class MultiplayerChess {
     }
     this.replayIndex = index;
     this.draw();
-    const info = document.getElementById('replayStepInfo');
+    const info = document.getElementById('stepInfo');
     if (info) {
         info.textContent = index === 0 ? 'Bàn cờ ban đầu' : `Nước đi: ${index}/${this.replayHistory.length}`;
     }
@@ -1301,7 +1368,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('⏳ Initializing game...');
     await gameInstance.init();
     console.log('✅ Game initialized');
-    
     // AUTO-LOGIN nếu đã có user
     document.getElementById('prevStepBtn').onclick = () => {
         if (gameInstance.viewStep > 0) {

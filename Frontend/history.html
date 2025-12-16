@@ -15,12 +15,21 @@
     <h1>Lịch sử ván đấu</h1>
     <div id="historyList"></div>
     <div id="replayArea" style="display:none;">
-        <div id="chessboardContainer" class="chessboard-container">
+    <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+        <div id="chessboardContainer" class="chessboard-container" style="flex:0 0 auto;">
         <canvas id="chessCanvas" width="640" height="640"></canvas>
         </div>
-        <button id="prevBtn">⬅️</button>
-        <button id="nextBtn">➡️</button>
-        <div id="moveInfo"></div>
+
+        <div id="replayControlsRight" style="display:flex; flex-direction:column; gap:12px; align-items:center; min-width:160px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+            <button id="prevBtn" class="control-btn">⬅️</button>
+            <div id="moveInfo" style="min-width:120px; text-align:center;">Bàn cờ ban đầu</div>
+            <button id="nextBtn" class="control-btn">➡️</button>
+        </div>
+
+        <!-- Optional: thêm các control khác (play/pause, speed) nếu cần -->
+        </div>
+    </div>
     </div>
     <!-- Nạp chess.js đúng như các file khác -->
     <script src="./libs/chess.js/dist/cjs/chess.js"></script> <!-- UMD/IIFE, không phải CJS/ESM -->

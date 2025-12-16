@@ -92,42 +92,57 @@ module.exports = (io, userManager, gameManager) => {
         });
 
         // --- GAMEPLAY ---
-        // Lưu ý: FE hiện tại đang dùng event 'game:move' hay 'make_move'?
-        // Trong game-manager.js bạn gửi t, nó emit 'game:move'. 
-        // Nên ở đây mình listen 'game:move' cho đồng bộ.
         socket.on('game:move', async ({ roomId, move }) => {
-            // Gọi Manager để kiểm tra và lấy kết quả
             const result = gameManager.makeMove(roomId, socket.id, move);
             
             if (result.success) {
-                // QUAN TRỌNG: Gửi nước đi cho đối thủ (Code cũ bị thiếu dòng này)
-                socket.to(roomId).emit('game:move', { 
-                    move: move, 
-                    fen: result.fen 
+                const room = gameManager.getRoom(roomId);
+                // Send move to all players in room (including sender) with timer snapshot
+                const timersSnapshot = room ? { ...room.timers } : {};
+                const currentPlayerObj = room ? room.players.find(p => room.playerColors[p.socketId] === room.currentTurn) : null;
+                const currentTurnSocketId = currentPlayerObj ? currentPlayerObj.socketId : null;
+                
+                socket.to(roomId).emit('game:move', {
+                    move: move,
+                    fen: result.fen,
+                    timers: timersSnapshot,
+                    currentTurnSocketId,
+                    by: socket.id
+                });
+                socket.emit('game:move_applied', {
+                    fen: result.fen,
+                    timers: timersSnapshot,
+                    currentTurnSocketId
                 });
 
-                // Kiểm tra nếu hết ván
+                // If game finished, emit game over and call endGame
                 if (result.gameOver) {
                     io.to(roomId).emit('game:over', {
                         winner: result.winner,
                         reason: result.reason,
                         fen: result.fen
                     });
-                    // Xác định ID người thắng
                     let winnerId = null;
                     if (result.reason === 'checkmate') {
-                        // Nếu chiếu hết, người vừa đi nước này (socket.id) là người thắng
                         winnerId = socket.id;
                     }
-                    
-                    // Thêm await và truyền đúng winnerId
-                    await gameManager.endGame(roomId, winnerId, result.reason); 
+                    await gameManager.endGame(roomId, winnerId, result.reason);
                 }
             } else {
                 socket.emit('game:invalid_move', { message: result.message });
             }
         });
-
+        socket.on('game:request_time_sync', ({ roomId }) => {
+            const room = gameManager.getRoom(roomId);
+            if (room) {
+                const currentPlayerObj = room.players.find(p => room.playerColors[p.socketId] === room.currentTurn);
+                const currentTurnSocketId = currentPlayerObj ? currentPlayerObj.socketId : null;
+                socket.emit('game:timer_update', {
+                    timers: { ...room.timers },
+                    currentTurnSocketId
+                });
+            }
+        });
         socket.on('game:resign', async ({ roomId }) => {
             const room = gameManager.getRoom(roomId);
             if (room) {
@@ -257,5 +272,20 @@ module.exports = (io, userManager, gameManager) => {
                 io.emit('users:update', { users: userManager.getAllUsers() });
             }
         });
+// handle client leaving a room (explicit leave -> notify opponent and remove room)
+        socket.on('room:leave', ({ roomId }) => {
+            try {
+                const room = gameManager.getRoom(roomId);
+                if (!room) return;
+                if (room.hasPlayer(socket.id)) {
+                    socket.to(roomId).emit('room:opponent_left', { reason: 'left' });
+                    socket.leave(roomId);
+                    gameManager.removeRoom(roomId);
+                    console.log(`🚪 User ${socket.id} left room ${roomId}`);
+                }
+            } catch (e) {
+                console.error('Error handling room:leave', e);
+            }
+        });        
     });
 };

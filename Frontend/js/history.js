@@ -56,21 +56,29 @@ function replayGame(game) {
     let moveIndex = 0;
 
     function showMove(index) {
-        renderer.reset();
-        for (let i = 0; i < index; i++) { // chỉ thực hiện nước đi đến index-1
-            const move = flatMoves[i];
-            if (move) chess.move({ from: move.from, to: move.to, promotion: move.promotion });
-        }
-        renderer.draw();
-        if (index === 0) {
-            document.getElementById('moveInfo').innerText = 'Bàn cờ ban đầu';
-        } else {
-            document.getElementById('moveInfo').innerText = `Nước đi: ${index}/${flatMoves.length}`;
+        try {
+            if (index < 0) index = 0;
+            if (index > flatMoves.length) index = flatMoves.length;
+            renderer.reset();
+            for (let i = 0; i < index; i++) {
+                const move = flatMoves[i];
+                if (move) chess.move({ from: move.from, to: move.to, promotion: move.promotion });
+            }
+            renderer.draw();
+            const infoEl = document.getElementById('moveInfo');
+            if (infoEl) infoEl.innerText = index === 0 ? 'Bàn cờ ban đầu' : `Nước đi: ${index}/${flatMoves.length}`;
+            // optional: disable/enable buttons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            if (prevBtn) prevBtn.disabled = index === 0;
+            if (nextBtn) nextBtn.disabled = index === flatMoves.length;
+        } catch (err) {
+            console.error('Replay showMove error:', err);
+            alert('Lỗi khi phát lại ván đấu (xem console).');
         }
     }
-
     document.getElementById('nextBtn').onclick = () => {
-        if (moveIndex < flatMoves.length - 1) moveIndex++;
+        if (moveIndex < flatMoves.length) moveIndex++;
         showMove(moveIndex);
     };
     document.getElementById('prevBtn').onclick = () => {
