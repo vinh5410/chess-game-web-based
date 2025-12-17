@@ -9,7 +9,7 @@ const getLeaderboard = async (req, res) => {
         const users = await User.find()
             .sort({ rating: -1 }) // Sắp xếp giảm dần theo rating
             .limit(50)
-            .select('username rating avatar'); // Chỉ lấy các trường cần thiết
+            .select('username rating avatar gamesPlayed gamesWon gamesLost gamesDraw'); // Chỉ lấy các trường cần thiết
 
         // --- ĐOẠN NÀY ĐỂ LOG RA TERMINAL CHO BẠN XEM ---
         console.log('\n╔════════════════════════════════════╗');

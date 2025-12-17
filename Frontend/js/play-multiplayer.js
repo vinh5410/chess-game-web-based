@@ -29,6 +29,7 @@ class MultiplayerChess {
         this.legalMoves = [];
         this.lastMove = null;
         this.isFlipped = false;
+        this.isInfoSwapped = false; // Track if info bars are swapped from initial state
         
         // Mouse interaction
         this.isDragging = false;
@@ -153,11 +154,18 @@ class MultiplayerChess {
     }
     
     setupEventListeners() {
+        // Mouse events (desktop)
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
         this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
         this.canvas.addEventListener('click', this.onClick.bind(this));
         this.canvas.addEventListener('contextmenu', e => e.preventDefault());
+        
+        // Touch events (mobile)
+        this.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
+        this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
+        this.canvas.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: false });
+        
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 // Tab bị ẩn, tạm dừng timer
@@ -304,6 +312,22 @@ class MultiplayerChess {
             }
             console.log('♟️ Move received:', data);
             this.onOpponentMove(data);
+        });
+        
+        // Listen for move confirmation from server (for the player who made the move)
+        io.on('game:move_applied', (data) => {
+            console.log('✅ Move applied by server:', data);
+            // Update timers from server
+            if (data.timers) {
+                const myId = this.socket.getUserId();
+                if (myId && data.timers[myId] !== undefined) {
+                    this.playerTime = data.timers[myId];
+                    const opponentId = Object.keys(data.timers).find(id => id !== myId);
+                    if (opponentId) this.opponentTime = data.timers[opponentId];
+                }
+            }
+            this.updateTimerDisplay();
+            this.updateGameInfo();
         });
         
         io.on('game:sync_time', (data) => {
@@ -463,6 +487,7 @@ class MultiplayerChess {
         this.gameStarted = true;
         this.gameOver = false;
         this.isFlipped = (this.playerColor === 'black');
+        this.isInfoSwapped = false; // Reset swap state on new game
 
         // Capture ELO if provided
         if (data.opponent && data.opponent.elo) {
@@ -491,20 +516,9 @@ class MultiplayerChess {
 // ensure player/opponent info bars in container are correct
         this.updatePlayerInfoPosition();
 
-        // scope selectors inside chessboardContainerEl
-        const c = this.chessboardContainerEl || document.querySelector('.chessboard-container');
+        // Update player info display based on flipped state
+        this.updatePlayerInfoDisplay();
 
-        if (c) {
-            const playerNameEl = c.querySelector('.player-info-bar.player-bottom .player-name');
-            const playerEloEl = c.querySelector('.player-info-bar.player-bottom .player-rating');
-            const opponentNameEl = c.querySelector('.player-info-bar:not(.player-bottom) .player-name');
-            const opponentEloEl = c.querySelector('.player-info-bar:not(.player-bottom) .player-rating');
-
-            if (playerNameEl) playerNameEl.textContent = this.socket.getUsername() || 'You';
-            if (playerEloEl) playerEloEl.textContent = `ELO: ${this.playerElo}`;
-            if (opponentNameEl) opponentNameEl.textContent = this.opponentName;
-            if (opponentEloEl) opponentEloEl.textContent = `ELO: ${this.opponentElo}`;
-        }
         // Update left sidebar info
         const opponentNameDisplay = document.getElementById('opponentNameDisplay');
         if (opponentNameDisplay) opponentNameDisplay.textContent = this.opponentName;
@@ -523,25 +537,24 @@ class MultiplayerChess {
         this.legalMoves = [];
         this.lastMove = null;
 
-        // Update player info position FIRST if playing black (before timer starts)
-        if (this.isFlipped) {
-            this.updatePlayerInfoPosition();
-        }
-
         this.updateTimerDisplay();
         this.updateGameInfo();
         this.startTimer();
         this.draw();
 
-        updateGameStatus(this.isMyTurn ? 'Your turn!' : 'Opponent\'s turn');
+        updateGameStatus(this.isMyTurn ? '👤 Your turn!' : '⏳ Opponent\'s turn', this.game);
     }
     
     updateGameInfo() {
-        // Update current turn display
+        // Update current turn display with chess piece icon
         const currentTurnEl = document.getElementById('currentTurn');
         if (currentTurnEl) {
-            const turn = this.game.turn() === 'w' ? 'White' : 'Black';
-            currentTurnEl.textContent = turn;
+            const turnColor = this.game.turn();
+            const isWhiteTurn = turnColor === 'w';
+            const turnText = isWhiteTurn ? 'White' : 'Black';
+            const turnIcon = isWhiteTurn ? '♔' : '♚';
+            
+            currentTurnEl.innerHTML = `<span style="margin-right: 4px;">${turnIcon}</span>${turnText}`;
             currentTurnEl.style.color = this.isMyTurn ? '#4ade80' : '#f8fafc';
         }
         
@@ -552,17 +565,34 @@ class MultiplayerChess {
             moveCountEl.textContent = moveNumber;
         }
         
-        // Update turn status
+        // Update turn status with icon
         const turnStatusEl = document.getElementById('turnStatus');
         if (turnStatusEl) {
             if (this.gameOver) {
-                turnStatusEl.textContent = 'Game Over';
-            } else if (this.isMyTurn) {
-                turnStatusEl.textContent = 'Your turn to move!';
-                turnStatusEl.style.color = '#4ade80';
-            } else {
-                turnStatusEl.textContent = 'Waiting for opponent...';
+                turnStatusEl.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> Game Over';
                 turnStatusEl.style.color = '#f8fafc';
+            } else if (this.isMyTurn) {
+                const myIcon = this.playerColor === 'white' ? '♔' : '♚';
+                let statusText = `${myIcon} Your turn to move!`;
+                // Add check warning
+                if (this.game.inCheck()) {
+                    statusText = `${myIcon} ⚠️ You are in Check!`;
+                    turnStatusEl.style.color = '#ef4444';
+                } else {
+                    turnStatusEl.style.color = '#4ade80';
+                }
+                turnStatusEl.innerHTML = statusText;
+            } else {
+                const oppIcon = this.playerColor === 'white' ? '♚' : '♔';
+                let statusText = `${oppIcon} Waiting for opponent...`;
+                // Check if opponent is in check
+                if (this.game.inCheck()) {
+                    statusText = `${oppIcon} ⚠️ Opponent in Check!`;
+                    turnStatusEl.style.color = '#fbbf24';
+                } else {
+                    turnStatusEl.style.color = '#94a3b8';
+                }
+                turnStatusEl.innerHTML = statusText;
             }
         }
     }
@@ -605,7 +635,7 @@ class MultiplayerChess {
                 this.draw();
                 this.updateTimerDisplay();
                 this.updateGameInfo();
-                updateGameStatus('Your turn!');
+                updateGameStatus('👤 Your turn!', this.game);
                 
                 if (this.checkGameOver()) {
                     return;
@@ -654,12 +684,36 @@ class MultiplayerChess {
         const chatMessages = document.getElementById('chatMessages');
         if (!chatMessages) return;
         
+        // Skip own messages (already displayed via optimistic update)
+        const isOwn = data.sender === this.socket.getUserId();
+        if (isOwn) return;
+        
+        // Remove welcome message if exists
+        const welcomeMsg = chatMessages.querySelector('.chat-welcome');
+        if (welcomeMsg) welcomeMsg.remove();
+        
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
         const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${data.sender === this.socket.getUserId() ? 'own' : 'other'}`;
+        messageDiv.className = 'chat-message opponent';
         messageDiv.innerHTML = `
-            <div class="sender">${data.username}</div>
-            <div class="text">${this.escapeHtml(data.message)}</div>
+            <span class="message-sender">${data.username}</span>
+            <span class="message-text">${this.escapeHtml(data.message)}</span>
+            <span class="message-time">${timeStr}</span>
         `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    addSystemMessage(text) {
+        const chatMessages = document.getElementById('chatMessages');
+        if (!chatMessages) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'chat-message system';
+        messageDiv.textContent = text;
         
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -728,6 +782,137 @@ class MultiplayerChess {
         this.dragStartSquare = null;
     }
     
+    // Touch handlers for mobile
+    onTouchStart(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Touch start on canvas', e.touches[0].clientX, e.touches[0].clientY);
+        
+        if (!this.gameStarted || this.gameOver || !this.isMyTurn || e.touches.length !== 1) {
+            console.log('Touch blocked:', {gameStarted: this.gameStarted, gameOver: this.gameOver, isMyTurn: this.isMyTurn});
+            return;
+        }
+        
+        const touch = e.touches[0];
+        this.touchStartPos = { x: touch.clientX, y: touch.clientY };
+        this.touchMoved = false;
+    }
+    
+    onTouchMove(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        
+        if (this.touchStartPos) {
+            const dx = touch.clientX - this.touchStartPos.x;
+            const dy = touch.clientY - this.touchStartPos.y;
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                // Start dragging if not already
+                if (!this.touchMoved) {
+                    this.touchMoved = true;
+                    const rect = this.canvas.getBoundingClientRect();
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+                    const x = (this.touchStartPos.x - rect.left) * scaleX;
+                    const y = (this.touchStartPos.y - rect.top) * scaleY;
+                    const sq = this.canvasToSquare(x, y);
+                    
+                    if (sq) {
+                        const piece = this.game.get(sq);
+                        if (piece && piece.color === this.playerColor.charAt(0)) {
+                            this.isDragging = true;
+                            this.dragStartSquare = sq;
+                            this.dragPiece = piece;
+                            this.selectedSquare = sq;
+                            this.legalMoves = this.game.moves({ square: sq, verbose: true });
+                            this.mousePos = { x, y };
+                        }
+                    }
+                }
+                
+                if (this.isDragging) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+                    this.mousePos = { 
+                        x: (touch.clientX - rect.left) * scaleX, 
+                        y: (touch.clientY - rect.top) * scaleY 
+                    };
+                    this.draw();
+                }
+            }
+        }
+    }
+    
+    onTouchEnd(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const touch = e.changedTouches[0];
+        
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        const x = (touch.clientX - rect.left) * scaleX;
+        const y = (touch.clientY - rect.top) * scaleY;
+        
+        console.log('Touch end - rect:', rect.top, rect.left, rect.width, rect.height);
+        console.log('Touch end - calculated:', x, y, 'scale:', scaleX, scaleY);
+        
+        if (this.touchMoved && this.isDragging) {
+            // Was dragging - complete the move
+            const targetSquare = this.canvasToSquare(x, y);
+            
+            this.isDragging = false;
+            this.dragPiece = null;
+            
+            if (targetSquare && targetSquare !== this.dragStartSquare) {
+                this.tryMove(this.dragStartSquare, targetSquare);
+            } else {
+                this.selectedSquare = null;
+                this.legalMoves = [];
+                this.draw();
+            }
+            
+            this.dragStartSquare = null;
+        } else {
+            // Tap - treat as click with scaled coordinates
+            this.onClickScaled(x, y);
+        }
+        
+        this.touchStartPos = null;
+        this.touchMoved = false;
+    }
+    
+    onClickScaled(x, y) {
+        if (this.isDragging || !this.gameStarted || this.gameOver || !this.isMyTurn) return;
+        
+        const square = this.canvasToSquare(x, y);
+        console.log('Click scaled - square:', square, 'x:', x, 'y:', y);
+        if (!square) return;
+        
+        if (this.selectedSquare === square) {
+            this.selectedSquare = null;
+            this.legalMoves = [];
+            this.draw();
+            return;
+        }
+        
+        if (this.selectedSquare && this.legalMoves.find(m => m.to === square)) {
+            this.tryMove(this.selectedSquare, square);
+            return;
+        }
+        
+        const piece = this.game.get(square);
+        if (piece && piece.color === this.playerColor.charAt(0)) {
+            this.selectedSquare = square;
+            this.legalMoves = this.game.moves({ square, verbose: true });
+            this.draw();
+        }
+    }
+    
     onClick(e) {
         if (this.isDragging || !this.gameStarted || this.gameOver || !this.isMyTurn) return;
         
@@ -764,8 +949,14 @@ class MultiplayerChess {
         const promotionMove = moves.find(m => m.to === to && m.promotion);
 
         if (promotionMove) {
+            // Clear selection highlights before showing promotion UI
+            this.selectedSquare = null;
+            this.legalMoves = [];
+            this.draw();
+            
             // Hiển thị UI chọn quân phong cấp
-            this.promotionUI.showPromotionDialog(from, to, this.playerColor, (selectedPiece) => {
+            const color = this.playerColor === 'white' ? 'w' : 'b';
+            this.promotionUI.showPromotionDialog(from, to, color, (selectedPiece) => {
                 const moveObj = this.game.move({
                     from,
                     to,
@@ -776,13 +967,16 @@ class MultiplayerChess {
                     this.viewStep = this.fullMoveHistory.length;
                     this.updateBoardView();
                     this.lastMove = { from: moveObj.from, to: moveObj.to };
+                    this.selectedSquare = null;
+                    this.legalMoves = [];
                     this.isMyTurn = false;
                     this.socket.makeMove(moveObj.san);
                     this.draw();
-                    updateGameStatus('Opponent\'s turn');
+                    this.updateGameInfo();
+                    updateGameStatus('⏳ Opponent\'s turn', this.game);
                     if (this.checkGameOver()) return true;
                 }
-            });
+            }, this.canvas, this.isFlipped);
             return true; // Đợi callback, không thực hiện tiếp
         }
 
@@ -800,7 +994,8 @@ class MultiplayerChess {
                 this.isMyTurn = false;
                 this.socket.makeMove(moveObj.san);
                 this.draw();
-                updateGameStatus('Opponent\'s turn');
+                this.updateGameInfo();
+                updateGameStatus('⏳ Opponent\'s turn', this.game);
                 if (this.checkGameOver()) return true;
             }
         } catch (error) {
@@ -870,22 +1065,30 @@ class MultiplayerChess {
     }
     
     drawCoordinates() {
-        this.ctx.font = '12px Arial';
+        const fontSize = Math.max(12, Math.floor(this.squareSize / 5));
+        this.ctx.font = `bold ${fontSize}px Arial`;
+        this.ctx.textBaseline = 'bottom';
         
+        // Draw letters (a-h) at bottom of each file
         for (let file = 0; file < 8; file++) {
-            const letter = String.fromCharCode(97 + file);
-            const x = file * this.squareSize + 5;
-            const y = 8 * this.squareSize - 5;
-            const isDark = file % 2 === 0;
+            const letter = this.isFlipped 
+                ? String.fromCharCode(104 - file)  // h to a when flipped
+                : String.fromCharCode(97 + file);  // a to h normally
+            const x = file * this.squareSize + 2;
+            const y = 8 * this.squareSize - 2;
+            // Bottom row: when not flipped, rank 1 (index 7), a1 is light (file+rank=0+0=even)
+            const isDark = (file + 7) % 2 === 0;
             this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
             this.ctx.fillText(letter, x, y);
         }
         
+        // Draw numbers (1-8) at right of each rank
+        this.ctx.textBaseline = 'top';
         for (let rank = 0; rank < 8; rank++) {
             const number = this.isFlipped ? rank + 1 : 8 - rank;
-            const x = 8 * this.squareSize - 15;
-            const y = rank * this.squareSize + 15;
-            const isDark = rank % 2 === 1;
+            const x = this.canvas.width - fontSize + 2;
+            const y = rank * this.squareSize + 2;
+            const isDark = (7 + rank) % 2 === 0;
             this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
             this.ctx.fillText(number, x, y);
         }
@@ -1047,18 +1250,21 @@ class MultiplayerChess {
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         };
 
-        const playerTimer = document.querySelector('.player-info-bar.player-bottom .player-timer');
-        const opponentTimer = document.querySelector('.player-info-bar:not(.player-bottom) .player-timer');
+        const topTimer = document.querySelector('.player-info-bar:not(.player-bottom) .player-timer');
+        const bottomTimer = document.querySelector('.player-info-bar.player-bottom .player-timer');
 
-        if (playerTimer) {
-            playerTimer.textContent = formatTime(this.playerTime || 0);
-            if ((this.playerTime || 0) <= 30) playerTimer.classList.add('low-time');
-            else playerTimer.classList.remove('low-time');
+        // When info is NOT swapped: player at bottom, opponent at top
+        // When info is swapped: opponent at bottom, player at top
+        const bottomTime = this.isInfoSwapped ? this.opponentTime : this.playerTime;
+        const topTime = this.isInfoSwapped ? this.playerTime : this.opponentTime;
+
+        if (bottomTimer) {
+            bottomTimer.textContent = formatTime(bottomTime || 0);
+            bottomTimer.classList.toggle('low-time', (bottomTime || 0) <= 30);
         }
-        if (opponentTimer) {
-            opponentTimer.textContent = formatTime(this.opponentTime || 0);
-            if ((this.opponentTime || 0) <= 30) opponentTimer.classList.add('low-time');
-            else opponentTimer.classList.remove('low-time');
+        if (topTimer) {
+            topTimer.textContent = formatTime(topTime || 0);
+            topTimer.classList.toggle('low-time', (topTime || 0) <= 30);
         }
     }
         
@@ -1107,9 +1313,102 @@ class MultiplayerChess {
     }
     flipBoard() {
         this.isFlipped = !this.isFlipped;
+        this.isInfoSwapped = !this.isInfoSwapped; // Toggle swap state
         this.draw();
-        this.updatePlayerInfoPosition();
+        this.swapPlayerInfoBars();
         console.log('🔄 Board flipped:', this.isFlipped ? 'Flipped' : 'Normal');
+    }
+
+    // Swap player info bars content when user manually flips board
+    swapPlayerInfoBars() {
+        const container = document.querySelector('.chessboard-container');
+        if (!container) return;
+
+        const topBar = container.querySelector('.player-info-bar:not(.player-bottom)');
+        const bottomBar = container.querySelector('.player-info-bar.player-bottom');
+
+        if (!topBar || !bottomBar) return;
+
+        // Get references to elements
+        const topName = topBar.querySelector('.player-name');
+        const topRating = topBar.querySelector('.player-rating');
+        const topTimer = topBar.querySelector('.player-timer');
+
+        const bottomName = bottomBar.querySelector('.player-name');
+        const bottomRating = bottomBar.querySelector('.player-rating');
+        const bottomTimer = bottomBar.querySelector('.player-timer');
+
+        // Swap name
+        if (topName && bottomName) {
+            const temp = topName.textContent;
+            topName.textContent = bottomName.textContent;
+            bottomName.textContent = temp;
+        }
+
+        // Swap rating
+        if (topRating && bottomRating) {
+            const temp = topRating.textContent;
+            topRating.textContent = bottomRating.textContent;
+            bottomRating.textContent = temp;
+        }
+
+        // Swap timer
+        if (topTimer && bottomTimer) {
+            const tempTime = topTimer.textContent;
+            const tempLowTime = topTimer.classList.contains('low-time');
+
+            topTimer.textContent = bottomTimer.textContent;
+            topTimer.classList.toggle('low-time', bottomTimer.classList.contains('low-time'));
+
+            bottomTimer.textContent = tempTime;
+            bottomTimer.classList.toggle('low-time', tempLowTime);
+        }
+    }
+
+    // Update player info bars display - always player at bottom, opponent at top
+    updatePlayerInfoDisplay() {
+        const container = document.querySelector('.chessboard-container');
+        if (!container) return;
+
+        const topBar = container.querySelector('.player-info-bar:not(.player-bottom)');
+        const bottomBar = container.querySelector('.player-info-bar.player-bottom');
+
+        if (!topBar || !bottomBar) return;
+
+        // Get references to elements
+        const topName = topBar.querySelector('.player-name');
+        const topRating = topBar.querySelector('.player-rating');
+        const topTimer = topBar.querySelector('.player-timer');
+
+        const bottomName = bottomBar.querySelector('.player-name');
+        const bottomRating = bottomBar.querySelector('.player-rating');
+        const bottomTimer = bottomBar.querySelector('.player-timer');
+
+        const myName = this.socket.getUsername() || 'You';
+        const myElo = `ELO: ${this.playerElo}`;
+        const oppName = this.opponentName;
+        const oppElo = `ELO: ${this.opponentElo}`;
+
+        const formatTime = (seconds) => {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.max(0, seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        // Always: player at bottom, opponent at top
+        if (bottomName) bottomName.textContent = myName;
+        if (bottomRating) bottomRating.textContent = myElo;
+        if (bottomTimer) {
+            bottomTimer.textContent = formatTime(this.playerTime || 0);
+            bottomTimer.classList.toggle('low-time', (this.playerTime || 0) <= 30);
+        }
+
+        if (topName) topName.textContent = oppName;
+        if (topRating) topRating.textContent = oppElo;
+        if (topTimer) {
+            topTimer.textContent = formatTime(this.opponentTime || 0);
+            topTimer.classList.toggle('low-time', (this.opponentTime || 0) <= 30);
+        }
     }
     enterReplayMode() {
         this.replayMode = true;
@@ -1143,7 +1442,7 @@ class MultiplayerChess {
     this.draw();
     const info = document.getElementById('stepInfo');
     if (info) {
-        info.textContent = index === 0 ? 'Bàn cờ ban đầu' : `Nước đi: ${index}/${this.replayHistory.length}`;
+        info.textContent = `${index}/${this.replayHistory.length}`;
     }
 }
     updateBoardView() {
@@ -1156,7 +1455,7 @@ class MultiplayerChess {
         // Cập nhật thông tin bước
         const info = document.getElementById('stepInfo');
         if (info) {
-            info.textContent = this.viewStep === 0 ? 'Bàn cờ ban đầu' : `Nước đi: ${this.viewStep}/${history.length}`;
+            info.textContent = `${this.viewStep}/${history.length}`;
         }
     }
 }
@@ -1165,11 +1464,39 @@ class MultiplayerChess {
 let gameInstance = null;
 
 // UI Functions
-function updateGameStatus(message) {
+function updateGameStatus(message, game = null) {
     const statusEl = document.getElementById('gameStatus');
-    if (statusEl) {
-        statusEl.textContent = message;
+    if (!statusEl) return;
+    
+    // Check for special game states if game instance provided
+    if (game) {
+        try {
+            if (game.isCheckmate()) {
+                const loser = game.turn() === 'w' ? 'White' : 'Black';
+                statusEl.textContent = `♚ Checkmate! ${loser} loses!`;
+                return;
+            }
+            
+            if (game.isStalemate()) {
+                statusEl.textContent = '🤝 Stalemate! Draw!';
+                return;
+            }
+            
+            if (game.isDraw()) {
+                statusEl.textContent = '🤝 Draw!';
+                return;
+            }
+            
+            // Add check warning
+            if (game.inCheck()) {
+                message += ' ⚠️ Check!';
+            }
+        } catch (error) {
+            // Ignore
+        }
     }
+    
+    statusEl.textContent = message;
 }
 
 function hideAllScreens() {
@@ -1349,8 +1676,36 @@ function sendMessage() {
         return;
     }
     
+    // Optimistic update - show message immediately
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        // Remove welcome message if exists
+        const welcomeMsg = chatMessages.querySelector('.chat-welcome');
+        if (welcomeMsg) welcomeMsg.remove();
+        
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'chat-message own';
+        messageDiv.innerHTML = `
+            <span class="message-sender">You</span>
+            <span class="message-text">${escapeHtml(message)}</span>
+            <span class="message-time">${timeStr}</span>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
     window.socketClient.sendChatMessage(message);
     chatInput.value = '';
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function inviteUser(userId) {
@@ -1369,6 +1724,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await gameInstance.init();
     console.log('✅ Game initialized');
     // AUTO-LOGIN nếu đã có user
+    document.getElementById('firstStepBtn').onclick = () => {
+        gameInstance.viewStep = 0;
+        gameInstance.updateBoardView();
+    };
     document.getElementById('prevStepBtn').onclick = () => {
         if (gameInstance.viewStep > 0) {
             gameInstance.viewStep--;
@@ -1381,6 +1740,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             gameInstance.viewStep++;
             gameInstance.updateBoardView();
         }
+    };
+    document.getElementById('lastStepBtn').onclick = () => {
+        gameInstance.viewStep = gameInstance.fullMoveHistory.length;
+        gameInstance.updateBoardView();
     };   
     // Ẩn ngay loginScreen để tránh nhấp nháy
     const loginScreen = document.getElementById('loginScreen');

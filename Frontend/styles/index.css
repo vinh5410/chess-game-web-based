@@ -1,18 +1,17 @@
 /* --- RESET & VARIABLES --- */
 :root {
     --bg-dark: #0f172a;
-    --bg-card: rgba(30, 41, 59, 0.6); /* Giảm opacity để background hòa trộn tốt hơn */
+    --bg-card: rgba(30, 41, 59, 0.6);
     --primary: #d4af37;
     --primary-hover: #f1c40f;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
     --glass-border: 1px solid rgba(255, 255, 255, 0.08);
     --glow-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
-    --font-heading: 'Cinzel', serif;
+    --font-heading: 'Inter', sans-serif;
     --font-body: 'Inter', sans-serif;
     
-    /* Kích thước Navbar */
-    --nav-height: 70px; 
+    /* --nav-height is defined in navbar.css */
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,7 +29,7 @@ body {
 
 /* --- BACKGROUND EFFECTS --- */
 .bg-gradient, .bg-blur {
-    position: absolute; /* Đổi thành absolute vì body đã full screen */
+    position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     z-index: -1;
     pointer-events: none;
@@ -45,43 +44,7 @@ body {
 a { text-decoration: none; color: inherit; transition: 0.3s; }
 ul { list-style: none; }
 
-/* --- NAVBAR (Compact) --- */
-.navbar {
-    height: var(--nav-height); /* Chiều cao cố định */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(12px);
-    border-bottom: var(--glass-border);
-    flex-shrink: 0; /* Không bị co lại */
-    z-index: 100;
-}
-
-.navbar-container {
-    width: 90%;
-    max-width: 1400px; /* Mở rộng chiều ngang để thoáng hơn */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.navbar-brand {
-    font-family: var(--font-heading);
-    font-size: 1.5rem; /* Giảm nhẹ size */
-    font-weight: 700;
-    color: var(--primary);
-    display: flex; align-items: center; gap: 10px;
-}
-
-.navbar-menu { display: flex; gap: 2rem; }
-.navbar-menu a {
-    font-size: 1.3rem;
-    color: var(--text-muted);
-    font-weight: 500;
-    display: flex; align-items: center; gap: 7px;
-}
-.navbar-menu a:hover { color: var(--text-main); text-shadow: 0 0 8px rgba(255,255,255,0.3); }
+/* --- NAVBAR styles moved to navbar.css --- */
 
 /* Buttons & User Menu (Giữ nguyên logic, chỉ chỉnh size) */
 .btn {
@@ -221,6 +184,8 @@ ul { list-style: none; }
     font-size: 1.4rem;
     margin-bottom: 0.3rem;
     color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .card p {

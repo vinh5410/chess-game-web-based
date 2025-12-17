@@ -708,17 +708,33 @@ class GameManager {
                 await gameHistory.save();
                 console.log('✅ Game history saved:', gameHistory._id);
 
-                // Cập nhật gameIds và gamesPlayed cho 2 người nếu tồn tại userId
+                // Cập nhật gameIds, gamesPlayed và thống kê thắng/thua/hòa cho 2 người chơi
                 if (white && white.userId) {
+                    const whiteStats = { gamesPlayed: 1 };
+                    if (result === 'white-win') {
+                        whiteStats.gamesWon = 1;
+                    } else if (result === 'black-win') {
+                        whiteStats.gamesLost = 1;
+                    } else if (result === 'draw') {
+                        whiteStats.gamesDraw = 1;
+                    }
                     await User.updateOne(
                         { _id: white.userId },
-                        { $push: { gameIds: gameHistory._id }, $inc: { gamesPlayed: 1 } }
+                        { $push: { gameIds: gameHistory._id }, $inc: whiteStats }
                     );
                 }
                 if (black && black.userId) {
+                    const blackStats = { gamesPlayed: 1 };
+                    if (result === 'black-win') {
+                        blackStats.gamesWon = 1;
+                    } else if (result === 'white-win') {
+                        blackStats.gamesLost = 1;
+                    } else if (result === 'draw') {
+                        blackStats.gamesDraw = 1;
+                    }
                     await User.updateOne(
                         { _id: black.userId },
-                        { $push: { gameIds: gameHistory._id }, $inc: { gamesPlayed: 1 } }
+                        { $push: { gameIds: gameHistory._id }, $inc: blackStats }
                     );
                 }
             } catch (err) {

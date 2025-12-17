@@ -10,9 +10,9 @@
     --text-muted: #94a3b8;
     --glass-bg: rgba(30, 41, 59, 0.75);
     --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-    --font-heading: 'Cinzel', serif;
+    --font-heading: 'Inter', sans-serif;
     --font-body: 'Inter', sans-serif;
-    --nav-height: 70px;
+    /* --nav-height is defined in navbar.css */
 }
 
 body {
@@ -40,23 +40,25 @@ body {
    3. APP LAYOUT (MOBILE FIRST)
    ========================================= */
 .app {
-    /* Đã sửa: Xóa padding-top lớn, dùng flex để căn giữa dọc */
     padding: 2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Căn giữa nội dung theo chiều dọc */
-    min-height: 100vh;
+    min-height: calc(100vh - var(--nav-height, 70px));
     box-sizing: border-box;
     width: 100%;
 }
 
-.header { text-align: center; margin-bottom: 0.25rem; width: 100%; position: relative; z-index: 200;}
+.header { 
+    text-align: center; 
+    margin-bottom: 1.5rem; 
+    width: 100%;
+}
 .header h1 {
-    font-family: var(--font-heading); font-size: 1.8rem; color: var(--primary);
+    font-family: 'Inter', sans-serif; font-size: 2rem; color: var(--primary);
     text-shadow: 0 0 15px rgba(212, 175, 55, 0.3); margin: 0; line-height: 1.2;
 }
-.subtitle { color: var(--text-muted); font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+.subtitle { color: var(--text-muted); font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; }
 
 /* =========================================
    4. GLASS PANELS (MENUS)
@@ -72,13 +74,8 @@ body {
     box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     text-align: center;
     animation: fadeInUp 0.5s ease-out;
-    z-index: 5;
-    position: absolute; /* Cố định vị trí */
-    top: 50%; 
-    left: 50%;
-    transform: translate(-50%, -50%);
+    margin-top: 1.5rem;
 }
-
 
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(20px); }
@@ -133,21 +130,22 @@ h2 { font-family: var(--font-heading); margin-bottom: 1rem; color: var(--text-ma
 
 /* Color Selection */
 .color-grid {
-    display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap;
+    display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 2rem; flex-wrap: wrap;
 }
 
 .color-btn {
-    width: 160px; height: 180px;
+    width: 180px; height: 200px;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 12px; cursor: pointer; transition: 0.3s;
-    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; color: var(--text-main);
+    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; color: var(--text-main);
 }
 
-.color-btn:hover { transform: scale(1.05); border-color: var(--primary); }
-.color-icon { font-size: 3.5rem; }
-.color-name { font-family: var(--font-heading); font-size: 1.2rem; font-weight: 700; }
-.color-desc { font-size: 0.8rem; color: var(--text-muted); }
+.color-btn:hover { transform: scale(1.05); border-color: var(--primary); background: rgba(212, 175, 55, 0.1); box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
+.color-icon { font-size: 3.5rem; color: var(--text-main); }
+.color-btn:hover .color-icon { color: var(--primary); }
+.color-name { font-family: 'Inter', sans-serif; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; }
+.color-desc { font-size: 0.8rem; color: var(--text-muted, #94a3b8); }
 
 /* Specific Colors */
 .white-side:hover { background: rgba(255,255,255,0.15); }
@@ -162,43 +160,188 @@ h2 { font-family: var(--font-heading); margin-bottom: 1rem; color: var(--text-ma
 .back-btn:hover { border-color: var(--text-main); color: var(--text-main); }
 
 /* =========================================
-   6. GAME CONTROLS (IN-GAME)
+   6. GAME SIDEBAR & INFO PANEL (Matching Multiplayer)
    ========================================= */
-.game-controls {
-    margin-bottom: 1rem;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 1rem 2rem;
-    width: auto;
-    max-width: 800px;
+.game-sidebar-left {
     display: flex;
-    justify-content: center;
-    transition: all 0.3s ease;
+    flex-direction: column;
+    gap: 0.5rem;
+    height: fit-content;
+    width: 100%;
+    max-width: 400px;
+    margin-top: 1.5rem;
 }
-.bot-controls { width: 100%; display: flex; justify-content: space-between; align-items: center; }
-.info-group { display: flex; gap: 20px; font-weight: 600; color: var(--primary); }
-.action-group { display: flex; gap: 10px; }
 
-.control-btn {
-    padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: 0.3s; display: flex; align-items: center; gap: 6px;
+.game-header-info {
+    text-align: center;
+    padding: 1rem 0;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
-.control-btn.restart { background: var(--primary); color: #000; }
-.control-btn.restart:hover { background: var(--primary-hover); }
-.control-btn.flip { background: rgba(255,255,255,0.1); color: var(--text-main); border: 1px solid rgba(255,255,255,0.2); }
-.control-btn.flip:hover { background: rgba(255,255,255,0.2); }
+
+.game-header-info h1 {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    color: var(--primary);
+    text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.game-header-info .subtitle {
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 3px;
+}
+
+.game-info-panel {
+    padding: 1rem;
+    text-align: center;
+    position: static !important;
+    transform: none !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+.game-info-panel .panel-title {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    color: var(--text-main);
+    margin-bottom: 0.2rem;
+}
+
+.game-info-panel .panel-subtitle {
+    color: var(--primary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.game-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.game-actions .action-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    min-width: auto;
+    flex: 1;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.action-btn.gold {
+    background: linear-gradient(135deg, var(--primary) 0%, #c9a227 100%);
+    color: #0f172a;
+    box-shadow: 0 2px 6px rgba(212, 175, 55, 0.25);
+}
+
+.action-btn.gold:hover {
+    background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(212, 175, 55, 0.35);
+}
+
+.action-btn.dark {
+    background: rgba(30, 41, 59, 0.8);
+    color: var(--text-main);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.action-btn.dark:hover {
+    background: rgba(51, 65, 85, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.game-status-section {
+    text-align: center;
+    padding: 1rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.game-status-section h4 {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    color: var(--primary);
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.status-message {
+    color: var(--text-main);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.game-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.stat-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary);
+}
 
 /* =========================================
-   7. CHESSBOARD
+   7. GAME CENTER & CHESSBOARD
    ========================================= */
+.game-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    padding-top: 0;
+    width: 100%;
+    max-width: 460px;
+}
+
 .chessboard-container {
     position: relative;
-    padding: 10px;
+    padding: 6px;
     background: #302e2b;
     border-radius: 4px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.6);
     width: 100%;
-    max-width: 640px;
-    margin: 0 auto;
     box-sizing: border-box;
     z-index: 10;
 }
@@ -214,6 +357,8 @@ h2 { font-family: var(--font-heading); margin-bottom: 1rem; color: var(--text-ma
     border-radius: 8px;
     margin-bottom: 8px;
     position: relative;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .player-info.player-bottom {
@@ -288,74 +433,98 @@ canvas {
    8. RESPONSIVE & LAYOUT ADJUSTMENTS
    ========================================= */
 
+/* Tablet adjustments */
+@media (min-width: 701px) and (max-width: 1023px) {
+    #difficultyMenu {
+        max-width: 900px;
+    }
+    
+    .difficulty-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .color-grid {
+        flex-direction: row;
+        justify-content: center;
+    }
+    
+    .color-btn {
+        width: 140px;
+        height: 160px;
+    }
+}
+
 /* Mobile adjustments */
 @media (max-width: 700px) {
     .app {
-        padding: 1rem;
-        min-height: 100vh;
-        justify-content: flex-start;
-        padding-top: 2rem;
+        padding: 0.5rem;
+        padding-top: 0.5rem;
         width: 100%;
         box-sizing: border-box;
     }
     
     .header {
-        margin-bottom: 1.5rem;
-        position: static;
+        margin-bottom: 0.5rem;
         width: 100%;
     }
     
     .header h1 {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
     }
     
     .subtitle {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         letter-spacing: 1px;
     }
     
     .glass-panel {
         width: 100%;
         max-width: 100%;
-        padding: 1.5rem;
-        position: static;
-        transform: none;
-        margin: 0 0 1.5rem 0;
-        animation: fadeInMobile 0.4s ease-out;
+        padding: 1rem;
+        margin: 0 0 0.5rem 0;
         box-sizing: border-box;
-        left: auto;
-        right: auto;
-    }
-    
-    @keyframes fadeInMobile {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
     }
     
     h2 {
-        font-size: 1.5rem;
-        margin-bottom: 0.75rem;
+        font-size: 1.3rem;
+        margin-bottom: 0.5rem;
     }
     
     .difficulty-subtitle {
-        font-size: 0.9rem;
-        margin-bottom: 1.5rem;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
     }
     
+    .game-center {
+        max-width: calc(100vw - 1rem);
+    }
+    
+    .player-info {
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .player-info .player-name {
+        font-size: 0.85rem;
+    }
+    
+    .player-info .player-rating {
+        font-size: 0.7rem;
+    }
+
     .game-controls {
         min-width: 100%;
         width: 100%;
         flex-direction: column;
-        gap: 10px;
-        padding: 1rem;
-        margin: 0 0 1rem 0;
+        gap: 8px;
+        padding: 0.75rem;
+        margin: 0 0 0.5rem 0;
         box-sizing: border-box;
         max-width: 100%;
     }
     
     .bot-controls {
         flex-direction: column;
-        gap: 1rem;
+        gap: 0.5rem;
         align-items: center;
         width: 100%;
         box-sizing: border-box;
@@ -363,25 +532,26 @@ canvas {
     }
     
     .info-group {
-        flex-direction: column;
-        gap: 0.5rem;
+        flex-direction: row;
+        gap: 1rem;
         text-align: center;
         width: 100%;
+        justify-content: center;
     }
     
     .action-group {
         flex-direction: row;
         justify-content: center;
-        gap: 0.75rem;
+        gap: 0.5rem;
         width: 100%;
     }
     
     .control-btn {
         flex: 1;
-        max-width: 150px;
+        max-width: 120px;
         justify-content: center;
-        padding: 10px 12px;
-        font-size: 0.9rem;
+        padding: 8px 10px;
+        font-size: 0.8rem;
     }
     
     .difficulty-grid {
@@ -448,300 +618,299 @@ canvas {
         padding: 1.5rem;
         font-size: 0.95rem;
     }
+    
+    .game-sidebar-left {
+        width: 100%;
+        padding-top: 0;
+    }
+    
+    .game-actions {
+        flex-direction: row;
+    }
+    
+    .game-actions .action-btn {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    /* Mobile: When game active, hide header and show sidebar/board */
+    body.game-active .header {
+        display: none;
+    }
+    
+    body.game-active .app {
+        justify-content: flex-start;
+        padding-top: 1rem;
+    }
+    
+    /* Mobile: Right sidebar below the board */
+    .game-sidebar-right {
+        width: 100%;
+        margin-top: 1rem;
+    }
+    
+    .game-sidebar-right .move-history-section {
+        margin-top: 0;
+    }
+    
+    .game-sidebar-right .move-history-list {
+        max-height: 120px;
+    }
 }
 
-/* --- DESKTOP LAYOUT (NEW: Bàn cờ sang phải, Menu giữa) --- */
+/* --- DESKTOP LAYOUT (2 columns: sidebar + board) --- */
 @media (min-width: 1024px) {
     .app {
-        /* Chuyển sang Grid Layout */
-        display: grid;
-        grid-template-columns: 350px auto; /* Cột trái 350px, Cột phải tự động theo bàn cờ */
-        grid-template-rows: auto auto;
-        grid-template-areas: 
-            "sidebar board"
-            "sidebar board";
-        row-gap: 0.3rem;
-        column-gap: 0.3rem;
-        align-items: start;
-        justify-content: center;
-        padding-bottom: 0.75rem;
-        padding-top: 140px;
-        max-width: 1400px;
-        margin: 0 auto;
-        position: relative;
-    }
-
-    /* Header luôn ở trên cùng và trải dài */
-    .header {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        margin-bottom: 0;
-        width: 100%;
-        z-index: 50;
-    }
-
-    /* Menu (Glass Panel) - Khi hiện phải đè lên grid và nằm giữa */
-    #difficultyMenu,
-    #colorMenu {
-        position: fixed !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        z-index: 100;
-        margin: 0 !important;
-    }
-    
-    /* Left Sidebar Container */
-    .left-sidebar {
-        grid-area: sidebar;
         display: flex;
         flex-direction: column;
-        gap: 15px;
+        align-items: center;
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        min-height: calc(100vh - var(--nav-height, 70px));
+    }
+    
+    /* Left Sidebar */
+    .game-sidebar-left {
+        flex-direction: column;
+        gap: 0.5rem;
         width: 100%;
-        max-width: 350px;
+        max-width: 280px;
     }
 
-    /* Game Controls - Nằm trong grid layout */
+    /* Game Info Panel */
     #gameControls {
         width: 100%;
-        padding: 0;
-        margin: 0;
-        margin-top: 300px;
-        box-sizing: border-box;
-    }
-
-    .status-content {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 1.5rem;
-        background: rgba(255,255,255,0.03);
-        border-radius: 12px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .status-label {
-        color: #d4af37;
-        font-weight: 600;
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .status-value {
-        color: #fff;
-        font-size: 1rem;
-        line-height: 1.5;
-        margin-left: 28px;
-        padding: 8px 0;
-    }
-
-    .status-info-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        margin-top: 8px;
-    }
-
-    .info-item {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        padding: 10px;
-        background: rgba(255,255,255,0.05);
-        border-radius: 8px;
-        border: none;
-    }
-
-    .info-label {
-        color: #d4af37;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .info-value {
-        color: #fff;
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-
-    /* Chuyển Game Controls sang cột bên TRÁI */
-    .game-controls {
-        flex-direction: column; /* Xếp dọc các nút */
-        min-width: unset;
-        width: 100%;
-        padding: 0;
+        padding: 1rem;
         margin: 0;
         box-sizing: border-box;
     }
-
-    .bot-controls {
-        flex-direction: column; /* Xếp thông tin và nút bấm dọc */
-        gap: 2rem;
-        width: 100%;
-        padding: 1.5rem;
-        background: rgba(255,255,255,0.03);
-        border-radius: 0;
-        border: none;
-        box-sizing: border-box;
-        min-height: auto;
+    
+    .game-actions {
+        flex-direction: row;
     }
     
-    .status-divider {
-        height: 0;
-        background: transparent;
-        margin: 0;
-    }
-    
-    .status-section {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-    
-    .info-group {
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-        font-size: 1.2rem;
+    .game-actions .action-btn {
+        flex: 1;
     }
 
-    .action-group {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .control-btn {
-        padding: 12px 24px; /* Nút to hơn trên PC */
-    }
-
-    /* Đặt Bàn cờ sang cột bên PHẢI */
+    /* Chessboard */
     .chessboard-container {
-        grid-area: board;
         margin: 0;
-        justify-self: start;
-        max-width: 580px;
+        max-width: 460px;
         width: 100%;
-    }
-
-    .chessboard-container canvas {
-        max-height: 62vh;
-        width: 100%;
-        height: auto;
     }
 }
 
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -45%);
+/* When game is active on desktop */
+@media (min-width: 1024px) {
+    body.game-active .app {
+        display: grid;
+        grid-template-columns: 280px 460px 280px;
+        gap: 1.5rem;
+        align-items: start;
+        justify-content: center;
+        padding-top: 1rem;
     }
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%);
+    
+    /* Hide main header when game is active */
+    body.game-active .header {
+        display: none;
+    }
+    
+    /* Left sidebar */
+    .game-sidebar-left {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .game-sidebar-left #gameControls {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Right Sidebar - same style as left */
+    .game-sidebar-right {
+        width: 280px;
+        display: flex;
+        flex-direction: column;
+        margin-top: 5rem;
+    }
+    
+    .game-sidebar-right .game-info-panel {
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+    }
+    
+    .game-sidebar-right .move-history-list {
+        flex: 1;
+        max-height: 120px;
     }
 }
 
-/* Chỉ làm rộng menu chọn độ khó */
+/* Menu chọn độ khó rộng hơn */
 #difficultyMenu {
-    max-width: 1100px;   /* hoặc 1200px nếu muốn rất rộng */
+    max-width: 1100px;
     width: 95%;
 }
 
-/* FIX: Game controls không được absolute */
+/* Menu chọn màu */
+#colorMenu {
+    max-width: 700px;
+    width: 90%;
+}
+
 #gameControls {
     position: relative;
     z-index: 1;
 }
 
-/* Đẩy */
-@media (min-width: 1024px) {
-    /* Khi vào game */
-    .app:has(#gameControls:not(.hidden)) .header {
-        grid-column: 1;        /* Cột bên trái */
-        grid-row: 1;
-        justify-self: start;
-        text-align: left;
-        padding-left: 1rem;
-    }
-
-    .app:has(#gameControls:not(.hidden)) .header h1 {
-        font-size: 2rem;
-    }
-
-    .app:has(#gameControls:not(.hidden)) .subtitle {
-        font-size: 0.85rem;
-        letter-spacing: 1px;
-    }
+/* Right Sidebar Base */
+.game-sidebar-right {
+    display: none;
 }
 
-
-body:has(#gameControls:not(.hidden)) .app {
-    min-height: 100vh;
-    padding-top: 1rem;
+/* =========================================
+   MOVE HISTORY SECTION
+   ========================================= */
+.move-history-section {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: var(--glass-border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-
-@media (min-width: 1024px) {
-    .app:has(#gameControls:not(.hidden)) .chessboard-container {
-        margin-left: 0;
-    }
+.move-history-section h4 {
+    font-family: var(--font-heading);
+    font-size: 0.9rem;
+    color: var(--primary);
+    margin: 0 0 0.75rem 0;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
 }
 
-@media (min-width: 1024px) {
-    /* Khi đang chơi game */
-    .app:has(#gameControls:not(.hidden)) .action-group {
-        flex-wrap: wrap;            /* cho phép xuống dòng */
-    }
-
-    .app:has(#gameControls:not(.hidden)) .control-btn.back {
-        width: 100%;                /* chiếm cả hàng */
-        justify-content: center;
-        margin-top: 0.5rem;
-    }
+.move-history-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-
-@media (min-width: 1024px) {
-    /* Khi đang chơi game */
-    .app:has(#gameControls:not(.hidden)) .action-group {
-        display: grid;
-        grid-template-columns: 1fr 1fr; /* 2 nút bằng nhau */
-        gap: 10px;
-    }
-
-    /* Back vẫn xuống hàng riêng */
-    .app:has(#gameControls:not(.hidden)) .control-btn.back {
-        grid-column: 1 / -1;
-        margin-top: 0.5rem;
-    }
+.history-btn {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
 }
 
-@media (min-width: 1024px) {
-    /* Khi đang chơi game */
-    .app:has(#gameControls:not(.hidden)) .action-group {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        justify-items: center; /* ⬅ QUAN TRỌNG */
-    }
+.history-btn:hover:not(:disabled) {
+    background: var(--primary);
+    color: var(--bg-dark);
+    transform: scale(1.05);
+}
 
-    /* Ép tất cả nút căn giữa nội dung */
-    .app:has(#gameControls:not(.hidden)) .control-btn {
-        justify-content: center; /* flex nội bộ */
-        align-items: center;
-        text-align: center;
-        width: 100%;
-    }
+.history-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
 
+.history-position {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--text-main);
+    min-width: 50px;
+    text-align: center;
+}
 
+.move-history-list {
+    max-height: 120px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.move-history-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.move-history-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.move-history-list::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+}
+
+.move-row {
+    display: flex;
+    align-items: center;
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.move-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.move-row.active {
+    background: rgba(212, 175, 55, 0.2);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.move-number {
+    color: var(--text-muted);
+    font-weight: 600;
+    min-width: 30px;
+}
+
+.move-white, .move-black {
+    flex: 1;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.move-white:hover, .move-black:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.move-white.current, .move-black.current {
+    background: var(--primary);
+    color: var(--bg-dark);
+    font-weight: 600;
+}
+
+.no-moves-msg {
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 1rem;
+}
 

@@ -144,8 +144,8 @@ exports.getLeaderboard = async (req, res) => {
     try {
         const users = await User.find()
             .sort({ rating: -1 })
-            .limit(10)
-            .select('username rating avatar');
+            .limit(50)
+            .select('_id username rating avatar gamesPlayed gamesWon gamesLost gamesDraw');
 
         res.status(200).json({
             success: true,

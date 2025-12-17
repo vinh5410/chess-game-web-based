@@ -1,5 +1,5 @@
 class ChessBoardRenderer {
-    constructor(canvasId) {
+    constructor(canvasId, options = {}) {
         this.canvas = document.getElementById(canvasId);
         if (!this.canvas) {
             throw new Error(`Canvas element '${canvasId}' not found`);
@@ -8,8 +8,13 @@ class ChessBoardRenderer {
         this.ctx = this.canvas.getContext('2d');
         this.game = new window.Chess();
         
-        // Canvas settings - RESPONSIVE
-        this.calculateResponsiveSize();
+        // Canvas settings - RESPONSIVE or FIXED
+        if (options.fixedSize) {
+            this.canvasSize = options.fixedSize;
+            this.squareSize = this.canvasSize / 8;
+        } else {
+            this.calculateResponsiveSize();
+        }
         this.canvas.width = this.canvasSize;
         this.canvas.height = this.canvasSize;
         
@@ -404,51 +409,70 @@ class ChessBoardRenderer {
         if (!this.canInteract() || e.touches.length !== 1) return;
         
         const touch = e.touches[0];
-        const { square, x, y } = this.getTouchPosition(touch);
-        
-        if (!square) return;
-        
-        const piece = this.game.get(square);
-        if (piece && piece.color === this.getPlayerColor()) {
-            this.mousePos = { x, y };
-            this.startDrag(square, piece);
-            console.log('📱 Touch drag started:', square);
-        }
+        this.touchStartPos = { x: touch.clientX, y: touch.clientY };
+        this.touchMoved = false;
     }
     
     onTouchMove(e) {
         e.preventDefault();
         
-        if (!this.isDragging || e.touches.length !== 1) return;
+        if (e.touches.length !== 1) return;
         
         const touch = e.touches[0];
-        const { x, y } = this.getTouchPosition(touch);
         
-        this.mousePos = { x, y };
-        this.draw();
+        // Check if finger moved significantly
+        if (this.touchStartPos) {
+            const dx = touch.clientX - this.touchStartPos.x;
+            const dy = touch.clientY - this.touchStartPos.y;
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                // Start dragging if not already
+                if (!this.touchMoved) {
+                    this.touchMoved = true;
+                    const { square, x, y } = this.getTouchPosition({ clientX: this.touchStartPos.x, clientY: this.touchStartPos.y });
+                    if (square) {
+                        const piece = this.game.get(square);
+                        if (piece && piece.color === this.getPlayerColor()) {
+                            this.mousePos = { x, y };
+                            this.startDrag(square, piece);
+                        }
+                    }
+                }
+                
+                if (this.isDragging) {
+                    const { x, y } = this.getTouchPosition(touch);
+                    this.mousePos = { x, y };
+                    this.draw();
+                }
+            }
+        }
     }
     
     onTouchEnd(e) {
         e.preventDefault();
         
-        if (!this.isDragging || !this.dragStartSquare) return;
-        
-        // Get final position from last touch or changedTouches
         const touch = e.changedTouches[0];
-        const { square: targetSquare } = this.getTouchPosition(touch);
         
-        console.log('📱 Touch drag ended:', this.dragStartSquare, '→', targetSquare);
-        
-        if (targetSquare && targetSquare !== this.dragStartSquare) {
-            this.tryMove(this.dragStartSquare, targetSquare);
+        if (this.touchMoved && this.isDragging) {
+            // Was dragging - complete the move
+            const { square: targetSquare } = this.getTouchPosition(touch);
+            
+            if (targetSquare && targetSquare !== this.dragStartSquare) {
+                this.tryMove(this.dragStartSquare, targetSquare);
+            }
+            
+            this.isDragging = false;
+            this.dragPiece = null;
+            this.dragStartSquare = null;
+            this.selectedSquare = null;
+            this.legalMoves = [];
+            this.draw();
+        } else {
+            // Tap - treat as click
+            this.onClick({ clientX: touch.clientX, clientY: touch.clientY });
         }
         
-        this.isDragging = false;
-        this.dragPiece = null;
-        this.dragStartSquare = null;
-        this.selectedSquare = null;
-        this.legalMoves = [];
-        this.draw();
+        this.touchStartPos = null;
+        this.touchMoved = false;
     }
     
     getTouchPosition(touch) {

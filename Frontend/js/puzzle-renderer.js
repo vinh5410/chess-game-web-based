@@ -2,7 +2,7 @@ class PuzzleRenderer {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
-        this.squareSize = 80;
+        this.squareSize = this.canvas.width / 8; // Dynamic based on canvas size
         this.boardFlipped = false;
         this.selectedSquare = null;
         this.legalMoves = [];

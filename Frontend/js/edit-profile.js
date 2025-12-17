@@ -8,6 +8,25 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('username').value = user.username;
     document.getElementById('avatar').value = user.avatar || '';
     
+    // Update avatar preview
+    const avatarPreview = document.getElementById('avatar-preview-img');
+    const previewUsername = document.getElementById('preview-username');
+    const previewEmail = document.getElementById('preview-email');
+    
+    if (avatarPreview) {
+        avatarPreview.src = user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=d4af37&color=0f172a`;
+    }
+    if (previewUsername) previewUsername.textContent = user.username;
+    if (previewEmail) previewEmail.textContent = user.email || '';
+    
+    // Update avatar preview when URL changes
+    document.getElementById('avatar').addEventListener('input', (e) => {
+        const url = e.target.value.trim();
+        if (avatarPreview) {
+            avatarPreview.src = url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=d4af37&color=0f172a`;
+        }
+    });
+    
     // Handle profile update
     document.getElementById('editProfileForm').addEventListener('submit', handleProfileUpdate);
     

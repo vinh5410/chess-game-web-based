@@ -2,11 +2,12 @@
 
 class ChessPuzzleGame {
     constructor() {
-        // --- CẤU HÌNH CANVAS (Lấy từ play-vs-bot) ---
+        // --- CẤU HÌNH CANVAS ---
         this.canvas = document.getElementById('puzzleCanvas');
         this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
-        this.canvasSize = 640;
-        this.squareSize = 80;
+        this.canvasSize = 440; // Match multiplayer size
+        this.squareSize = 55;  // 440 / 8
+        this.lastParentWidth = 0; // Track width to prevent resize on scroll
         
         // Màu sắc bàn cờ
         this.colors = {
@@ -108,17 +109,31 @@ class ChessPuzzleGame {
     }
 
     drawCoordinates() {
-        this.ctx.font = "14px Arial";
-        for (let i = 0; i < 8; i++) {
-            // Vẽ chữ (a-h)
-            const letter = String.fromCharCode(97 + i);
-            this.ctx.fillStyle = (i % 2 === 1) ? this.colors.light : this.colors.dark;
-            this.ctx.fillText(letter, i * this.squareSize + 5, this.canvas.height - 5);
-            
-            // Vẽ số (1-8)
-            const num = this.isFlipped ? (i + 1) : (8 - i);
-            this.ctx.fillStyle = (i % 2 === 0) ? this.colors.light : this.colors.dark;
-            this.ctx.fillText(num, this.canvas.width - 15, i * this.squareSize + 15);
+        const fontSize = Math.max(12, Math.floor(this.squareSize / 5));
+        this.ctx.font = `bold ${fontSize}px Arial`;
+        this.ctx.textBaseline = 'bottom';
+        
+        // Draw letters (a-h)
+        for (let file = 0; file < 8; file++) {
+            const letter = this.isFlipped 
+                ? String.fromCharCode(104 - file)
+                : String.fromCharCode(97 + file);
+            const x = file * this.squareSize + 2;
+            const y = 8 * this.squareSize - 2;
+            const isDark = (file + 7) % 2 === 0;
+            this.ctx.fillStyle = isDark ? this.colors.dark : this.colors.light;
+            this.ctx.fillText(letter, x, y);
+        }
+        
+        // Draw numbers (1-8)
+        this.ctx.textBaseline = 'top';
+        for (let rank = 0; rank < 8; rank++) {
+            const num = this.isFlipped ? (rank + 1) : (8 - rank);
+            const x = this.canvas.width - fontSize + 2;
+            const y = rank * this.squareSize + 2;
+            const isDark = (7 + rank) % 2 === 0;
+            this.ctx.fillStyle = isDark ? this.colors.dark : this.colors.light;
+            this.ctx.fillText(num, x, y);
         }
     }
 
@@ -259,9 +274,20 @@ class ChessPuzzleGame {
                 document.getElementById('puzzle-difficulty').textContent = (this.currentPuzzle.difficulty || 'Normal').toUpperCase();
                 document.getElementById('puzzle-puzzle-rating').textContent = this.currentPuzzle.rating;
                 
+                // Update themes
+                const themesEl = document.getElementById('puzzle-themes');
+                if (themesEl && this.currentPuzzle.themes) {
+                    themesEl.textContent = Array.isArray(this.currentPuzzle.themes) 
+                        ? this.currentPuzzle.themes.join(', ') 
+                        : this.currentPuzzle.themes;
+                }
+                
                 // Hiển thị lượt đi
                 const turn = this.game.turn() === 'w' ? 'White' : 'Black';
-                document.getElementById('to-move').textContent = `${turn === 'White' ? '⚪' : '⚫'} ${turn} to move`;
+                const toMoveEl = document.getElementById('to-move');
+                if (toMoveEl) {
+                    toMoveEl.innerHTML = `<i class="fa-solid fa-chess-${turn === 'White' ? 'king' : 'queen'}"></i> ${turn} to move`;
+                }
 
                 // Lật bàn cờ theo phe User (người chơi luôn cầm quân vừa đến lượt)
                 this.isFlipped = (this.game.turn() === 'b');
@@ -287,15 +313,29 @@ class ChessPuzzleGame {
     }
 
     async getHint() {
-        if (!this.isSolving || !this.isUserTurn) return;
+        console.log('🔍 getHint called, isSolving:', this.isSolving, 'isUserTurn:', this.isUserTurn, 'puzzle:', this.currentPuzzle?.puzzleId);
+        
+        if (!this.isSolving || !this.isUserTurn) {
+            console.log('❌ Cannot get hint - isSolving:', this.isSolving, 'isUserTurn:', this.isUserTurn);
+            return;
+        }
+        
+        if (!this.currentPuzzle || !this.currentPuzzle.puzzleId) {
+            console.log('❌ No puzzle loaded');
+            return;
+        }
 
         const token = localStorage.getItem('token');
         try {
             // Gọi API lấy gợi ý (Backend đã có route này)
-            const res = await fetch(`/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`, {
+            const url = `/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`;
+            console.log('📡 Fetching hint:', url);
+            
+            const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
+            console.log('📡 Hint response:', data);
 
             if (data.success && data.hint) {
                 // Lưu tọa độ gợi ý vào biến state
@@ -316,7 +356,17 @@ class ChessPuzzleGame {
     }
 
     async showSolution() {
-        if (!this.isSolving) return;
+        console.log('🔍 showSolution called, isSolving:', this.isSolving, 'puzzle:', this.currentPuzzle?.puzzleId);
+        
+        if (!this.isSolving) {
+            console.log('❌ Cannot show solution - not solving');
+            return;
+        }
+        
+        if (!this.currentPuzzle || !this.currentPuzzle.puzzleId) {
+            console.log('❌ No puzzle loaded');
+            return;
+        }
 
         // 1. Xác nhận thua cuộc
         this.submitResult(false); // Gửi kết quả thua lên server
@@ -326,10 +376,14 @@ class ChessPuzzleGame {
         // 2. Lấy nước đi đúng (Hack: Gọi API hint để lấy nước đi tiếp theo)
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`, {
+            const url = `/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`;
+            console.log('📡 Fetching solution:', url);
+            
+            const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
+            console.log('📡 Solution response:', data);
 
             if (data.success && data.hint) {
                 // 3. Thực hiện nước đi trên bàn cờ cho người xem
@@ -499,17 +553,139 @@ class ChessPuzzleGame {
     }
 
     setupEventListeners() {
-        // Chuột
+        // Mouse events (desktop)
         this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        
+        // Touch events (mobile)
+        this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
+        this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
 
         // Nút bấm
-        document.getElementById('new-puzzle-btn').addEventListener('click', () => this.loadNewPuzzle());
-        document.getElementById('hint-btn').addEventListener('click', () => this.getHint());
-        document.getElementById('solution-btn').addEventListener('click', () => this.showSolution());        
-        // Resize
-        window.addEventListener('resize', () => this.handleResize());
+        const newPuzzleBtn = document.getElementById('new-puzzle-btn');
+        const hintBtn = document.getElementById('hint-btn');
+        const solutionBtn = document.getElementById('solution-btn');
+        
+        if (newPuzzleBtn) newPuzzleBtn.addEventListener('click', () => this.loadNewPuzzle());
+        if (hintBtn) hintBtn.addEventListener('click', () => { console.log('Hint btn clicked'); this.getHint(); });
+        if (solutionBtn) solutionBtn.addEventListener('click', () => { console.log('Solution btn clicked'); this.showSolution(); });
+        
+        console.log('✅ Buttons found:', { newPuzzleBtn: !!newPuzzleBtn, hintBtn: !!hintBtn, solutionBtn: !!solutionBtn });
+                
+        // Resize - only on orientationchange for mobile, resize for desktop
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => this.handleResize(true), 100);
+        });
+        window.addEventListener('resize', () => {
+            // On mobile, ignore resize events (they fire on scroll)
+            if ('ontouchstart' in window && !this.isOrientationChange) return;
+            this.handleResize(false);
+        });
+    }
+    
+    // Touch handlers for mobile
+    handleTouchStart(e) {
+        e.preventDefault();
+        if (!this.isUserTurn || e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        this.touchStartPos = { x: touch.clientX, y: touch.clientY };
+        this.touchMoved = false;
+    }
+    
+    handleTouchMove(e) {
+        e.preventDefault();
+        if (e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        
+        if (this.touchStartPos) {
+            const dx = touch.clientX - this.touchStartPos.x;
+            const dy = touch.clientY - this.touchStartPos.y;
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                // Start dragging if not already
+                if (!this.touchMoved) {
+                    this.touchMoved = true;
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = this.touchStartPos.x - rect.left;
+                    const y = this.touchStartPos.y - rect.top;
+                    const sq = this.canvasToSquare(x, y);
+                    
+                    if (sq) {
+                        const piece = this.game.get(sq);
+                        if (piece && piece.color === this.game.turn()) {
+                            this.isDragging = true;
+                            this.dragStartSquare = sq;
+                            this.dragPiece = piece;
+                            this.selectedSquare = sq;
+                            this.legalMoves = this.game.moves({ square: sq, verbose: true });
+                            this.mousePos = { x, y };
+                        }
+                    }
+                }
+                
+                if (this.isDragging) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.mousePos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+                    this.draw();
+                }
+            }
+        }
+    }
+    
+    handleTouchEnd(e) {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        
+        if (this.touchMoved && this.isDragging) {
+            // Was dragging - complete the move
+            const rect = this.canvas.getBoundingClientRect();
+            const sq = this.canvasToSquare(touch.clientX - rect.left, touch.clientY - rect.top);
+            
+            if (sq && sq !== this.dragStartSquare) {
+                this.onDropPiece(this.dragStartSquare, sq);
+            }
+            
+            this.isDragging = false;
+            this.dragPiece = null;
+            this.dragStartSquare = null;
+            this.legalMoves = [];
+            this.draw();
+        } else {
+            // Tap - treat as click for selection
+            const rect = this.canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            const sq = this.canvasToSquare(x, y);
+            
+            if (sq && this.isUserTurn) {
+                // If already selected a piece and tapping a legal move target
+                if (this.selectedSquare && this.legalMoves.some(m => m.to === sq)) {
+                    this.onDropPiece(this.selectedSquare, sq);
+                    this.selectedSquare = null;
+                    this.legalMoves = [];
+                    this.draw();
+                } else {
+                    // Select a piece
+                    const piece = this.game.get(sq);
+                    if (piece && piece.color === this.game.turn()) {
+                        this.selectedSquare = sq;
+                        this.legalMoves = this.game.moves({ square: sq, verbose: true });
+                        this.draw();
+                    } else if (this.selectedSquare) {
+                        // Deselect if tapping elsewhere
+                        this.selectedSquare = null;
+                        this.legalMoves = [];
+                        this.draw();
+                    }
+                }
+            }
+        }
+        
+        this.touchStartPos = null;
+        this.touchMoved = false;
     }
 
     handleMouseDown(e) {
@@ -557,14 +733,20 @@ class ChessPuzzleGame {
         }
     }
 
-    handleResize() {
+    handleResize(force = false) {
         const parent = this.canvas.parentElement;
         if (parent) {
-            const size = Math.min(parent.clientWidth - 40, 640);
-            this.canvas.width = size;
-            this.canvas.height = size;
-            this.canvasSize = size;
-            this.squareSize = size / 8;
+            const parentWidth = parent.clientWidth;
+            // Only resize if width changed significantly (> 50px) or forced
+            const widthDiff = Math.abs(parentWidth - this.lastParentWidth);
+            if (!force && widthDiff < 50) return;
+            this.lastParentWidth = parentWidth;
+            
+            const maxSize = Math.min(parentWidth - 20, 440);
+            this.canvas.width = maxSize;
+            this.canvas.height = maxSize;
+            this.canvasSize = maxSize;
+            this.squareSize = maxSize / 8;
             this.draw();
         }
     }

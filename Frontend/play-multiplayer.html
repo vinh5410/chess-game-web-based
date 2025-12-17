@@ -7,14 +7,14 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
     <link rel="stylesheet" href="./styles/index.css">
-    <link rel="stylesheet" href="./styles/navbar.css">
     <link rel="stylesheet" href="./styles/play-multiplayer.css">
     <link rel="stylesheet" href="./styles/promote-ui.css">
+    <link rel="stylesheet" href="./styles/navbar.css">
 </head>
 <body>
     
@@ -28,10 +28,10 @@
             </a>
             
             <ul class="navbar-menu">
-                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i> Multiplayer</a></li>
-                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i> VS Bot</a></li>
-                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i> Puzzles</a></li>
-                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i> Rankings</a></li>
+                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i><span class="nav-text"> Multiplayer</span></a></li>
+                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i><span class="nav-text"> VS Bot</span></a></li>
+                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i><span class="nav-text"> Puzzles</span></a></li>
+                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i><span class="nav-text"> Rankings</span></a></li>
             </ul>
             
             <div class="navbar-actions">
@@ -246,10 +246,12 @@
                     </div>
 
                     <!-- Replay Controls -->
-                    <div id="replayControls" style="display:block; margin-top:10px; text-align:center;">
-                        <button id="prevStepBtn" class="control-btn">⬅️</button>
-                        <span id="stepInfo">Bàn cờ ban đầu</span>
-                        <button id="nextStepBtn" class="control-btn">➡️</button>
+                    <div id="replayControls" class="replay-controls" style="display:block; margin-top:10px;">
+                        <button id="firstStepBtn"><i class="fa-solid fa-backward-fast"></i></button>
+                        <button id="prevStepBtn"><i class="fa-solid fa-backward-step"></i></button>
+                        <span class="move-info" id="stepInfo">0/0</span>
+                        <button id="nextStepBtn"><i class="fa-solid fa-forward-step"></i></button>
+                        <button id="lastStepBtn"><i class="fa-solid fa-forward-fast"></i></button>
                     </div>
                     <!-- Game Over Overlay (single instance) -->
                     <div id="gameOverOverlay" class="game-over hidden">
@@ -278,10 +280,17 @@
             <!-- Right Sidebar: Chat -->
             <div class="game-sidebar-right">
                 <div class="chat-panel glass-panel">
-                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-welcome">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <p>Chat with your opponent. Be respectful!</p>
+                        </div>
+                    </div>
                     <div class="chat-input-wrapper">
                         <input type="text" id="chatInput" placeholder="Type a message..." maxlength="200" />
-                        <button onclick="sendMessage()" class="send-btn">Send</button>
+                        <button onclick="sendMessage()" class="send-btn">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -323,3 +332,5 @@
     <script src="./js/play-multiplayer.js"></script>
 </body>
 </html>
+
+

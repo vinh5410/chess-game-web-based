@@ -37,7 +37,11 @@ class ChessCanvasVsBot {
         this.pieceImages = {};
         this.imagesLoaded = false;
         this.playerColor = 'white'; // 'white' or 'black'
-        this.selectedPlayerColor = null; // Chosen color before game starts        
+        this.selectedPlayerColor = null; // Chosen color before game starts
+        
+        // Promotion UI
+        this.promotionUI = null;
+        
         // API Cache
         this.apiCache = new Map();
         this.maxCacheSize = 100;
@@ -46,6 +50,10 @@ class ChessCanvasVsBot {
         this.playerTopInfoEl = null;
         this.playerBottomInfoEl = null;
         this.chessboardContainerEl = null;
+        
+        // Render optimization
+        this.needsRender = false;
+        this.renderScheduled = false;
         
         this.viewStep = 0;
         this.initPromise = this.init();
@@ -78,6 +86,11 @@ class ChessCanvasVsBot {
         if (this.chessboardContainerEl) {
             this.playerTopInfoEl = this.chessboardContainerEl.querySelector('.player-info.player-top');
             this.playerBottomInfoEl = this.chessboardContainerEl.querySelector('.player-info.player-bottom');
+        }
+
+        // Initialize Promotion UI
+        if (typeof PromotionUI !== 'undefined') {
+            this.promotionUI = new PromotionUI(this.game, this.pieceImages, this.isFlipped);
         }
 
         // Setup event listeners
@@ -141,13 +154,67 @@ class ChessCanvasVsBot {
     }
     
     setupEventListeners() {
+        // Mouse events (desktop only)
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
         this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
         this.canvas.addEventListener('click', this.onClick.bind(this));
         this.canvas.addEventListener('contextmenu', e => e.preventDefault());
         
+        // Touch events for mobile
+        this.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
+        this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
+        this.canvas.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: false });
+        
         window.addEventListener('resize', this.handleResize.bind(this));
+    }
+    
+    // Touch event handlers
+    onTouchStart(e) {
+        e.preventDefault();
+        if (e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        this.touchStartPos = { x: touch.clientX, y: touch.clientY };
+        this.touchMoved = false;
+        this.touchStartTime = Date.now();
+    }
+    
+    onTouchMove(e) {
+        e.preventDefault();
+        if (e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        
+        // Check if finger moved significantly
+        if (this.touchStartPos) {
+            const dx = touch.clientX - this.touchStartPos.x;
+            const dy = touch.clientY - this.touchStartPos.y;
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                // Start dragging if not already
+                if (!this.touchMoved) {
+                    this.touchMoved = true;
+                    this.onMouseDown({ clientX: this.touchStartPos.x, clientY: this.touchStartPos.y });
+                }
+                this.onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+            }
+        }
+    }
+    
+    onTouchEnd(e) {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        
+        if (this.touchMoved && this.isDragging) {
+            // Was dragging - complete the move
+            this.onMouseUp({ clientX: touch.clientX, clientY: touch.clientY });
+        } else {
+            // Tap - treat as click
+            this.onClick({ clientX: touch.clientX, clientY: touch.clientY });
+        }
+        
+        this.touchStartPos = null;
+        this.touchMoved = false;
     }
     
     handleResize() {
@@ -286,11 +353,45 @@ class ChessCanvasVsBot {
     
     tryMove(from, to) {
         if (this.viewStep !== this.game.history({ verbose: true }).length) return false;
+        
+        // Check if this is a promotion move
+        const moves = this.game.moves({ square: from, verbose: true });
+        const promotionMove = moves.find(m => m.to === to && m.promotion);
+        
+        if (promotionMove && this.promotionUI) {
+            // Clear selection highlights before showing promotion UI
+            this.selectedSquare = null;
+            this.legalMoves = [];
+            this.draw();
+            
+            // Show promotion UI
+            const color = this.playerColor === 'white' ? 'w' : 'b';
+            this.promotionUI.showPromotionDialog(from, to, color, (selectedPiece) => {
+                try {
+                    const move = this.game.move({
+                        from,
+                        to,
+                        promotion: selectedPiece
+                    });
+                    
+                    if (move) {
+                        console.log('✅ Player move:', move.san);
+                        this.selectedSquare = null;
+                        this.legalMoves = [];
+                        this.onMove(move);
+                    }
+                } catch (error) {
+                    console.log('❌ Invalid promotion move');
+                }
+            }, this.canvas, this.isFlipped);
+            return true;
+        }
+        
         try {
             const move = this.game.move({
                 from,
                 to,
-                promotion: 'q'
+                promotion: 'q' // Default promotion if UI not available
             });
             
             if (move) {
@@ -306,8 +407,9 @@ class ChessCanvasVsBot {
     
     onMove(move) {
         this.draw();
-        this.updateGameStatus();
+        this.updateGameStatus('🤖 Bot is thinking...');
         this.viewStep = this.game.history({ verbose: true }).length;
+        updateMoveHistoryUI();
         if (this.checkGameOver()) {
             return;
         }
@@ -316,8 +418,18 @@ class ChessCanvasVsBot {
         setTimeout(() => this.makeBotMove(), 750);
     }
     
-    // Drawing methods
+    // Drawing methods - use requestAnimationFrame to prevent flickering
     draw() {
+        if (this.renderScheduled) return;
+        this.renderScheduled = true;
+        
+        requestAnimationFrame(() => {
+            this.renderScheduled = false;
+            this._doDraw();
+        });
+    }
+    
+    _doDraw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
         this.drawBoard();
@@ -343,22 +455,30 @@ class ChessCanvasVsBot {
     }
     
     drawCoordinates() {
-        this.ctx.font = '12px Arial';
+        const fontSize = Math.max(12, Math.floor(this.squareSize / 5));
+        this.ctx.font = `bold ${fontSize}px Arial`;
+        this.ctx.textBaseline = 'bottom';
         
+        // Draw letters (a-h) at bottom of each file
         for (let file = 0; file < 8; file++) {
-            const letter = String.fromCharCode(97 + file);
-            const x = file * this.squareSize + 5;
-            const y = 8 * this.squareSize - 5;
-            const isDark = file % 2 === 0;
+            const letter = this.isFlipped 
+                ? String.fromCharCode(104 - file)  // h to a when flipped
+                : String.fromCharCode(97 + file);  // a to h normally
+            const x = file * this.squareSize + 2;
+            const y = 8 * this.squareSize - 2;
+            // Bottom row: when not flipped, rank 1 (index 7), a1 is light (file+rank=0+0=even)
+            const isDark = (file + 7) % 2 === 0;
             this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
             this.ctx.fillText(letter, x, y);
         }
         
+        // Draw numbers (1-8) at right of each rank
+        this.ctx.textBaseline = 'top';
         for (let rank = 0; rank < 8; rank++) {
             const number = this.isFlipped ? rank + 1 : 8 - rank;
-            const x = 8 * this.squareSize - 15;
-            const y = rank * this.squareSize + 15;
-            const isDark = rank % 2 === 1;
+            const x = this.canvas.width - fontSize + 2;
+            const y = rank * this.squareSize + 2;
+            const isDark = (7 + rank) % 2 === 0;
             this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
             this.ctx.fillText(number, x, y);
         }
@@ -499,6 +619,7 @@ class ChessCanvasVsBot {
             this.draw();
             this.updateGameStatus();
             this.viewStep = this.game.history({ verbose: true }).length;
+            updateMoveHistoryUI();
             
             if (this.checkGameOver()) {
                 return;
@@ -506,6 +627,7 @@ class ChessCanvasVsBot {
             
             this.isPlayerTurn = true;
             this.isThinking = false;
+            this.updateGameStatus('👤 Your turn');
             
         } catch (error) {
             console.error('❌ Bot move error:', error);
@@ -722,6 +844,9 @@ class ChessCanvasVsBot {
         
         this.draw();
         
+        // Initialize move history UI
+        updateMoveHistoryUI();
+        
         // Swap player info bars if flipped (when playing black)
         this.updatePlayerInfoPosition();;
         
@@ -771,17 +896,16 @@ class ChessCanvasVsBot {
             }
         }
         
-        // Update old UI elements for compatibility
+        // Update panel title and subtitle (new UI matching multiplayer)
         const botLevelInfo = document.getElementById('botLevelInfo');
         if (botLevelInfo) {
-            botLevelInfo.innerHTML = `Playing vs Bot Level ${difficulty} ${this.getDifficultyEmoji(difficulty)}`;
+            botLevelInfo.textContent = `Bot Lv.${difficulty} ${this.getDifficultyEmoji(difficulty)}`;
         }
         
         const playerColorInfo = document.getElementById('playerColorInfo');
         if (playerColorInfo) {
-            const colorIcon = playerColor === 'white' ? '♔' : '♚';
             const colorName = playerColor.charAt(0).toUpperCase() + playerColor.slice(1);
-            playerColorInfo.innerHTML = `You are ${colorName} ${colorIcon}`;
+            playerColorInfo.textContent = colorName;
         }
         
         if (playerColor === 'white') {
@@ -843,32 +967,56 @@ class ChessCanvasVsBot {
         const gameStatus = document.getElementById('gameStatus');
         if (!gameStatus) return;
 
-        if (customMessage) {
-            gameStatus.textContent = customMessage;
-            return;
-        }
-
         if (this.gameOver) return;
         
         let status = '';
         
+        // Check for special game states first
+        try {
+            if (this.game.isCheckmate()) {
+                const loser = this.game.turn() === 'w' ? 'White' : 'Black';
+                status = `♚ Checkmate! ${loser} loses!`;
+                gameStatus.textContent = status;
+                return;
+            }
+            
+            if (this.game.isStalemate()) {
+                status = '🤝 Stalemate! Draw!';
+                gameStatus.textContent = status;
+                return;
+            }
+            
+            if (this.game.isDraw()) {
+                status = '🤝 Draw!';
+                gameStatus.textContent = status;
+                return;
+            }
+        } catch (error) {
+            // Ignore
+        }
+
+        if (customMessage) {
+            // Add check warning to custom message if in check
+            try {
+                if (this.game.inCheck()) {
+                    customMessage += ' ⚠️ Check!';
+                }
+            } catch (error) {}
+            gameStatus.textContent = customMessage;
+            return;
+        }
+        
         if (this.isThinking) {
             status = '🤖 Bot is thinking...';
-            if (this.botDifficulty >= 5) {
-                status += ' (Using Lichess API)';
-            } else {
-                status += ' (Rule-based)';
-            }
         } else if (this.isPlayerTurn) {
-            status = '👤 Your turn - Click to move';
+            status = '👤 Your turn';
         } else {
             status = '🤖 Bot\'s turn';
         }
         
         try {
             if (this.game.inCheck()) {
-                const turn = this.game.turn() === 'w' ? 'White' : 'Black';
-                status += ` - ${turn} is in check! ⚠️`;
+                status += ' ⚠️ Check!';
             }
         } catch (error) {
             // Ignore
@@ -991,11 +1139,20 @@ function backToDifficultyMenu() {
 }
 
 function backToMenu() {
+    // Remove game-active class from body
+    document.body.classList.remove('game-active');
+    
+    // Hide game elements
+    const sidebar = document.getElementById('gameSidebarLeft');
+    const sidebarRight = document.getElementById('gameSidebarRight');
+    const gameCenter = document.getElementById('gameCenter');
+    if (sidebar) sidebar.style.display = 'none';
+    if (sidebarRight) sidebarRight.style.display = 'none';
+    if (gameCenter) gameCenter.style.display = 'none';
+    
     document.getElementById('mainMenu').classList.add('hidden');      // Thay đổi: Luôn ẩn Main Menu
     document.getElementById('colorMenu').classList.remove('hidden');  // Thay đổi: Hiện Color Menu
     document.getElementById('difficultyMenu').classList.add('hidden');
-    document.getElementById('gameControls').classList.add('hidden');
-    document.getElementById('chessboardContainer').classList.add('hidden');
     document.getElementById('gameOverOverlay').classList.add('hidden');
     
     document.getElementById('gameStatus').textContent = 'Choose game mode to start';
@@ -1023,9 +1180,19 @@ async function startBotGame(difficulty) {
         return;
     }
     
+    // Hide menu
     document.getElementById('difficultyMenu').classList.add('hidden');
-    document.getElementById('gameControls').classList.remove('hidden');
-    document.getElementById('chessboardContainer').classList.remove('hidden');
+    
+    // Add class to body for layout switching
+    document.body.classList.add('game-active');
+    
+    // Show game screen (sidebar + board + right sidebar)
+    const sidebar = document.getElementById('gameSidebarLeft');
+    const sidebarRight = document.getElementById('gameSidebarRight');
+    const gameCenter = document.getElementById('gameCenter');
+    if (sidebar) sidebar.style.display = 'flex';
+    if (sidebarRight) sidebarRight.style.display = 'flex';
+    if (gameCenter) gameCenter.style.display = 'flex';
     
     await gameInstance.startGame(difficulty, selectedColor);
 }
@@ -1041,6 +1208,192 @@ function flipBoard() {
     if (gameInstance) {
         gameInstance.flipBoard();
     }
+}
+
+// Move History Navigation Functions
+function goToFirstMove() {
+    if (!gameInstance || !gameInstance.gameStarted && !gameInstance.gameOver) return;
+    gameInstance.viewStep = 0;
+    drawBoardAtStep(0);
+    updateMoveHistoryUI();
+}
+
+function goToPrevMove() {
+    if (!gameInstance || !gameInstance.gameStarted && !gameInstance.gameOver) return;
+    if (gameInstance.viewStep > 0) {
+        gameInstance.viewStep--;
+        drawBoardAtStep(gameInstance.viewStep);
+        updateMoveHistoryUI();
+    }
+}
+
+function goToNextMove() {
+    if (!gameInstance || !gameInstance.gameStarted && !gameInstance.gameOver) return;
+    const history = gameInstance.game.history({ verbose: true });
+    if (gameInstance.viewStep < history.length) {
+        gameInstance.viewStep++;
+        drawBoardAtStep(gameInstance.viewStep);
+        updateMoveHistoryUI();
+    }
+}
+
+function goToLastMove() {
+    if (!gameInstance || !gameInstance.gameStarted && !gameInstance.gameOver) return;
+    const history = gameInstance.game.history({ verbose: true });
+    gameInstance.viewStep = history.length;
+    drawBoardAtStep(gameInstance.viewStep);
+    updateMoveHistoryUI();
+}
+
+function goToMove(step) {
+    if (!gameInstance || !gameInstance.gameStarted && !gameInstance.gameOver) return;
+    const history = gameInstance.game.history({ verbose: true });
+    if (step >= 0 && step <= history.length) {
+        gameInstance.viewStep = step;
+        drawBoardAtStep(step);
+        updateMoveHistoryUI();
+    }
+}
+
+function drawBoardAtStep(step) {
+    if (!gameInstance) return;
+    
+    const history = gameInstance.game.history({ verbose: true });
+    
+    // Create a new game to replay to the desired step
+    const tempGame = new window.Chess();
+    for (let i = 0; i < step; i++) {
+        if (history[i]) {
+            tempGame.move(history[i].san);
+        }
+    }
+    
+    // Draw the board at this state
+    const ctx = gameInstance.ctx;
+    const squareSize = gameInstance.squareSize;
+    const isFlipped = gameInstance.isFlipped;
+    
+    // Clear and draw board
+    ctx.clearRect(0, 0, gameInstance.canvas.width, gameInstance.canvas.height);
+    
+    // Draw board squares
+    for (let rank = 0; rank < 8; rank++) {
+        for (let file = 0; file < 8; file++) {
+            const isLight = (rank + file) % 2 === 0;
+            const color = isLight ? gameInstance.lightSquareColor : gameInstance.darkSquareColor;
+            ctx.fillStyle = color;
+            ctx.fillRect(file * squareSize, rank * squareSize, squareSize, squareSize);
+        }
+    }
+    
+    // Highlight last move if viewing a step > 0
+    if (step > 0 && history[step - 1]) {
+        const lastMove = history[step - 1];
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
+        
+        // Highlight from square
+        const fromFile = lastMove.from.charCodeAt(0) - 97;
+        const fromRank = parseInt(lastMove.from[1]) - 1;
+        const fromX = fromFile * squareSize;
+        const fromY = isFlipped ? fromRank * squareSize : (7 - fromRank) * squareSize;
+        ctx.fillRect(fromX, fromY, squareSize, squareSize);
+        
+        // Highlight to square
+        const toFile = lastMove.to.charCodeAt(0) - 97;
+        const toRank = parseInt(lastMove.to[1]) - 1;
+        const toX = toFile * squareSize;
+        const toY = isFlipped ? toRank * squareSize : (7 - toRank) * squareSize;
+        ctx.fillRect(toX, toY, squareSize, squareSize);
+    }
+    
+    // Draw coordinates
+    ctx.font = '12px Arial';
+    for (let file = 0; file < 8; file++) {
+        const letter = String.fromCharCode(97 + file);
+        const x = file * squareSize + 5;
+        const y = 8 * squareSize - 5;
+        const isDark = file % 2 === 0;
+        ctx.fillStyle = isDark ? gameInstance.darkSquareColor : gameInstance.lightSquareColor;
+        ctx.fillText(letter, x, y);
+    }
+    for (let rank = 0; rank < 8; rank++) {
+        const number = isFlipped ? rank + 1 : 8 - rank;
+        const x = 8 * squareSize - 15;
+        const y = rank * squareSize + 15;
+        const isDark = rank % 2 === 1;
+        ctx.fillStyle = isDark ? gameInstance.darkSquareColor : gameInstance.lightSquareColor;
+        ctx.fillText(number, x, y);
+    }
+    
+    // Draw pieces from temp game state
+    const board = tempGame.board();
+    for (let rank = 0; rank < 8; rank++) {
+        for (let file = 0; file < 8; file++) {
+            const boardRank = isFlipped ? 7 - rank : rank;
+            const piece = board[boardRank][file];
+            if (!piece) continue;
+            
+            const x = file * squareSize;
+            const y = rank * squareSize;
+            const pieceKey = piece.color + piece.type.toUpperCase();
+            
+            if (gameInstance.imagesLoaded && gameInstance.pieceImages[pieceKey] && gameInstance.pieceImages[pieceKey].complete) {
+                ctx.drawImage(
+                    gameInstance.pieceImages[pieceKey],
+                    x + 4, y + 4,
+                    squareSize - 8,
+                    squareSize - 8
+                );
+            }
+        }
+    }
+}
+
+function updateMoveHistoryUI() {
+    if (!gameInstance) return;
+    
+    const history = gameInstance.game.history({ verbose: true });
+    const currentStep = gameInstance.viewStep;
+    
+    // Update position display
+    const positionEl = document.getElementById('historyPosition');
+    if (positionEl) {
+        positionEl.textContent = `${currentStep}/${history.length}`;
+    }
+    
+    // Update move list
+    const listEl = document.getElementById('moveHistoryList');
+    if (!listEl) return;
+    
+    if (history.length === 0) {
+        listEl.innerHTML = '<p class="no-moves-msg">No moves yet</p>';
+        return;
+    }
+    
+    let html = '';
+    for (let i = 0; i < history.length; i += 2) {
+        const moveNum = Math.floor(i / 2) + 1;
+        const whiteMove = history[i];
+        const blackMove = history[i + 1];
+        
+        const whiteClass = (i + 1 === currentStep) ? 'current' : '';
+        const blackClass = (i + 2 === currentStep) ? 'current' : '';
+        
+        html += `<div class="move-row ${(i + 1 === currentStep || i + 2 === currentStep) ? 'active' : ''}">`;
+        html += `<span class="move-number">${moveNum}.</span>`;
+        html += `<span class="move-white ${whiteClass}" onclick="goToMove(${i + 1})">${whiteMove.san}</span>`;
+        if (blackMove) {
+            html += `<span class="move-black ${blackClass}" onclick="goToMove(${i + 2})">${blackMove.san}</span>`;
+        } else {
+            html += `<span class="move-black"></span>`;
+        }
+        html += '</div>';
+    }
+    
+    listEl.innerHTML = html;
+    
+    // Scroll to bottom to show latest moves
+    listEl.scrollTop = listEl.scrollHeight;
 }
 
 // Initialize when DOM is ready
@@ -1082,5 +1435,22 @@ document.addEventListener('keydown', (e) => {
     
     if (e.key === 'f' || e.key === 'F') {
         flipBoard();
+    }
+    
+    // Move history navigation with arrow keys
+    if (e.key === 'ArrowLeft') {
+        goToPrevMove();
+    }
+    
+    if (e.key === 'ArrowRight') {
+        goToNextMove();
+    }
+    
+    if (e.key === 'ArrowUp' || e.key === 'Home') {
+        goToFirstMove();
+    }
+    
+    if (e.key === 'ArrowDown' || e.key === 'End') {
+        goToLastMove();
     }
 });
