@@ -1,156 +1,44 @@
-/* --- RESET & VARIABLES --- */
-:root {
-    --bg-dark: #0f172a;
-    --bg-card: rgba(30, 41, 59, 0.6); /* Giảm opacity để background hòa trộn tốt hơn */
-    --primary: #d4af37;
-    --primary-hover: #f1c40f;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-    --glow-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
-    --font-heading: 'Cinzel', serif;
-    --font-body: 'Inter', sans-serif;
-    
-    /* Kích thước Navbar */
-    --nav-height: 70px; 
-}
+/* =========================================
+   INDEX.CSS - Home Page Specific Styles
+   Note: Variables, reset, background from common.css
+========================================= */
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
+/* Override body for index page */
 body {
-    font-family: var(--font-body);
-    background-color: var(--bg-dark);
-    color: var(--text-main);
-    /* KEY CHANGE: Khóa scroll và set full chiều cao */
     height: 100vh;
-    overflow: hidden; 
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
-/* --- BACKGROUND EFFECTS --- */
-.bg-gradient, .bg-blur {
-    position: absolute; /* Đổi thành absolute vì body đã full screen */
-    top: 0; left: 0; width: 100%; height: 100%;
-    z-index: -1;
-    pointer-events: none;
-}
-
-.bg-gradient {
-    background: radial-gradient(circle at 80% 20%, #1e3a8a, transparent 50%),
-                radial-gradient(circle at 20% 80%, #331d2c, transparent 50%);
-}
-.bg-blur { backdrop-filter: blur(80px); }
-
-a { text-decoration: none; color: inherit; transition: 0.3s; }
-ul { list-style: none; }
-
-/* --- NAVBAR (Compact) --- */
-.navbar {
-    height: var(--nav-height); /* Chiều cao cố định */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(12px);
-    border-bottom: var(--glass-border);
-    flex-shrink: 0; /* Không bị co lại */
-    z-index: 100;
-}
-
-.navbar-container {
-    width: 90%;
-    max-width: 1400px; /* Mở rộng chiều ngang để thoáng hơn */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.navbar-brand {
-    font-family: var(--font-heading);
-    font-size: 1.5rem; /* Giảm nhẹ size */
-    font-weight: 700;
-    color: var(--primary);
-    display: flex; align-items: center; gap: 10px;
-}
-
-.navbar-menu { display: flex; gap: 2rem; }
-.navbar-menu a {
-    font-size: 1.3rem;
-    color: var(--text-muted);
-    font-weight: 500;
-    display: flex; align-items: center; gap: 7px;
-}
-.navbar-menu a:hover { color: var(--text-main); text-shadow: 0 0 8px rgba(255,255,255,0.3); }
-
-/* Buttons & User Menu (Giữ nguyên logic, chỉ chỉnh size) */
-.btn {
-    padding: 0.5rem 1.2rem;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-/* Login button – nền tối nhẹ (Cách 1) */
-.btn-secondary {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: var(--text-main);
-    margin-right: 8px;
-}
-
-.btn-secondary:hover {
-    background: rgba(15, 23, 42, 0.8);
-    border-color: var(--text-main);
-}
-
-.btn-primary { background: linear-gradient(135deg, var(--primary), #b8860b); color: #0f172a; border: none; }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4); }
-
-.user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.05); border: var(--glass-border); }
-.user-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--primary); }
-.dropdown { position: relative; }
-.dropdown-menu {
-    position: absolute; top: 120%; right: 0; background: #1e293b; width: 180px;
-    border-radius: 8px; border: var(--glass-border); padding: 8px; display: none; flex-direction: column;
-}
-.dropdown:hover .dropdown-menu { display: flex; }
-.dropdown-item { padding: 8px; border-radius: 4px; color: var(--text-muted); font-size: 0.85rem; }
-.dropdown-item:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
-.dropdown-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
-.text-danger { color: #ef4444 !important; }
-
-/* --- HERO SECTION (Auto Fill Height) --- */
+/* --- HERO SECTION --- */
 #hero {
-    /* KEY CHANGE: Chiếm toàn bộ phần còn lại của màn hình */
-    flex: 1; 
+    flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Căn giữa theo chiều dọc */
+    justify-content: center;
     align-items: center;
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 1rem 2rem; /* Padding nhỏ để không bị sát viền */
-    overflow: hidden; /* Chặn scroll con */
+    padding: 1rem 2rem;
+    overflow: hidden;
 }
 
-/* Header Compact */
 .hero-content {
     text-align: center;
-    margin-bottom: 2rem; /* Giảm khoảng cách tới thẻ card */
+    margin-bottom: 2rem;
     flex-shrink: 0;
 }
 
 .hero-content h1 {
     font-family: var(--font-heading);
-    font-size: 3rem; /* Giảm size một chút để vừa vặn */
+    font-size: 3rem;
     margin: 0;
     background: linear-gradient(to right, #fff, #94a3b8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     line-height: 1.2;
 }
 
@@ -163,51 +51,52 @@ ul { list-style: none; }
     margin-top: 0.5rem;
 }
 
-/* --- CARDS (Fit Screen) --- */
+/* --- CARDS GRID --- */
 .card-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr); /* Chia đều 2 hàng */
-    gap: 1.5rem; /* Giảm gap */
+    grid-template-rows: repeat(2, 1fr);
+    gap: 1.5rem;
     width: 100%;
-    height: 100%; /* Fill chiều cao còn lại của hero */
-    max-height: 550px; /* Giới hạn chiều cao tối đa để card không bị kéo quá dài trên màn hình lớn */
+    height: 100%;
+    max-height: 550px;
 }
 
 .card {
     background: var(--bg-card);
     backdrop-filter: blur(16px);
     border: var(--glass-border);
-    border-radius: 12px;
-    padding: 1.5rem; /* Giảm padding */
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
     text-align: left;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
     display: flex;
-    flex-direction: row; /* Chuyển icon sang ngang để tiết kiệm chiều dọc */
+    flex-direction: row;
     align-items: center;
     gap: 1.5rem;
 }
 
-/* Hover Effects */
 .card:hover {
-    transform: scale(1.02); /* Scale nhẹ thay vì đẩy lên để tránh vỡ layout */
+    transform: scale(1.02);
     background: rgba(30, 41, 59, 0.8);
     border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-/* Card Styling - Compact Mode */
 .card-icon {
-    font-size: 2.5rem; /* Icon nhỏ hơn */
+    font-size: 2.5rem;
     color: var(--text-muted);
     transition: 0.3s;
-    min-width: 60px; /* Cố định chiều rộng icon */
+    min-width: 60px;
     text-align: center;
 }
 
-.card:hover .card-icon { color: var(--primary); transform: rotate(10deg); }
+.card:hover .card-icon {
+    color: var(--primary);
+    transform: rotate(10deg);
+}
 
 .card-content {
     display: flex;
@@ -221,6 +110,8 @@ ul { list-style: none; }
     font-size: 1.4rem;
     margin-bottom: 0.3rem;
     color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .card p {
@@ -229,7 +120,7 @@ ul { list-style: none; }
     line-height: 1.4;
     margin-bottom: 0.8rem;
     display: -webkit-box;
-    -webkit-line-clamp: 2; /* Chỉ hiện tối đa 2 dòng */
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -242,28 +133,52 @@ ul { list-style: none; }
     font-weight: 600;
     font-size: 0.8rem;
     transition: 0.2s;
-    margin-top: auto; /* Đẩy nút xuống dưới cùng nếu cần */
+    margin-top: auto;
 }
-.btn-card:hover { gap: 12px; color: var(--primary-hover); }
 
-/* --- RESPONSIVE SAFETY NET --- */
-/* Nếu màn hình quá lùn (ví dụ điện thoại xoay ngang), buộc phải cho scroll để không vỡ */
+.btn-card:hover {
+    gap: 12px;
+    color: var(--primary-hover);
+}
+
+/* --- RESPONSIVE --- */
 @media (max-height: 700px) {
-    body { height: auto; overflow-y: auto; }
-    #hero { height: auto; padding: 2rem; display: block; }
-    .card-container { display: grid; height: auto; max-height: none; }
-    .card { margin-bottom: 1rem; }
+    body {
+        height: auto;
+        overflow-y: auto;
+    }
+    #hero {
+        height: auto;
+        padding: 2rem;
+        display: block;
+    }
+    .card-container {
+        display: grid;
+        height: auto;
+        max-height: none;
+    }
+    .card {
+        margin-bottom: 1rem;
+    }
 }
 
-/* Mobile Portrait */
 @media (max-width: 768px) {
-    body { height: auto; overflow-y: auto; }
-    .navbar-menu { display: none; } 
-    #hero { height: auto; padding: 2rem 1rem; margin-top: 0; }
+    body {
+        height: auto;
+        overflow-y: auto;
+    }
+    #hero {
+        height: auto;
+        padding: 2rem 1rem;
+        margin-top: 0;
+    }
     .card-container {
-        grid-template-columns: 1fr; /* 1 cột */
+        grid-template-columns: 1fr;
         grid-template-rows: auto;
         max-height: none;
     }
-    .hero-content h1 { font-size: 2.2rem; margin-top: 2rem;}
+    .hero-content h1 {
+        font-size: 2.2rem;
+        margin-top: 2rem;
+    }
 }

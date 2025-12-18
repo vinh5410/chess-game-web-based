@@ -2,7 +2,9 @@
    NAVBAR VARIABLES
 ========================= */
 :root {
-    --nav-height: 70px;
+    --nav-height: 56px;
+    --font-heading: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
 }
 
 /* =========================
@@ -10,15 +12,16 @@
 ========================= */
 .navbar {
     height: var(--nav-height);
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     justify-content: center;
     align-items: center;
     position: sticky;
     top: 0;
     z-index: 1000;
+    font-family: var(--font-body);
 }
 
 .navbar-container {
@@ -31,26 +34,27 @@
 
 /* Brand */
 .navbar-brand {
-    font-family: 'Cinzel', serif;
-    font-size: 1.5rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--primary);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 /* Menu */
 .navbar-menu {
     display: flex;
-    gap: 2rem;
+    gap: 1.5rem;
 }
 
 .navbar-menu a {
-    font-size: 1.3rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
     color: var(--text-muted);
     font-weight: 500;
-    display: flex; align-items: center; gap: 7px;
+    display: flex; align-items: center; gap: 6px;
 }
 .navbar-menu a:hover { color: var(--text-main); text-shadow: 0 0 8px rgba(255,255,255,0.3); }
 
@@ -58,7 +62,13 @@
 .navbar-actions {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+}
+
+/* Hide authenticated user menu by default to prevent flicker
+   JS will show it after auth check */
+#user-menu {
+    display: none;
 }
 
 /* =========================
@@ -67,8 +77,8 @@
 .user-info {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.4rem 1rem;
+    gap: 0.5rem;
+    padding: 0.3rem 0.75rem;
     background: rgba(255,255,255,0.05);
     border-radius: 20px;
     cursor: pointer;
@@ -76,8 +86,8 @@
 }
 
 .user-avatar {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     border: 2px solid var(--primary);
 }
@@ -100,13 +110,13 @@
 
 .dropdown-menu {
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + 4px);
     right: 0;
     background: #1e293b;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.08);
-    min-width: 180px;
-    padding: 0.5rem 0;
+    min-width: 160px;
+    padding: 0.4rem 0;
     display: none;
     opacity: 0;
     transform: translateY(-10px);
@@ -126,6 +136,14 @@
     padding: 0.75rem 1.25rem;
     color: var(--text-muted);
     font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dropdown-item i {
+    width: 18px;
+    text-align: center;
 }
 
 .dropdown-item:hover {
@@ -143,21 +161,194 @@
    MOBILE
 ========================= */
 @media (max-width: 768px) {
+    .navbar {
+        height: 50px;
+    }
+    
+    .navbar-brand {
+        font-size: 1rem;
+        gap: 6px;
+    }
+    
+    .navbar-brand i {
+        font-size: 1rem;
+    }
+    
+    /* Show menu as icons only on mobile */
     .navbar-menu {
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    .navbar-menu a {
+        font-size: 1.1rem;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .navbar-menu a:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Hide text, show only icons */
+    .navbar-menu a span,
+    .navbar-menu .nav-text {
         display: none;
     }
+    
+    .user-info {
+        padding: 0.25rem 0.5rem;
+        gap: 0.4rem;
+    }
+    
+    .user-avatar {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .username {
+        display: none;
+    }
+    
+    .user-info .fa-chevron-down {
+        font-size: 0.6rem;
+    }
 
+    /* Keep dropdown attached to user icon, not centered */
     .dropdown-menu {
-        position: fixed;
-        left: 1rem;
-        right: 1rem;
-        max-width: 300px;
-        margin: auto;
+        position: absolute;
+        right: 0;
+        left: auto;
+        min-width: 150px;
+        max-width: 200px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 400px) {
+    .navbar-menu {
+        gap: 0.4rem;
+    }
+    
+    .navbar-menu a {
+        padding: 5px 6px;
+        font-size: 1rem;
+    }
+    
+    .navbar-brand span {
+        display: none;
     }
 }
 
 #auth-buttons {
-    display: flex;
+    display: none; /* hidden by default to prevent flicker; JS will show when logged out */
     align-items: center;
-    gap: 0.75rem; /* chỉnh khoảng cách tại đây */
+    gap: 0.75rem;
+    position: relative;
 }
+
+#auth-buttons .btn {
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+#auth-buttons .btn-secondary {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-muted);
+}
+
+#auth-buttons .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+}
+
+#auth-buttons .btn-primary {
+    background: var(--primary);
+    color: #000;
+}
+
+#auth-buttons .btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+/* Auth icon trigger - hidden on desktop */
+.auth-icon-trigger {
+    display: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.auth-icon-trigger:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.auth-icon-trigger i {
+    font-size: 1.3rem;
+    color: var(--text-muted);
+}
+
+/* Desktop: hide icon trigger, show buttons */
+.auth-icon-trigger {
+    display: none;
+}
+
+#auth-buttons .auth-buttons-desktop {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Auth buttons container needs relative positioning for dropdown */
+#auth-buttons {
+    position: relative;
+}
+
+/* Auth dropdown menu - hidden by default */
+#auth-buttons .auth-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: #1e293b;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    min-width: 140px;
+    padding: 0.4rem 0;
+    display: none;
+    z-index: 1001;
+}
+
+/* Show dropdown when .show class is added */
+#auth-buttons .auth-dropdown.show {
+    display: block !important;
+}
+
+/* Force hide auth dropdown on desktop */
+@media (min-width: 769px) {
+    #auth-buttons .auth-dropdown,
+    #auth-buttons .auth-dropdown.show {
+        display: none !important;
+    }
+}
+
+/* Mobile auth buttons */
+@media (max-width: 768px) {
+    /* Hide desktop buttons, show icon trigger */
+    #auth-buttons .auth-buttons-desktop {
+        display: none;
+    }
+    
+    .auth-icon-trigger {
+        display: flex;
+    }
+}
+

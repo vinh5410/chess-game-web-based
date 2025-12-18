@@ -6,155 +6,161 @@
     <title>Chess Puzzles - CHESSMATE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="stylesheet" href="./styles/basic.css">
     <link rel="stylesheet" href="./styles/index.css">
     <link rel="stylesheet" href="./styles/puzzles.css">
+    <link rel="stylesheet" href="./styles/navbar.css">
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
 </head>
 <body>
     <div class="bg-gradient"></div>
     <div class="bg-blur"></div>
 
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="/" class="navbar-brand">
-                <i class="fa-solid fa-chess-king"></i> CHESSMATE
-            </a>
+    <!-- Navbar Component -->
+    <div id="navbar-placeholder"></div>
+
+    <!-- Main App Container -->
+    <div class="app">
+        <!-- Puzzle Screen - 3 Column Layout -->
+        <div class="puzzle-screen">
             
-            <ul class="navbar-menu">
-                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i> Multiplayer</a></li>
-                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i> VS Bot</a></li>
-                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i> Puzzles</a></li>
-                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i> Rankings</a></li>
-            </ul>
-            
-            <div class="navbar-actions">
-                <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Log In</a>
-                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
+            <!-- Left Sidebar: Header + Stats + Controls -->
+            <div class="puzzle-sidebar-left">
+                <!-- Header -->
+                <div class="puzzle-header-info">
+                    <h1><i class="fa-solid fa-puzzle-piece"></i> Puzzles</h1>
+                    <p class="subtitle">Train Your Tactics</p>
                 </div>
                 
-                <div id="user-menu">
-                    <div class="dropdown">
-                        <div class="user-info">
-                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
-                            <span id="username-display" class="username">User</span>
-                            <i class="fa-solid fa-chevron-down"></i>
+                <div class="puzzle-info-panel glass-panel">
+                    <h3 class="panel-title" id="puzzle-title">Find the best move!</h3>
+                    <p class="panel-subtitle" id="to-move"><i class="fa-solid fa-chess-king"></i> White to move</p>
+                    
+                    <div class="puzzle-meta-section">
+                        <h4><i class="fa-solid fa-info-circle"></i> PUZZLE INFO</h4>
+                        <div class="meta-grid">
+                            <div class="meta-item">
+                                <span class="meta-label">Difficulty</span>
+                                <span class="meta-value" id="puzzle-difficulty">Intermediate</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Rating</span>
+                                <span class="meta-value" id="puzzle-puzzle-rating">1500</span>
+                            </div>
                         </div>
-                        <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+                        <div class="themes-display">
+                            <span class="meta-label">Themes</span>
+                            <span class="meta-value" id="puzzle-themes">Tactics</span>
                         </div>
+                    </div>
+                    
+                    <div class="puzzle-stats-section">
+                        <h4><i class="fa-solid fa-chart-line"></i> YOUR STATS</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label"><i class="fa-solid fa-star"></i> Rating</span>
+                                <span class="stat-value" id="puzzle-rating">1200</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label"><i class="fa-solid fa-check"></i> Solved</span>
+                                <span class="stat-value" id="puzzles-solved">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label"><i class="fa-solid fa-fire"></i> Streak</span>
+                                <span class="stat-value" id="current-streak">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label"><i class="fa-solid fa-percent"></i> Success</span>
+                                <span class="stat-value" id="success-rate">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="puzzle-actions">
+                        <button id="hint-btn" class="action-btn gold">
+                            <i class="fa-solid fa-lightbulb"></i> Hint
+                        </button>
+                        <button id="new-puzzle-btn" class="action-btn dark">
+                            <i class="fa-solid fa-arrows-rotate"></i> New
+                        </button>
+                        <button id="solution-btn" class="action-btn dark">
+                            <i class="fa-solid fa-eye"></i> Solution
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <div class="puzzles-container">
-        <!-- Stats Header -->
-        <div class="puzzle-stats">
-            <div class="stat-item">
-                <span class="stat-icon">📊</span>
-                <span class="stat-label">Puzzle Rating</span>
-                <span class="stat-value" id="puzzle-rating">1200</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">✅</span>
-                <span class="stat-label">Solved</span>
-                <span class="stat-value" id="puzzles-solved">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">🔥</span>
-                <span class="stat-label">Current Streak</span>
-                <span class="stat-value" id="current-streak">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">📈</span>
-                <span class="stat-label">Success Rate</span>
-                <span class="stat-value" id="success-rate">0%</span>
-            </div>
-        </div>
-
-        <!-- Main Puzzle Area -->
-        <div class="puzzle-main">
-            <!-- Puzzle Board -->
-            <div class="puzzle-board-container">
-                <div class="puzzle-header">
-                    <h2 id="puzzle-title">♟️ Find the best move!</h2>
-                    <div class="puzzle-meta">
-                        <span class="puzzle-info-item">
-                            <strong>Difficulty:</strong> <span id="puzzle-difficulty">Intermediate</span>
-                        </span>
-                        <span class="puzzle-info-item">
-                            <strong>Rating:</strong> <span id="puzzle-puzzle-rating">1500</span>
-                        </span>
-                        <span class="puzzle-info-item">
-                            <strong>Themes:</strong> <span id="puzzle-themes">Tactics</span>
-                        </span>
+            
+            <!-- Center: Chessboard -->
+            <div class="puzzle-center">
+                <div class="chessboard-container">
+                    <!-- Timer Bar (Top) -->
+                    <div class="puzzle-timer-bar">
+                        <div class="timer-icon"><i class="fa-solid fa-stopwatch"></i></div>
+                        <div class="timer-display">
+                            <span class="timer-label">Time</span>
+                            <span class="timer-value" id="timer">0:00</span>
+                        </div>
                     </div>
-                    <p id="to-move" class="to-move">⚪ White to move</p>
-                </div>
 
-                <canvas id="puzzleCanvas" width="640" height="640"></canvas>
+                    <!-- Board Square Wrapper -->
+                    <div class="board-square">
+                        <canvas id="puzzleCanvas" width="640" height="640"></canvas>
+                    </div>
 
-                <div class="puzzle-controls">
-                    <button id="hint-btn" class="control-btn btn-hint">💡 Hint</button>
-                    <button id="new-puzzle-btn" class="control-btn btn-new">🔄 New Puzzle</button>
-                    <button id="solution-btn" class="control-btn btn-solution">👁️ Show Solution</button>
-                </div>
-
-                <div id="feedback" class="feedback hidden">
-                    <div class="feedback-icon" id="feedback-icon">✅</div>
-                    <p id="feedback-message"></p>
-                    <div id="rating-change"></div>
+                    <!-- Feedback (Bottom) -->
+                    <div id="feedback" class="feedback hidden">
+                        <div class="feedback-icon" id="feedback-icon">✅</div>
+                        <span id="feedback-message"></span>
+                        <span id="rating-change"></span>
+                    </div>
                 </div>
             </div>
-
-            <!-- Sidebar -->
-            <div class="puzzle-sidebar">
-                <!-- Timer -->
-                <div class="timer-box">
-                    <span class="timer-label">⏱️ Time</span>
-                    <span class="timer-value" id="timer">0:00</span>
-                </div>
-                
-                <!-- Moves List -->
-                <div class="moves-box">
-                    <h3>📝 Your Moves</h3>
+            
+            <!-- Right Sidebar: Moves + Filters -->
+            <div class="puzzle-sidebar-right">
+                <!-- Moves Panel -->
+                <div class="moves-panel glass-panel">
+                    <h3 class="panel-title"><i class="fa-solid fa-list"></i> Your Moves</h3>
                     <div id="moves-container" class="moves-list"></div>
                 </div>
-
-                <!-- Filters -->
-                <div class="filters-box">
-                    <h3>🎯 Filters</h3>
-                    <select id="difficulty-filter" class="filter-select">
-                        <option value="">All Difficulties</option>
-                        <option value="beginner">Beginner</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="advanced">Advanced</option>
-                        <option value="expert">Expert</option>
-                    </select>
-                    <select id="theme-filter" class="filter-select">
-                        <option value="">All Themes</option>
-                        <!-- Populated dynamically -->
-                    </select>
+                
+                <!-- Filters Panel -->
+                <div class="filters-panel glass-panel">
+                    <h3 class="panel-title"><i class="fa-solid fa-filter"></i> Filters</h3>
+                    <div class="filter-group">
+                        <label class="filter-label">Difficulty</label>
+                        <select id="difficulty-filter" class="filter-select">
+                            <option value="">All Difficulties</option>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                            <option value="expert">Expert</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Theme</label>
+                        <select id="theme-filter" class="filter-select">
+                            <option value="">All Themes</option>
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
                 </div>
             </div>
+            
         </div>
     </div>
 
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
+    <script src="./js/components/loader.js"></script>
     <script src="./js/auth-check.js"></script>
     <script src="./js/navbar.js"></script>
+    <script src="./js/utils.js"></script>
     <script src="./js/puzzle-renderer.js"></script>
     <script src="./js/puzzles.js"></script>
 </body>
 </html>
+

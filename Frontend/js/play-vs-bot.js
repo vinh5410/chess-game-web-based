@@ -7,6 +7,7 @@ class ChessCanvasVsBot {
         // Canvas settings
         this.canvasSize = 640;
         this.squareSize = 80;
+        this.lastParentWidth = 0;
         
         // Colors
         this.lightSquareColor = '#f0d9b5';
@@ -20,6 +21,7 @@ class ChessCanvasVsBot {
         this.selectedSquare = null;
         this.legalMoves = [];
         this.isFlipped = false;
+        this.manualFlipped = false; // Track manual flip from Flip button
         this.gameStarted = false;
         this.gameOver = false;
         this.isPlayerTurn = true;
@@ -37,7 +39,11 @@ class ChessCanvasVsBot {
         this.pieceImages = {};
         this.imagesLoaded = false;
         this.playerColor = 'white'; // 'white' or 'black'
-        this.selectedPlayerColor = null; // Chosen color before game starts        
+        this.selectedPlayerColor = null; // Chosen color before game starts
+        
+        // Promotion UI
+        this.promotionUI = null;
+        
         // API Cache
         this.apiCache = new Map();
         this.maxCacheSize = 100;
@@ -47,6 +53,14 @@ class ChessCanvasVsBot {
         this.playerBottomInfoEl = null;
         this.chessboardContainerEl = null;
         
+<<<<<<< Updated upstream
+=======
+        // Render optimization
+        this.needsRender = false;
+        this.renderScheduled = false;
+        
+        this.viewStep = 0;
+>>>>>>> Stashed changes
         this.initPromise = this.init();
     }
     
@@ -68,6 +82,7 @@ class ChessCanvasVsBot {
         
         this.ctx = this.canvas.getContext('2d');
         this.game = new window.Chess();
+        this.sound = window.Sound;
         
         // Load piece images
         await this.loadPieceImages();
@@ -79,8 +94,15 @@ class ChessCanvasVsBot {
             this.playerBottomInfoEl = this.chessboardContainerEl.querySelector('.player-info.player-bottom');
         }
 
+        // Initialize Promotion UI
+        if (typeof PromotionUI !== 'undefined') {
+            this.promotionUI = new PromotionUI(this.game, this.pieceImages, this.isFlipped);
+        }
+
         // Setup event listeners
         this.setupEventListeners();
+        // Force initial resize to match .board-square size
+        this.handleResize(true);
         
         // Initial draw
         this.draw();
@@ -140,26 +162,97 @@ class ChessCanvasVsBot {
     }
     
     setupEventListeners() {
+        // Mouse events (desktop only)
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
         this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
         this.canvas.addEventListener('click', this.onClick.bind(this));
         this.canvas.addEventListener('contextmenu', e => e.preventDefault());
         
+        // Touch events for mobile
+        this.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
+        this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
+        this.canvas.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: false });
+        
+        // Resize event đơn giản
         window.addEventListener('resize', this.handleResize.bind(this));
     }
     
-    handleResize() {
-        const container = this.canvas.parentElement;
-        const maxSize = Math.min(container.clientWidth - 40, 640);
+    // Touch event handlers
+    onTouchStart(e) {
+        e.preventDefault();
+        if (e.touches.length !== 1) return;
         
-        if (maxSize !== this.canvasSize) {
-            this.canvasSize = maxSize;
-            this.squareSize = maxSize / 8;
-            this.canvas.width = maxSize;
-            this.canvas.height = maxSize;
-            this.draw();
+        const touch = e.touches[0];
+        this.touchStartPos = { x: touch.clientX, y: touch.clientY };
+        this.touchMoved = false;
+        this.touchStartTime = Date.now();
+    }
+    
+    onTouchMove(e) {
+        e.preventDefault();
+        if (e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        
+        // Check if finger moved significantly
+        if (this.touchStartPos) {
+            const dx = touch.clientX - this.touchStartPos.x;
+            const dy = touch.clientY - this.touchStartPos.y;
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                // Start dragging if not already
+                if (!this.touchMoved) {
+                    this.touchMoved = true;
+                    this.onMouseDown({ clientX: this.touchStartPos.x, clientY: this.touchStartPos.y });
+                }
+                this.onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+            }
         }
+    }
+    
+    onTouchEnd(e) {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        
+        if (this.touchMoved && this.isDragging) {
+            // Was dragging - complete the move
+            this.onMouseUp({ clientX: touch.clientX, clientY: touch.clientY });
+        } else {
+            // Tap - treat as click
+            this.onClick({ clientX: touch.clientX, clientY: touch.clientY });
+        }
+        
+        this.touchStartPos = null;
+        this.touchMoved = false;
+    }
+    
+    handleResize(force = false) {
+        const container = this.canvas.parentElement; // .board-square
+        if (!container) return;
+        const cssSize = container.clientWidth;
+        if (!force && Math.abs(cssSize - this.lastParentWidth) < 10) return;
+        this.lastParentWidth = cssSize;
+
+        // High-DPI crispness: scale backing store by devicePixelRatio
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        this.canvasSize = cssSize;
+        this.squareSize = cssSize / 8;
+
+        this.canvas.style.width = cssSize + 'px';
+        this.canvas.style.height = cssSize + 'px';
+        this.canvas.width = Math.floor(cssSize * dpr);
+        this.canvas.height = Math.floor(cssSize * dpr);
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        
+        // Update CSS var globally so sidebars match total height (top bar + board + bottom bar)
+        try {
+            const rootStyles = getComputedStyle(document.documentElement);
+            const barHStr = rootStyles.getPropertyValue('--player-bar-height') || '64px';
+            const barH = parseFloat(barHStr) || 64;
+            const total = cssSize + barH * 2;
+            document.documentElement.style.setProperty('--board-total-height', total + 'px');
+        } catch (e) {}
+        this.draw();
     }
     
     // Coordinate conversion
@@ -187,11 +280,9 @@ class ChessCanvasVsBot {
         if (!this.gameStarted || this.gameOver || !this.isPlayerTurn || this.isThinking) return;
         
         const rect = this.canvas.getBoundingClientRect();
-        // Scale coordinates based on actual canvas size vs displayed size
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        // Use CSS pixel coordinates; DPR handled by ctx transform
+        const x = (e.clientX - rect.left);
+        const y = (e.clientY - rect.top);
         
         const square = this.canvasToSquare(x, y);
         if (!square) return;
@@ -210,11 +301,9 @@ class ChessCanvasVsBot {
     
     onMouseMove(e) {
         const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
         this.mousePos = {
-            x: (e.clientX - rect.left) * scaleX,
-            y: (e.clientY - rect.top) * scaleY
+            x: (e.clientX - rect.left),
+            y: (e.clientY - rect.top)
         };
         
         if (this.isDragging) {
@@ -226,10 +315,8 @@ class ChessCanvasVsBot {
         if (!this.isDragging || !this.dragStartSquare) return;
         
         const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        const x = (e.clientX - rect.left);
+        const y = (e.clientY - rect.top);
         
         const targetSquare = this.canvasToSquare(x, y);
         
@@ -249,10 +336,8 @@ class ChessCanvasVsBot {
         if (this.isDragging) return;
         
         const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        const x = (e.clientX - rect.left);
+        const y = (e.clientY - rect.top);
         
         const square = this.canvasToSquare(x, y);
         if (!square) return;
@@ -282,15 +367,55 @@ class ChessCanvasVsBot {
     }
     
     tryMove(from, to) {
+<<<<<<< Updated upstream
+=======
+        if (this.viewStep !== this.game.history({ verbose: true }).length) return false;
+        
+        // Check if this is a promotion move
+        const moves = this.game.moves({ square: from, verbose: true });
+        const promotionMove = moves.find(m => m.to === to && m.promotion);
+        
+        if (promotionMove && this.promotionUI) {
+            // Clear selection highlights before showing promotion UI
+            this.selectedSquare = null;
+            this.legalMoves = [];
+            this.draw();
+            
+            // Show promotion UI
+            const color = this.playerColor === 'white' ? 'w' : 'b';
+            this.promotionUI.showPromotionDialog(from, to, color, (selectedPiece) => {
+                try {
+                    const move = this.game.move({
+                        from,
+                        to,
+                        promotion: selectedPiece
+                    });
+                    
+                    if (move) {
+                        console.log('✅ Player move:', move.san);
+                        this.selectedSquare = null;
+                        this.legalMoves = [];
+                        if (this.sound) this.sound.playMove(move, this.game);
+                        this.onMove(move);
+                    }
+                } catch (error) {
+                    console.log('❌ Invalid promotion move');
+                }
+            }, this.canvas, this.isFlipped);
+            return true;
+        }
+        
+>>>>>>> Stashed changes
         try {
             const move = this.game.move({
                 from,
                 to,
-                promotion: 'q'
+                promotion: 'q' // Default promotion if UI not available
             });
             
             if (move) {
                 console.log('✅ Player move:', move.san);
+                if (this.sound) this.sound.playMove(move, this.game);
                 this.onMove(move);
                 return true;
             }
@@ -302,8 +427,14 @@ class ChessCanvasVsBot {
     
     onMove(move) {
         this.draw();
+<<<<<<< Updated upstream
         this.updateGameStatus();
         
+=======
+        this.updateGameStatus('🤖 Bot is thinking...');
+        this.viewStep = this.game.history({ verbose: true }).length;
+        updateMoveHistoryUI();
+>>>>>>> Stashed changes
         if (this.checkGameOver()) {
             return;
         }
@@ -312,9 +443,19 @@ class ChessCanvasVsBot {
         setTimeout(() => this.makeBotMove(), 750);
     }
     
-    // Drawing methods
+    // Drawing methods - use requestAnimationFrame to prevent flickering
     draw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        if (this.renderScheduled) return;
+        this.renderScheduled = true;
+        
+        requestAnimationFrame(() => {
+            this.renderScheduled = false;
+            this._doDraw();
+        });
+    }
+    
+    _doDraw() {
+        this.ctx.clearRect(0, 0, this.canvasSize, this.canvasSize);
         
         this.drawBoard();
         this.drawCoordinates();
@@ -339,22 +480,30 @@ class ChessCanvasVsBot {
     }
     
     drawCoordinates() {
-        this.ctx.font = '12px Arial';
+        const fontSize = Math.max(12, Math.floor(this.squareSize / 5));
+        this.ctx.font = `bold ${fontSize}px Arial`;
+        this.ctx.textBaseline = 'bottom';
         
+        // Draw letters (a-h) at bottom of each file
         for (let file = 0; file < 8; file++) {
-            const letter = String.fromCharCode(97 + file);
-            const x = file * this.squareSize + 5;
-            const y = 8 * this.squareSize - 5;
-            const isDark = file % 2 === 0;
+            const letter = this.isFlipped 
+                ? String.fromCharCode(104 - file)  // h to a when flipped
+                : String.fromCharCode(97 + file);  // a to h normally
+            const x = file * this.squareSize + 2;
+            const y = 8 * this.squareSize - 2;
+            // Bottom row: when not flipped, rank 1 (index 7), a1 is light (file+rank=0+0=even)
+            const isDark = (file + 7) % 2 === 0;
             this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
             this.ctx.fillText(letter, x, y);
         }
         
+        // Draw numbers (1-8) at right of each rank
+        this.ctx.textBaseline = 'top';
         for (let rank = 0; rank < 8; rank++) {
             const number = this.isFlipped ? rank + 1 : 8 - rank;
-            const x = 8 * this.squareSize - 15;
-            const y = rank * this.squareSize + 15;
-            const isDark = rank % 2 === 1;
+            const x = 8 * this.squareSize - fontSize + 2;
+            const y = rank * this.squareSize + 2;
+            const isDark = (7 + rank) % 2 === 0;
             this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
             this.ctx.fillText(number, x, y);
         }
@@ -491,9 +640,15 @@ class ChessCanvasVsBot {
             
             const move = this.game.move(selectedMove);
             console.log('🤖 Bot move:', move.san);
+            if (this.sound) this.sound.playMove(move, this.game);
             
             this.draw();
             this.updateGameStatus();
+<<<<<<< Updated upstream
+=======
+            this.viewStep = this.game.history({ verbose: true }).length;
+            updateMoveHistoryUI();
+>>>>>>> Stashed changes
             
             if (this.checkGameOver()) {
                 return;
@@ -501,12 +656,13 @@ class ChessCanvasVsBot {
             
             this.isPlayerTurn = true;
             this.isThinking = false;
+            this.updateGameStatus('⚪ Your turn!');
             
         } catch (error) {
             console.error('❌ Bot move error:', error);
             this.isPlayerTurn = true;
             this.isThinking = false;
-            this.updateGameStatus('Your turn');
+            this.updateGameStatus('⚪ Your turn!');
         }
     }
     
@@ -705,7 +861,11 @@ class ChessCanvasVsBot {
         // FIX: Flip khi player chọn BLACK (để quân đen xuống dưới)
         // Không flip khi player chọn WHITE (quân trắng đã ở dưới mặc định)
         this.isFlipped = (playerColor === 'black');
+        this.manualFlipped = false; // Reset manual flip on new game
         
+        // Ensure board is sized after UI becomes visible
+        this.handleResize(true);
+
         // Determine first turn
         if (playerColor === 'white') {
             this.isPlayerTurn = true;
@@ -717,77 +877,40 @@ class ChessCanvasVsBot {
         
         this.draw();
         
-        // Swap player info bars if flipped (when playing black)
-        this.updatePlayerInfoPosition();;
+        // Initialize move history UI
+        updateMoveHistoryUI();
         
-        // Update UI - Bot Info
-        const botNameTop = document.getElementById('botNameTop');
-        const botRatingTop = document.getElementById('botRatingTop');
-        if (botNameTop) {
-            botNameTop.textContent = 'Chess Bot';
-        }
-        if (botRatingTop) {
-            botRatingTop.textContent = `LV ${difficulty}`;
-        }
+        // Store difficulty for updatePlayerInfoPosition
+        this.selectedDifficulty = difficulty;
         
-        // Update UI - Player Info (Get ELO from ranking)
-        const playerNameBottom = document.getElementById('playerNameBottom');
-        const playerRatingBottom = document.getElementById('playerRatingBottom');
+        // Update player info bars based on isFlipped state
+        this.updatePlayerInfoPosition();
         
-        // Get player username from localStorage
-        let username = 'Guest';
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-            try {
-                const user = JSON.parse(userStr);
-                username = user.username || user.name || 'Guest';
-            } catch (e) {
-                console.log('Error parsing user data');
-            }
-        }
-        
-        if (playerNameBottom) {
-            playerNameBottom.textContent = username;
-        }
-        
-        // Fetch player ELO from ranking API
-        if (playerRatingBottom) {
-            try {
-                const response = await fetch(`/api/user/${username}/stats`);
-                if (response.ok) {
-                    const data = await response.json();
-                    playerRatingBottom.textContent = `ELO: ${data.elo || 1200}`;
-                } else {
-                    playerRatingBottom.textContent = 'ELO: 1200';
-                }
-            } catch (error) {
-                console.log('Using default ELO:', error);
-                playerRatingBottom.textContent = 'ELO: 1200';
-            }
-        }
-        
-        // Update old UI elements for compatibility
+        // Update panel title and subtitle (new UI matching multiplayer)
         const botLevelInfo = document.getElementById('botLevelInfo');
         if (botLevelInfo) {
-            botLevelInfo.innerHTML = `Playing vs Bot Level ${difficulty} ${this.getDifficultyEmoji(difficulty)}`;
+            botLevelInfo.textContent = `Bot Lv.${difficulty} ${this.getDifficultyEmoji(difficulty)}`;
         }
         
         const playerColorInfo = document.getElementById('playerColorInfo');
         if (playerColorInfo) {
-            const colorIcon = playerColor === 'white' ? '♔' : '♚';
             const colorName = playerColor.charAt(0).toUpperCase() + playerColor.slice(1);
-            playerColorInfo.innerHTML = `You are ${colorName} ${colorIcon}`;
+            playerColorInfo.textContent = colorName;
         }
         
         if (playerColor === 'white') {
-            this.updateGameStatus('Your turn - Click a piece to move!');
+            this.updateGameStatus('⚪ Your turn!');
         } else {
-            this.updateGameStatus('Bot starts first...');
-            // Bot makes first move
-            setTimeout(() => this.makeBotMove(), 1000);
+            this.updateGameStatus('🤖 Bot is thinking...');
+            console.log('🎯 Player chose BLACK - scheduling bot first move');
+            // Bot makes first move - use arrow function to preserve 'this' context
+            setTimeout(() => {
+                console.log('🎯 Bot first move timeout fired, gameStarted:', this.gameStarted);
+                this.makeBotMove();
+            }, 1000);
         }
         
-        console.log('🏁 Canvas game setup complete - isFlipped:', this.isFlipped);
+        console.log('🏁 Canvas game setup complete - isFlipped:', this.isFlipped, 'playerColor:', playerColor);
     }
     checkGameOver() {
         try {
@@ -838,32 +961,56 @@ class ChessCanvasVsBot {
         const gameStatus = document.getElementById('gameStatus');
         if (!gameStatus) return;
 
-        if (customMessage) {
-            gameStatus.textContent = customMessage;
-            return;
-        }
-
         if (this.gameOver) return;
         
         let status = '';
         
+        // Check for special game states first
+        try {
+            if (this.game.isCheckmate()) {
+                const loser = this.game.turn() === 'w' ? 'White' : 'Black';
+                status = `♚ Checkmate! ${loser} loses!`;
+                gameStatus.textContent = status;
+                return;
+            }
+            
+            if (this.game.isStalemate()) {
+                status = '🤝 Stalemate! Draw!';
+                gameStatus.textContent = status;
+                return;
+            }
+            
+            if (this.game.isDraw()) {
+                status = '🤝 Draw!';
+                gameStatus.textContent = status;
+                return;
+            }
+        } catch (error) {
+            // Ignore
+        }
+
+        if (customMessage) {
+            // Add check warning to custom message if in check
+            try {
+                if (this.game.inCheck()) {
+                    customMessage += ' ⚠️ Check!';
+                }
+            } catch (error) {}
+            gameStatus.textContent = customMessage;
+            return;
+        }
+        
         if (this.isThinking) {
             status = '🤖 Bot is thinking...';
-            if (this.botDifficulty >= 5) {
-                status += ' (Using Lichess API)';
-            } else {
-                status += ' (Rule-based)';
-            }
         } else if (this.isPlayerTurn) {
-            status = '👤 Your turn - Click to move';
+            status = '👤 Your turn';
         } else {
             status = '🤖 Bot\'s turn';
         }
         
         try {
             if (this.game.inCheck()) {
-                const turn = this.game.turn() === 'w' ? 'White' : 'Black';
-                status += ` - ${turn} is in check! ⚠️`;
+                status += ' ⚠️ Check!';
             }
         } catch (error) {
             // Ignore
@@ -909,38 +1056,83 @@ class ChessCanvasVsBot {
         }
     }
     
-    // Update player info bar positions based on isFlipped state
+    // Update player info bar positions based on manual flip state
+    // Initially: Player at bottom, Bot at top (regardless of chosen color)
+    // After manual flip: Player at top, Bot at bottom
     updatePlayerInfoPosition() {
-        const topEl = this.playerTopInfoEl;
-        const bottomEl = this.playerBottomInfoEl;
-        const container = this.chessboardContainerEl || (this.canvas && this.canvas.parentNode);
-        const canvas = this.canvas;
+        // Get all avatar elements
+        const topBotAvatar = document.getElementById('topBotAvatar');
+        const topPlayerAvatar = document.getElementById('topPlayerAvatar');
+        const bottomBotAvatar = document.getElementById('bottomBotAvatar');
+        const bottomPlayerAvatar = document.getElementById('bottomPlayerAvatar');
 
-        if (topEl && bottomEl && container && canvas) {
-            if (this.isFlipped) {
-                // Show player's info on top (when playing black)
-                container.insertBefore(bottomEl, canvas);
-                bottomEl.classList.remove('player-bottom');
-                bottomEl.classList.add('player-top');
+        // Get name/rating elements
+        const topName = document.getElementById('topName');
+        const topRating = document.getElementById('topRating');
+        const bottomName = document.getElementById('bottomName');
+        const bottomRating = document.getElementById('bottomRating');
 
-                container.appendChild(topEl);
-                topEl.classList.remove('player-top');
-                topEl.classList.add('player-bottom');
-            } else {
-                // Restore bot on top, player at bottom (when playing white)
-                container.insertBefore(topEl, canvas);
-                topEl.classList.remove('player-bottom');
-                topEl.classList.add('player-top');
+        // Get player info
+        let username = 'Guest';
+        let playerElo = 'ELO: 1200';
+        let playerAvatar = `https://ui-avatars.com/api/?name=Guest&background=d4af37&color=0f172a`;
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                username = user.username || user.name || 'Guest';
+                if (user.rating) {
+                    playerElo = `ELO: ${user.rating}`;
+                }
+                if (user.avatar) {
+                    playerAvatar = user.avatar;
+                } else {
+                    playerAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=d4af37&color=0f172a`;
+                }
+            } catch (e) {}
+        }
 
-                container.appendChild(bottomEl);
-                bottomEl.classList.remove('player-top');
-                bottomEl.classList.add('player-bottom');
+        const botName = 'Chess Bot';
+        const botRating = `LV ${this.selectedDifficulty || 5}`;
+
+        if (this.manualFlipped) {
+            // User clicked Flip button - swap info bars
+            // Top bar = Player (show player avatar, hide bot icon)
+            if (topBotAvatar) topBotAvatar.style.display = 'none';
+            if (topPlayerAvatar) {
+                topPlayerAvatar.style.display = '';
+                topPlayerAvatar.src = playerAvatar;
             }
+            if (topName) topName.textContent = username;
+            if (topRating) topRating.textContent = playerElo;
+
+            // Bottom bar = Bot (show bot icon, hide player avatar)
+            if (bottomBotAvatar) bottomBotAvatar.style.display = '';
+            if (bottomPlayerAvatar) bottomPlayerAvatar.style.display = 'none';
+            if (bottomName) bottomName.textContent = botName;
+            if (bottomRating) bottomRating.textContent = botRating;
+        } else {
+            // Normal state - Player at bottom, Bot at top
+            // Top bar = Bot (show bot icon, hide player avatar)
+            if (topBotAvatar) topBotAvatar.style.display = '';
+            if (topPlayerAvatar) topPlayerAvatar.style.display = 'none';
+            if (topName) topName.textContent = botName;
+            if (topRating) topRating.textContent = botRating;
+
+            // Bottom bar = Player (show player avatar, hide bot icon)
+            if (bottomBotAvatar) bottomBotAvatar.style.display = 'none';
+            if (bottomPlayerAvatar) {
+                bottomPlayerAvatar.style.display = '';
+                bottomPlayerAvatar.src = playerAvatar;
+            }
+            if (bottomName) bottomName.textContent = username;
+            if (bottomRating) bottomRating.textContent = playerElo;
         }
     }
     
     flipBoard() {
         this.isFlipped = !this.isFlipped;
+        this.manualFlipped = !this.manualFlipped; // Toggle manual flip state
         this.draw();
         this.updatePlayerInfoPosition();
         console.log('🔄 Board flipped:', this.isFlipped ? 'Black perspective' : 'White perspective');
@@ -986,14 +1178,21 @@ function backToDifficultyMenu() {
 }
 
 function backToMenu() {
+    // Remove game-active class from body
+    document.body.classList.remove('game-active');
+    
+    // Hide game elements
+    const sidebar = document.getElementById('gameSidebarLeft');
+    const gameCenter = document.getElementById('gameCenter');
+    if (sidebar) sidebar.style.display = 'none';
+    if (gameCenter) gameCenter.style.display = 'none';
+    
     document.getElementById('mainMenu').classList.add('hidden');      // Thay đổi: Luôn ẩn Main Menu
     document.getElementById('colorMenu').classList.remove('hidden');  // Thay đổi: Hiện Color Menu
     document.getElementById('difficultyMenu').classList.add('hidden');
-    document.getElementById('gameControls').classList.add('hidden');
-    document.getElementById('chessboardContainer').classList.add('hidden');
     document.getElementById('gameOverOverlay').classList.add('hidden');
     
-    document.getElementById('gameStatus').textContent = 'Choose game mode to start';
+    document.getElementById('gameStatus').textContent = '—';
     
     selectedColor = null;
     
@@ -1018,9 +1217,21 @@ async function startBotGame(difficulty) {
         return;
     }
     
+    // Hide menu
     document.getElementById('difficultyMenu').classList.add('hidden');
-    document.getElementById('gameControls').classList.remove('hidden');
-    document.getElementById('chessboardContainer').classList.remove('hidden');
+    
+    // Add class to body for layout switching
+    document.body.classList.add('game-active');
+    
+    // Show game screen (sidebar + board)
+    const sidebar = document.getElementById('gameSidebarLeft');
+    const gameCenter = document.getElementById('gameCenter');
+    if (sidebar) sidebar.style.display = 'flex';
+    if (gameCenter) gameCenter.style.display = 'flex';
+    // Ensure canvas sizes after becoming visible
+    if (gameInstance && typeof gameInstance.handleResize === 'function') {
+        gameInstance.handleResize(true);
+    }
     
     await gameInstance.startGame(difficulty, selectedColor);
 }
@@ -1036,6 +1247,209 @@ function flipBoard() {
     if (gameInstance) {
         gameInstance.flipBoard();
     }
+}
+
+// Move History Navigation Functions
+function goToFirstMove() {
+    if (!gameInstance || !gameInstance.gameStarted && !gameInstance.gameOver) return;
+    gameInstance.viewStep = 0;
+    drawBoardAtStep(0);
+    updateMoveHistoryUI();
+}
+
+function goToPrevMove() {
+    if (!gameInstance || !gameInstance.gameStarted && !gameInstance.gameOver) return;
+    if (gameInstance.viewStep > 0) {
+        gameInstance.viewStep--;
+        drawBoardAtStep(gameInstance.viewStep);
+        updateMoveHistoryUI();
+        // Play sound for the move at this step
+        const history = gameInstance.game.history({ verbose: true });
+        if (gameInstance.viewStep > 0 && history[gameInstance.viewStep - 1]) {
+            if (window.Sound) window.Sound.playMove(history[gameInstance.viewStep - 1]);
+        } else {
+            if (window.Sound) window.Sound.play('move');
+        }
+    }
+}
+
+function goToNextMove() {
+    if (!gameInstance || !gameInstance.gameStarted && !gameInstance.gameOver) return;
+    const history = gameInstance.game.history({ verbose: true });
+    if (gameInstance.viewStep < history.length) {
+        gameInstance.viewStep++;
+        drawBoardAtStep(gameInstance.viewStep);
+        updateMoveHistoryUI();
+        // Play sound for the move at this step
+        if (history[gameInstance.viewStep - 1]) {
+            if (window.Sound) window.Sound.playMove(history[gameInstance.viewStep - 1]);
+        }
+    }
+}
+
+function goToLastMove() {
+    if (!gameInstance || !gameInstance.gameStarted && !gameInstance.gameOver) return;
+    const history = gameInstance.game.history({ verbose: true });
+    gameInstance.viewStep = history.length;
+    drawBoardAtStep(gameInstance.viewStep);
+    updateMoveHistoryUI();
+}
+
+function goToMove(step) {
+    if (!gameInstance || !gameInstance.gameStarted && !gameInstance.gameOver) return;
+    const history = gameInstance.game.history({ verbose: true });
+    if (step >= 0 && step <= history.length) {
+        gameInstance.viewStep = step;
+        drawBoardAtStep(step);
+        updateMoveHistoryUI();
+        // Play sound for the move at this step
+        if (step > 0 && history[step - 1]) {
+            if (window.Sound) window.Sound.playMove(history[step - 1]);
+        } else {
+            if (window.Sound) window.Sound.play('move');
+        }
+    }
+}
+
+function drawBoardAtStep(step) {
+    if (!gameInstance) return;
+    
+    const history = gameInstance.game.history({ verbose: true });
+    
+    // Create a new game to replay to the desired step
+    const tempGame = new window.Chess();
+    for (let i = 0; i < step; i++) {
+        if (history[i]) {
+            tempGame.move(history[i].san);
+        }
+    }
+    
+    // Draw the board at this state
+    const ctx = gameInstance.ctx;
+    const squareSize = gameInstance.squareSize;
+    const isFlipped = gameInstance.isFlipped;
+    
+    // Clear and draw board
+    ctx.clearRect(0, 0, gameInstance.canvas.width, gameInstance.canvas.height);
+    
+    // Draw board squares
+    for (let rank = 0; rank < 8; rank++) {
+        for (let file = 0; file < 8; file++) {
+            const isLight = (rank + file) % 2 === 0;
+            const color = isLight ? gameInstance.lightSquareColor : gameInstance.darkSquareColor;
+            ctx.fillStyle = color;
+            ctx.fillRect(file * squareSize, rank * squareSize, squareSize, squareSize);
+        }
+    }
+    
+    // Highlight last move if viewing a step > 0
+    if (step > 0 && history[step - 1]) {
+        const lastMove = history[step - 1];
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
+        
+        // Highlight from square
+        const fromFile = lastMove.from.charCodeAt(0) - 97;
+        const fromRank = parseInt(lastMove.from[1]) - 1;
+        const fromX = fromFile * squareSize;
+        const fromY = isFlipped ? fromRank * squareSize : (7 - fromRank) * squareSize;
+        ctx.fillRect(fromX, fromY, squareSize, squareSize);
+        
+        // Highlight to square
+        const toFile = lastMove.to.charCodeAt(0) - 97;
+        const toRank = parseInt(lastMove.to[1]) - 1;
+        const toX = toFile * squareSize;
+        const toY = isFlipped ? toRank * squareSize : (7 - toRank) * squareSize;
+        ctx.fillRect(toX, toY, squareSize, squareSize);
+    }
+    
+    // Draw coordinates
+    ctx.font = '12px Arial';
+    for (let file = 0; file < 8; file++) {
+        const letter = String.fromCharCode(97 + file);
+        const x = file * squareSize + 5;
+        const y = 8 * squareSize - 5;
+        const isDark = file % 2 === 0;
+        ctx.fillStyle = isDark ? gameInstance.darkSquareColor : gameInstance.lightSquareColor;
+        ctx.fillText(letter, x, y);
+    }
+    for (let rank = 0; rank < 8; rank++) {
+        const number = isFlipped ? rank + 1 : 8 - rank;
+        const x = 8 * squareSize - 15;
+        const y = rank * squareSize + 15;
+        const isDark = rank % 2 === 1;
+        ctx.fillStyle = isDark ? gameInstance.darkSquareColor : gameInstance.lightSquareColor;
+        ctx.fillText(number, x, y);
+    }
+    
+    // Draw pieces from temp game state
+    const board = tempGame.board();
+    for (let rank = 0; rank < 8; rank++) {
+        for (let file = 0; file < 8; file++) {
+            const boardRank = isFlipped ? 7 - rank : rank;
+            const piece = board[boardRank][file];
+            if (!piece) continue;
+            
+            const x = file * squareSize;
+            const y = rank * squareSize;
+            const pieceKey = piece.color + piece.type.toUpperCase();
+            
+            if (gameInstance.imagesLoaded && gameInstance.pieceImages[pieceKey] && gameInstance.pieceImages[pieceKey].complete) {
+                ctx.drawImage(
+                    gameInstance.pieceImages[pieceKey],
+                    x + 4, y + 4,
+                    squareSize - 8,
+                    squareSize - 8
+                );
+            }
+        }
+    }
+}
+
+function updateMoveHistoryUI() {
+    if (!gameInstance) return;
+    
+    const history = gameInstance.game.history({ verbose: true });
+    const currentStep = gameInstance.viewStep;
+    
+    // Update position display
+    const positionEl = document.getElementById('historyPosition');
+    if (positionEl) {
+        positionEl.textContent = `${currentStep}/${history.length}`;
+    }
+    
+    // Update move list
+    const listEl = document.getElementById('moveHistoryList');
+    if (!listEl) return;
+    
+    if (history.length === 0) {
+        listEl.innerHTML = '<p class="no-moves-msg">No moves yet</p>';
+        return;
+    }
+    
+    let html = '';
+    for (let i = 0; i < history.length; i += 2) {
+        const moveNum = Math.floor(i / 2) + 1;
+        const whiteMove = history[i];
+        const blackMove = history[i + 1];
+        
+        const whiteClass = (i + 1 === currentStep) ? 'current' : '';
+        const blackClass = (i + 2 === currentStep) ? 'current' : '';
+        
+        html += `<div class="move-row ${(i + 1 === currentStep || i + 2 === currentStep) ? 'active' : ''}">`;
+        html += `<span class="move-number">${moveNum}.</span>`;
+        html += `<span class="move-white ${whiteClass}" onclick="goToMove(${i + 1})">${whiteMove.san}</span>`;
+        if (blackMove) {
+            html += `<span class="move-black ${blackClass}" onclick="goToMove(${i + 2})">${blackMove.san}</span>`;
+        } else {
+            html += `<span class="move-black"></span>`;
+        }
+        html += '</div>';
+    }
+    
+    listEl.innerHTML = html;
+    
+    // Scroll to bottom to show latest moves
+    listEl.scrollTop = listEl.scrollHeight;
 }
 
 // Initialize when DOM is ready
@@ -1054,7 +1468,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (initialized) {
             console.log('✅ Canvas Chess ready to play!');
-            document.getElementById('gameStatus').textContent = 'Choose game mode to start';
+            document.getElementById('gameStatus').textContent = '—';
         } else {
             console.error('❌ Failed to initialize canvas chess');
             document.getElementById('gameStatus').textContent = '❌ Failed to initialize game';
@@ -1077,5 +1491,22 @@ document.addEventListener('keydown', (e) => {
     
     if (e.key === 'f' || e.key === 'F') {
         flipBoard();
+    }
+    
+    // Move history navigation with arrow keys
+    if (e.key === 'ArrowLeft') {
+        goToPrevMove();
+    }
+    
+    if (e.key === 'ArrowRight') {
+        goToNextMove();
+    }
+    
+    if (e.key === 'ArrowUp' || e.key === 'Home') {
+        goToFirstMove();
+    }
+    
+    if (e.key === 'ArrowDown' || e.key === 'End') {
+        goToLastMove();
     }
 });
