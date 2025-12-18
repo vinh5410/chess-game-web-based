@@ -22,7 +22,7 @@ body {
     background-color: var(--bg-dark);
     color: var(--text-main);
     min-height: 100vh;
-    overflow-x: hidden;
+    overflow-y: auto; /* Cho phép scroll */
 }
 
 /* --- 2. GLOBAL BACKGROUND --- */
@@ -62,12 +62,6 @@ body {
     z-index: 2;
     animation: fadeSlideLeft 0.8s ease-out;
     text-decoration: none;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-}
-
-.brand-content:hover {
-    transform: scale(1.02);
 }
 
 .huge-logo {

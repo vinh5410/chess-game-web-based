@@ -12,8 +12,9 @@
 ========================= */
 .navbar {
     height: var(--nav-height);
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -62,6 +63,12 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
+}
+
+/* Hide authenticated user menu by default to prevent flicker
+   JS will show it after auth check */
+#user-menu {
+    display: none;
 }
 
 /* =========================
@@ -235,7 +242,113 @@
 }
 
 #auth-buttons {
-    display: flex;
+    display: none; /* hidden by default to prevent flicker; JS will show when logged out */
     align-items: center;
-    gap: 0.75rem; /* chỉnh khoảng cách tại đây */
+    gap: 0.75rem;
+    position: relative;
 }
+
+#auth-buttons .btn {
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+#auth-buttons .btn-secondary {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-muted);
+}
+
+#auth-buttons .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+}
+
+#auth-buttons .btn-primary {
+    background: var(--primary);
+    color: #000;
+}
+
+#auth-buttons .btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+/* Auth icon trigger - hidden on desktop */
+.auth-icon-trigger {
+    display: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.auth-icon-trigger:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.auth-icon-trigger i {
+    font-size: 1.3rem;
+    color: var(--text-muted);
+}
+
+/* Desktop: hide icon trigger, show buttons */
+.auth-icon-trigger {
+    display: none;
+}
+
+#auth-buttons .auth-buttons-desktop {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Auth buttons container needs relative positioning for dropdown */
+#auth-buttons {
+    position: relative;
+}
+
+/* Auth dropdown menu - hidden by default */
+#auth-buttons .auth-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: #1e293b;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    min-width: 140px;
+    padding: 0.4rem 0;
+    display: none;
+    z-index: 1001;
+}
+
+/* Show dropdown when .show class is added */
+#auth-buttons .auth-dropdown.show {
+    display: block !important;
+}
+
+/* Force hide auth dropdown on desktop */
+@media (min-width: 769px) {
+    #auth-buttons .auth-dropdown,
+    #auth-buttons .auth-dropdown.show {
+        display: none !important;
+    }
+}
+
+/* Mobile auth buttons */
+@media (max-width: 768px) {
+    /* Hide desktop buttons, show icon trigger */
+    #auth-buttons .auth-buttons-desktop {
+        display: none;
+    }
+    
+    .auth-icon-trigger {
+        display: flex;
+    }
+}
+

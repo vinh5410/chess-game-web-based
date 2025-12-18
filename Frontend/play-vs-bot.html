@@ -22,43 +22,8 @@
     <div class="bg-gradient"></div>
     <div class="bg-blur"></div>
 
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="/" class="navbar-brand">
-                <i class="fa-solid fa-chess-king"></i> CHESSMATE
-            </a>
-            
-            <ul class="navbar-menu">
-                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i><span class="nav-text"> Multiplayer</span></a></li>
-                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i><span class="nav-text"> VS Bot</span></a></li>
-                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i><span class="nav-text"> Puzzles</span></a></li>
-                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i><span class="nav-text"> Rankings</span></a></li>
-            </ul>
-            
-            <div class="navbar-actions">
-                <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Log In</a>
-                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
-                </div>
-                
-                <div id="user-menu">
-                    <div class="dropdown">
-                        <div class="user-info">
-                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
-                            <span id="username-display" class="username">User</span>
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar Component -->
+    <div id="navbar-placeholder"></div>
 
     <div class="app">
         
@@ -189,7 +154,7 @@
                 
                 <div class="game-status-section">
                     <h4><i class="fa-solid fa-hourglass-half"></i> STATUS</h4>
-                    <p id="gameStatus" class="status-message">Waiting for your move...</p>
+                    <p id="gameStatus" class="status-message">—</p>
                 </div>
                 
                 <div class="game-stats">
@@ -202,32 +167,51 @@
                         <span class="stat-value" id="moveCount">1</span>
                     </div>
                 </div>
+
+                <!-- Move History merged here -->
+                <div class="move-history-section-inline">
+                    <h4><i class="fa-solid fa-clock-rotate-left"></i> MOVE HISTORY</h4>
+                    <div class="move-history-controls">
+                        <button onclick="goToFirstMove()" class="history-btn" title="First Move"><i class="fa-solid fa-backward-fast"></i></button>
+                        <button onclick="goToPrevMove()" class="history-btn" title="Previous Move"><i class="fa-solid fa-backward-step"></i></button>
+                        <span id="historyPosition" class="history-position">0/0</span>
+                        <button onclick="goToNextMove()" class="history-btn" title="Next Move"><i class="fa-solid fa-forward-step"></i></button>
+                        <button onclick="goToLastMove()" class="history-btn" title="Last Move"><i class="fa-solid fa-forward-fast"></i></button>
+                    </div>
+                    <div id="moveHistoryList" class="move-history-list">
+                        <p class="no-moves-msg">No moves yet</p>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="game-center" id="gameCenter" style="display:none;">
             <div id="chessboardContainer" class="chessboard-container">
-            <!-- Bot Info (Top) -->
-            <div class="player-info player-top">
-                <div class="player-avatar">
+            <!-- Top Info Bar -->
+            <div class="player-info player-top" id="topInfoBar">
+                <div class="player-avatar bot-avatar" id="topBotAvatar">
                     <i class="fa-solid fa-robot"></i>
                 </div>
+                <img class="player-avatar" id="topPlayerAvatar" src="https://ui-avatars.com/api/?name=Y&background=d4af37&color=0f172a" alt="Avatar" style="display: none;">
                 <div class="player-details">
-                    <div class="player-name" id="botNameTop">Chess Bot</div>
-                    <div class="player-rating" id="botRatingTop">ELO: 1500</div>
+                    <div class="player-name" id="topName">Chess Bot</div>
+                    <div class="player-rating" id="topRating">LV 5</div>
                 </div>
             </div>
             
-            <canvas id="chessCanvas" width="640" height="640"></canvas>
+            <div class="board-square">
+                <canvas id="chessCanvas" width="640" height="640"></canvas>
+            </div>
             
-            <!-- Player Info (Bottom) -->
-            <div class="player-info player-bottom">
-                <div class="player-avatar">
-                    <i class="fa-solid fa-user"></i>
+            <!-- Bottom Info Bar -->
+            <div class="player-info player-bottom" id="bottomInfoBar">
+                <div class="player-avatar bot-avatar" id="bottomBotAvatar" style="display: none;">
+                    <i class="fa-solid fa-robot"></i>
                 </div>
+                <img class="player-avatar" id="bottomPlayerAvatar" src="https://ui-avatars.com/api/?name=Y&background=d4af37&color=0f172a" alt="Avatar">
                 <div class="player-details">
-                    <div class="player-name" id="playerNameBottom">You</div>
-                    <div class="player-rating" id="playerRatingBottom">ELO: 1200</div>
+                    <div class="player-name" id="bottomName">You</div>
+                    <div class="player-rating" id="bottomRating">ELO: 1200</div>
                 </div>
             </div>
             
@@ -241,25 +225,7 @@
             </div>
         </div>
 
-        <!-- Right Sidebar: Move History -->
-        <div class="game-sidebar-right" id="gameSidebarRight" style="display:none;">
-            <div class="game-info-panel glass-panel">
-                <h3 class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Move History</h3>
-                <p class="panel-subtitle">Review your moves</p>
-                
-                <div class="move-history-controls">
-                    <button onclick="goToFirstMove()" class="history-btn" title="First Move"><i class="fa-solid fa-backward-fast"></i></button>
-                    <button onclick="goToPrevMove()" class="history-btn" title="Previous Move"><i class="fa-solid fa-backward-step"></i></button>
-                    <span id="historyPosition" class="history-position">0/0</span>
-                    <button onclick="goToNextMove()" class="history-btn" title="Next Move"><i class="fa-solid fa-forward-step"></i></button>
-                    <button onclick="goToLastMove()" class="history-btn" title="Last Move"><i class="fa-solid fa-forward-fast"></i></button>
-                </div>
-                
-                <div id="moveHistoryList" class="move-history-list">
-                    <p class="no-moves-msg">No moves yet</p>
-                </div>
-            </div>
-        </div>
+
     </div>
 
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
@@ -271,9 +237,11 @@
         });
     </script>
     
+    <script src="./js/components/loader.js"></script>
+    <script src="./js/utils.js"></script>
     <script src="./js/promote-ui.js"></script>
     <script src="./js/play-vs-bot.js"></script>
-    <script src="./js/navbar.js"></script>
+    
     <script src="./js/auth-check.js"></script>
 </body>
 </html>

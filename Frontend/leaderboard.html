@@ -10,6 +10,7 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <link rel="stylesheet" href="./styles/basic.css">
     <link rel="stylesheet" href="./styles/index.css">
     <link rel="stylesheet" href="./styles/navbar.css">
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
@@ -26,6 +27,9 @@
             overflow: auto;
             height: auto;
             min-height: 100vh;
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 10% 20%, rgba(30, 58, 138, 0.4), transparent 50%),
+                              radial-gradient(circle at 90% 80%, rgba(51, 29, 44, 0.5), transparent 50%);
         }
         
         .leaderboard-container {
@@ -539,16 +543,71 @@
             font-size: 1.2rem;
         }
         
-        .replay-board {
-            width: 400px;
-            height: 400px;
-            margin: 0 auto;
+        /* Replay Board Wrapper */
+        .replay-board-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
         }
         
-        .replay-board canvas {
-            width: 100%;
-            height: 100%;
-            border-radius: 8px;
+        .replay-board-square {
+            width: min(75vh - 180px, 550px);
+            min-width: 280px;
+            aspect-ratio: 1 / 1;
+            border: 3px solid var(--primary);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+        
+        .replay-board-square canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        /* Replay Player Info */
+        .replay-player-info {
+            width: min(75vh - 180px, 550px);
+            min-width: 280px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: 50px;
+            box-sizing: border-box;
+        }
+        
+        .replay-player-info.player-top {
+            border-radius: 8px 8px 0 0;
+            border-bottom: none;
+        }
+        
+        .replay-player-info.player-bottom {
+            border-radius: 0 0 8px 8px;
+            border-top: none;
+        }
+        
+        .replay-player-info .player-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary);
+            flex-shrink: 0;
+        }
+        
+        .replay-player-info .player-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .replay-player-info .player-name {
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 0.9rem;
         }
         
         .replay-controls {
@@ -636,9 +695,29 @@
                 gap: 0.5rem;
             }
             
-            .replay-board {
-                width: 300px;
-                height: 300px;
+            .replay-board-square,
+            .replay-player-info {
+                width: calc(100vw - 60px) !important;
+                min-width: 260px !important;
+                max-width: 400px !important;
+            }
+            
+            .replay-board-square {
+                max-height: 60vh;
+            }
+            
+            .replay-player-info {
+                height: 44px;
+                padding: 0 10px;
+            }
+            
+            .replay-player-info .player-avatar {
+                width: 30px;
+                height: 30px;
+            }
+            
+            .replay-player-info .player-name {
+                font-size: 0.8rem;
             }
 
             .replay-controls {
@@ -670,44 +749,8 @@
     <div class="bg-gradient"></div>
     <div class="bg-blur"></div>
 
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="/" class="navbar-brand">
-                <i class="fa-solid fa-chess-king"></i> CHESSMATE
-            </a>
-            
-            <ul class="navbar-menu">
-                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i><span class="nav-text"> Multiplayer</span></a></li>
-                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i><span class="nav-text"> VS Bot</span></a></li>
-                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i><span class="nav-text"> Puzzles</span></a></li>
-                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i><span class="nav-text"> Rankings</span></a></li>
-            </ul>
-            
-            <div class="navbar-actions">
-                <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Log In</a>
-                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
-                </div>
-                
-                <div id="user-menu">
-                    <div class="dropdown">
-                        <div class="user-info">
-                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
-                            <span id="username-display" class="username">User</span>
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar Component -->
+    <div id="navbar-placeholder"></div>
 
     <div class="leaderboard-container">
         <div class="page-header">
@@ -766,9 +809,30 @@
                 <h3><i class="fa-solid fa-chess"></i> Game Replay</h3>
                 <button class="close-modal" id="close-replay">&times;</button>
             </div>
-            <div class="replay-board">
-                <canvas id="replay-canvas" width="400" height="400"></canvas>
+            
+            <div class="replay-board-wrapper">
+                <!-- Opponent Info (Top - Black) -->
+                <div class="replay-player-info player-top">
+                    <img class="player-avatar" id="replay-opponent-avatar" src="https://ui-avatars.com/api/?name=O&background=d4af37&color=0f172a" alt="Avatar">
+                    <div class="player-details">
+                        <span class="player-name" id="replay-opponent-name">Opponent</span>
+                    </div>
+                </div>
+                
+                <!-- Board -->
+                <div class="replay-board-square">
+                    <canvas id="replay-canvas" width="400" height="400"></canvas>
+                </div>
+                
+                <!-- Your Info (Bottom - White) -->
+                <div class="replay-player-info player-bottom">
+                    <img class="player-avatar" id="replay-player-avatar" src="https://ui-avatars.com/api/?name=Y&background=d4af37&color=0f172a" alt="Avatar">
+                    <div class="player-details">
+                        <span class="player-name" id="replay-player-name">You</span>
+                    </div>
+                </div>
             </div>
+            
             <div class="replay-controls">
                 <button id="first-move"><i class="fa-solid fa-backward-fast"></i></button>
                 <button id="prev-move"><i class="fa-solid fa-backward-step"></i></button>
@@ -784,6 +848,8 @@
         if (typeof Chess !== 'undefined') { window.Chess = Chess; } 
         else { console.error('❌ Chess.js not found'); }
     </script>
+    <script src="./js/components/loader.js"></script>
+    <script src="./js/utils.js"></script>
     <script src="./js/chess-board-renderer.js"></script>
     <script src="./js/auth-check.js"></script>
     <script src="./js/navbar.js"></script>
@@ -924,7 +990,7 @@
                 const games = currentType === 'pvp' ? player.gamesPlayed : player.puzzlesSolved;
                 const title = getTitle(rating);
                 const playerId = player._id || player.id || player.odUserId;
-                const avatar = player.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.username)}&background=d4af37&color=0f172a`;
+                const avatar = (player.avatar && player.avatar.trim()) ? player.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(player.username)}&background=d4af37&color=0f172a`;
                 
                 // For puzzle, don't allow clicking to view history (no puzzle history yet)
                 const clickable = currentType === 'pvp';
@@ -1044,8 +1110,11 @@
                 }
                 
                 const ratingChange = thisPlayer.ratingChange || 0;
-                const ratingChangeClass = ratingChange >= 0 ? 'positive' : 'negative';
-                const ratingChangeText = ratingChange >= 0 ? `+${ratingChange}` : ratingChange;
+                const ratingAfter = (thisPlayer.rating || 1200) + ratingChange;
+                
+                // Tính rating sau trận của đối thủ
+                const opponentRatingChange = opponent.ratingChange || 0;
+                const opponentRatingAfter = (opponent.rating || 1200) + opponentRatingChange;
                 
                 // Handle different date fields
                 const gameDate = game.endedAt || game.startedAt || game.createdAt;
@@ -1060,13 +1129,12 @@
                         <div class="history-players">
                             <div class="player">
                                 <span class="player-name">${playerUsername}</span>
-                                <span class="p-rating">(${thisPlayer.rating || 1200})</span>
-                                <span class="rating-change ${ratingChangeClass}">${ratingChangeText}</span>
+                                <span class="p-rating">(${ratingAfter})</span>
                             </div>
                             <span class="vs">vs</span>
                             <div class="player">
                                 <span class="player-name">${opponent.username}</span>
-                                <span class="p-rating">(${opponent.rating || 1200})</span>
+                                <span class="p-rating">(${opponentRatingAfter})</span>
                             </div>
                         </div>
                         <span class="history-result ${result}">${resultText}</span>
@@ -1111,10 +1179,22 @@
             // Wait a tick for modal to become visible
             await new Promise(resolve => setTimeout(resolve, 50));
             
-            // Initialize renderer if needed
+            // Update player info - names based on color (White at bottom, Black at top)
+            const whiteName = game.whitePlayer?.username || game.white?.username || 'White';
+            const blackName = game.blackPlayer?.username || game.black?.username || 'Black';
+            const whiteAvatar = game.whitePlayer?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(whiteName)}&background=d4af37&color=0f172a`;
+            const blackAvatar = game.blackPlayer?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(blackName)}&background=d4af37&color=0f172a`;
+            
+            // Bottom = White, Top = Black (standard chess view)
+            document.getElementById('replay-player-name').textContent = whiteName;
+            document.getElementById('replay-opponent-name').textContent = blackName;
+            document.getElementById('replay-player-avatar').src = whiteAvatar;
+            document.getElementById('replay-opponent-avatar').src = blackAvatar;
+            
+            // Initialize renderer if needed - responsive mode
             if (!replayRenderer) {
                 try {
-                    replayRenderer = new ChessBoardRenderer('replay-canvas', { fixedSize: 400 });
+                    replayRenderer = new ChessBoardRenderer('replay-canvas', { responsive: true });
                     await replayRenderer.loadPieceImages();
                     console.log('✅ Replay renderer initialized');
                 } catch (error) {
@@ -1122,6 +1202,9 @@
                     return;
                 }
             }
+            
+            // Handle resize for responsive canvas
+            handleReplayResize();
             
             // Flatten moves
             currentGameMoves = [];
@@ -1135,6 +1218,38 @@
             
             showReplayMove(0);
         }
+        
+        function handleReplayResize() {
+            if (!replayRenderer) return;
+            
+            const canvas = document.getElementById('replay-canvas');
+            const container = canvas.parentElement;
+            if (!container) return;
+            
+            const rect = container.getBoundingClientRect();
+            const size = Math.floor(Math.min(rect.width, rect.height));
+            if (size <= 0) return;
+            
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
+            
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            
+            replayRenderer.canvasSize = size;
+            replayRenderer.squareSize = size / 8;
+            replayRenderer.draw();
+        }
+        
+        // Resize listener for replay
+        window.addEventListener('resize', () => {
+            if (document.getElementById('replay-modal').classList.contains('active')) {
+                handleReplayResize();
+            }
+        });
         
         function showReplayMove(index) {
             if (!replayRenderer) return;
@@ -1170,10 +1285,32 @@
         }
         
         // Replay controls
-        document.getElementById('first-move').addEventListener('click', () => showReplayMove(0));
-        document.getElementById('prev-move').addEventListener('click', () => showReplayMove(currentMoveIndex - 1));
-        document.getElementById('next-move').addEventListener('click', () => showReplayMove(currentMoveIndex + 1));
-        document.getElementById('last-move').addEventListener('click', () => showReplayMove(currentGameMoves.length));
+        document.getElementById('first-move').addEventListener('click', () => {
+            if (currentMoveIndex > 0 && currentGameMoves[0] && window.Sound) {
+                window.Sound.playMove(currentGameMoves[0]);
+            }
+            showReplayMove(0);
+        });
+        document.getElementById('prev-move').addEventListener('click', () => {
+            if (currentMoveIndex > 0) {
+                const move = currentGameMoves[currentMoveIndex - 1];
+                if (move && window.Sound) window.Sound.playMove(move);
+            }
+            showReplayMove(currentMoveIndex - 1);
+        });
+        document.getElementById('next-move').addEventListener('click', () => {
+            if (currentMoveIndex < currentGameMoves.length) {
+                const move = currentGameMoves[currentMoveIndex];
+                if (move && window.Sound) window.Sound.playMove(move);
+            }
+            showReplayMove(currentMoveIndex + 1);
+        });
+        document.getElementById('last-move').addEventListener('click', () => {
+            if (currentMoveIndex < currentGameMoves.length && currentGameMoves[currentGameMoves.length - 1] && window.Sound) {
+                window.Sound.playMove(currentGameMoves[currentGameMoves.length - 1]);
+            }
+            showReplayMove(currentGameMoves.length);
+        });
         
         document.getElementById('close-replay').addEventListener('click', () => {
             document.getElementById('replay-modal').classList.remove('active');
@@ -1192,10 +1329,32 @@
             const playerModal = document.getElementById('player-modal');
             
             if (replayModal.classList.contains('active')) {
-                if (e.key === 'ArrowLeft') showReplayMove(currentMoveIndex - 1);
-                if (e.key === 'ArrowRight') showReplayMove(currentMoveIndex + 1);
-                if (e.key === 'Home') showReplayMove(0);
-                if (e.key === 'End') showReplayMove(currentGameMoves.length);
+                if (e.key === 'ArrowLeft') {
+                    if (currentMoveIndex > 0) {
+                        const move = currentGameMoves[currentMoveIndex - 1];
+                        if (move && window.Sound) window.Sound.playMove(move);
+                    }
+                    showReplayMove(currentMoveIndex - 1);
+                }
+                if (e.key === 'ArrowRight') {
+                    if (currentMoveIndex < currentGameMoves.length) {
+                        const move = currentGameMoves[currentMoveIndex];
+                        if (move && window.Sound) window.Sound.playMove(move);
+                    }
+                    showReplayMove(currentMoveIndex + 1);
+                }
+                if (e.key === 'Home') {
+                    if (currentMoveIndex > 0 && currentGameMoves[0] && window.Sound) {
+                        window.Sound.playMove(currentGameMoves[0]);
+                    }
+                    showReplayMove(0);
+                }
+                if (e.key === 'End') {
+                    if (currentMoveIndex < currentGameMoves.length && currentGameMoves[currentGameMoves.length - 1] && window.Sound) {
+                        window.Sound.playMove(currentGameMoves[currentGameMoves.length - 1]);
+                    }
+                    showReplayMove(currentGameMoves.length);
+                }
                 if (e.key === 'Escape') replayModal.classList.remove('active');
             } else if (playerModal.classList.contains('active')) {
                 if (e.key === 'Escape') playerModal.classList.remove('active');

@@ -314,13 +314,12 @@ exports.getLeaderboard = async (req, res) => {
         const topUsers = await UserPuzzle.find()
             .sort({ puzzleRating: -1, puzzlesSolved: -1 })
             .limit(limit)
-            .populate('userId', '_id username avatar');
+            .populate('userId', 'username avatar');
         
         const leaderboard = topUsers.map((up, index) => ({
             rank: index + 1,
-            _id: up.userId._id,
             username: up.userId.username,
-            avatar: up.userId.avatar || '/assets/default-avatar.png',
+            avatar: up.userId.avatar || '',
             puzzleRating: up.puzzleRating,
             puzzlesSolved: up.puzzlesSolved,
             streak: up.streak.longest,

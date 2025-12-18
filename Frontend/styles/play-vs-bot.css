@@ -13,6 +13,11 @@
     --font-heading: 'Inter', sans-serif;
     --font-body: 'Inter', sans-serif;
     /* --nav-height is defined in navbar.css */
+    /* Fixed player bar height and computed total for viewport sizing */
+    --player-bar-height: 64px;
+    --player-bars-total: calc(var(--player-bar-height) * 2);
+    /* Fallback navbar height if not provided by navbar.css */
+    --nav-height: var(--nav-height, 70px);
 }
 
 body {
@@ -21,6 +26,7 @@ body {
     color: var(--text-main);
     min-height: 100vh;
     overflow-x: hidden;
+    overflow-y: auto;
     margin: 0;
 }
 
@@ -28,11 +34,12 @@ body {
    2. BACKGROUND
    ========================================= */
 .bg-gradient, .bg-blur {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: -1;
 }
 .bg-gradient {
-    background: radial-gradient(circle at 20% 20%, #1e3a8a, transparent 40%),
-                radial-gradient(circle at 80% 80%, #331d2c, transparent 40%);
+    background: var(--bg-dark);
+    background-image: radial-gradient(circle at 20% 20%, #1e3a8a, transparent 40%),
+                      radial-gradient(circle at 80% 80%, #331d2c, transparent 40%);
 }
 .bg-blur { backdrop-filter: blur(60px); }
 
@@ -47,6 +54,7 @@ body {
     min-height: calc(100vh - var(--nav-height, 70px));
     box-sizing: border-box;
     width: 100%;
+    overflow: visible;
 }
 
 .header { 
@@ -169,7 +177,7 @@ h2 { font-family: var(--font-heading); margin-bottom: 1rem; color: var(--text-ma
     height: fit-content;
     width: 100%;
     max-width: 400px;
-    margin-top: 1.5rem;
+    margin-top: 0;
 }
 
 .game-header-info {
@@ -207,6 +215,7 @@ h2 { font-family: var(--font-heading); margin-bottom: 1rem; color: var(--text-ma
     left: auto !important;
     width: 100% !important;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 .game-info-panel .panel-title {
@@ -332,16 +341,19 @@ h2 { font-family: var(--font-heading); margin-bottom: 1rem; color: var(--text-ma
     gap: 0;
     padding-top: 0;
     width: 100%;
-    max-width: 460px;
+    max-width: 560px;
 }
 
 .chessboard-container {
     position: relative;
-    padding: 6px;
-    background: #302e2b;
-    border-radius: 4px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
     width: 100%;
+    max-width: 640px;
+    display: grid;
+    grid-template-rows: var(--player-bar-height) auto var(--player-bar-height);
     box-sizing: border-box;
     z-index: 10;
 }
@@ -351,22 +363,31 @@ h2 { font-family: var(--font-heading); margin-bottom: 1rem; color: var(--text-ma
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 15px;
+    padding: 0 15px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    margin-bottom: 8px;
+    margin: 0; /* remove vertical margins to avoid extra scroll */
     position: relative;
     width: 100%;
     box-sizing: border-box;
+    height: var(--player-bar-height);
 }
 
-.player-info.player-bottom {
-    margin-top: 8px;
-    margin-bottom: 0;
+.player-info.player-bottom { margin: 0; }
+
+/* Player avatar as img */
+img.player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid var(--primary);
 }
 
-.player-avatar {
+/* Bot avatar with icon */
+.player-avatar.bot-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -395,16 +416,29 @@ h2 { font-family: var(--font-heading); margin-bottom: 1rem; color: var(--text-ma
     text-overflow: ellipsis;
 }
 
+/* Player rating */
 .player-rating {
-    font-size: 0.85rem;
     color: var(--primary);
     font-weight: 600;
+    font-size: 0.85rem;
 }
+
+/* Square board sized by viewport: min(width, height minus player bars) */
+.board-square {
+    /* Size by viewport width or available height minus bars */
+    width: min(100vw, calc(100svh - var(--nav-height, 70px) - var(--player-bars-total)));
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    display: block;
+}
+
+
+/* board-square wrapper present and sized by viewport */
 
 canvas {
     display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
     cursor: pointer;
     position: relative;
     z-index: 10;
@@ -497,6 +531,11 @@ canvas {
     
     .game-center {
         max-width: calc(100vw - 1rem);
+    }
+
+    /* Mobile: ưu tiên theo chiều ngang, board chiếm full bề ngang container */
+    .board-square {
+        width: 100%;
     }
     
     .player-info {
@@ -642,20 +681,6 @@ canvas {
         justify-content: flex-start;
         padding-top: 1rem;
     }
-    
-    /* Mobile: Right sidebar below the board */
-    .game-sidebar-right {
-        width: 100%;
-        margin-top: 1rem;
-    }
-    
-    .game-sidebar-right .move-history-section {
-        margin-top: 0;
-    }
-    
-    .game-sidebar-right .move-history-list {
-        max-height: 120px;
-    }
 }
 
 /* --- DESKTOP LAYOUT (2 columns: sidebar + board) --- */
@@ -670,8 +695,9 @@ canvas {
         min-height: calc(100vh - var(--nav-height, 70px));
     }
     
-    /* Left Sidebar */
+    /* Left sidebar */
     .game-sidebar-left {
+        display: flex;
         flex-direction: column;
         gap: 0.5rem;
         width: 100%;
@@ -694,11 +720,18 @@ canvas {
         flex: 1;
     }
 
-    /* Chessboard */
+    /* Chessboard: center and let width follow board */
     .chessboard-container {
-        margin: 0;
-        max-width: 460px;
-        width: 100%;
+        margin: 0 auto;
+        max-width: 640px;
+        width: auto;
+    }
+    
+    /* Game center column should size to content (board) */
+    .game-center {
+        width: auto;
+        max-width: none;
+        align-items: center;
     }
 }
 
@@ -706,11 +739,11 @@ canvas {
 @media (min-width: 1024px) {
     body.game-active .app {
         display: grid;
-        grid-template-columns: 280px 460px 280px;
+        grid-template-columns: 280px auto;
         gap: 1.5rem;
         align-items: start;
         justify-content: center;
-        padding-top: 1rem;
+        padding-top: 0; /* avoid extra vertical overflow */
     }
     
     /* Hide main header when game is active */
@@ -722,30 +755,17 @@ canvas {
     .game-sidebar-left {
         display: flex;
         flex-direction: column;
+        /* Match board stack height and scroll internally */
+        height: var(--board-total-height, auto);
+        max-height: var(--board-total-height, none);
+        overflow: auto;
+        min-height: 0;
+        box-sizing: border-box;
     }
     
     .game-sidebar-left #gameControls {
         display: flex;
         flex-direction: column;
-    }
-    
-    /* Right Sidebar - same style as left */
-    .game-sidebar-right {
-        width: 280px;
-        display: flex;
-        flex-direction: column;
-        margin-top: 5rem;
-    }
-    
-    .game-sidebar-right .game-info-panel {
-        display: flex;
-        flex-direction: column;
-        padding: 1.5rem;
-    }
-    
-    .game-sidebar-right .move-history-list {
-        flex: 1;
-        max-height: 120px;
     }
 }
 
@@ -766,10 +786,7 @@ canvas {
     z-index: 1;
 }
 
-/* Right Sidebar Base */
-.game-sidebar-right {
-    display: none;
-}
+/* ui-scale and mobile blur override removed in revert */
 
 /* =========================================
    MOVE HISTORY SECTION
@@ -844,8 +861,8 @@ canvas {
 .move-history-list {
     max-height: 120px;
     overflow-y: auto;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
+    background: transparent;
+    border-radius: 0;
     padding: 0.5rem;
     display: flex;
     flex-direction: column;
@@ -914,3 +931,39 @@ canvas {
     padding: 1rem;
 }
 
+/* =========================================
+   9. INLINE MOVE HISTORY SECTION (merged into left panel)
+   ========================================= */
+
+.move-history-section-inline {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.move-history-section-inline h4 {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    color: var(--primary);
+    margin: 0 0 0.75rem 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.move-history-section-inline .move-history-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.move-history-section-inline .move-history-list {
+    max-height: 150px;
+    flex: 1;
+}

@@ -1,22 +1,39 @@
-<!DOCTYPE html>
+còn<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lịch sử ván đấu</title>
+    <title>Game History - CHESSMATE</title>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="./styles/basic.css">
     <link rel="stylesheet" href="./styles/index.css">
+    <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
     <style>
-        .history-item { margin-bottom: 8px; }
+        .history-container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .history-container h1 { color: var(--primary); margin-bottom: 1.5rem; }
+        .history-item { margin-bottom: 8px; background: var(--bg-card); padding: 1rem; border-radius: 8px; }
         #board { width: 400px; height: 400px; border: 1px solid #333; }
         #replayArea { margin-top: 24px; }
+        #moveInfo { color: var(--text-main); }
+        .control-btn { background: var(--bg-card); color: var(--text-main); border: var(--glass-border); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; }
+        .control-btn:hover { background: var(--primary); color: var(--bg-dark); }
     </style>
 </head>
 <body>
-    <h1>Lịch sử ván đấu</h1>
+    <div class="bg-gradient"></div>
+    <div class="bg-blur"></div>
+
+    <!-- Navbar Component -->
+    <div id="navbar-placeholder"></div>
+
+    <div class="history-container">
+        <h1><i class="fa-solid fa-clock-rotate-left"></i> Game History</h1>
     <div id="historyList"></div>
     <div id="replayArea" style="display:none;">
     <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
@@ -35,6 +52,9 @@
         </div>
     </div>
     </div>
+    </div>
+
+    <script src="./js/components/loader.js"></script>
     <!-- Nạp chess.js đúng như các file khác -->
     <script src="./libs/chess.js/dist/cjs/chess.js"></script> <!-- UMD/IIFE, không phải CJS/ESM -->
     <script>
@@ -65,4 +85,3 @@
     </script>
 </body>
 </html>
-

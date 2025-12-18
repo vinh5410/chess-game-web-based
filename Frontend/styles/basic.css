@@ -2,8 +2,9 @@
    RESET & VARIABLES
 ========================= */
 :root {
-    --bg-dark: #0f172a;
+    --bg-dark: #121212;
     --bg-card: rgba(30, 41, 59, 0.6);
+    --glass-bg: rgba(30, 41, 59, 0.75);
     --primary: #d4af37;
     --primary-hover: #f1c40f;
     --text-main: #f8fafc;
@@ -44,20 +45,20 @@ body {
 ========================= */
 .bg-gradient,
 .bg-blur {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: -1;
     pointer-events: none;
 }
 
 .bg-gradient {
-    background:
-        radial-gradient(circle at 80% 20%, #1e3a8a, transparent 50%),
-        radial-gradient(circle at 20% 80%, #331d2c, transparent 50%);
+    background-color: #0f172a;
+    background-image: radial-gradient(circle at 10% 20%, rgba(30, 58, 138, 0.4), transparent 50%),
+                      radial-gradient(circle at 90% 80%, rgba(51, 29, 44, 0.5), transparent 50%);
 }
 
 .bg-blur {
-    backdrop-filter: blur(80px);
+    backdrop-filter: blur(50px);
 }
 
 /* =========================

@@ -8,6 +8,12 @@ class PuzzleRenderer {
         this.legalMoves = [];
         this.lastMove = null;
         
+        // Colors - use GameConfig if available
+        const colors = window.GameConfig?.colors || {};
+        this.lightSquareColor = colors.lightSquare || '#F0D9B5';
+        this.darkSquareColor = colors.darkSquare || '#B58863';
+        this.highlightColor = colors.highlight || 'rgba(255, 255, 0, 0.4)';
+        
         // Piece Unicode symbols
         this.pieces = {
             'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
@@ -31,14 +37,14 @@ class PuzzleRenderer {
                 
                 // Alternate colors
                 const isLight = (row + col) % 2 === 0;
-                this.ctx.fillStyle = isLight ? '#F0D9B5' : '#B58863';
+                this.ctx.fillStyle = isLight ? this.lightSquareColor : this.darkSquareColor;
                 this.ctx.fillRect(x, y, this.squareSize, this.squareSize);
                 
                 // Highlight last move
                 if (this.lastMove) {
                     const square = this.getSquareFromCoords(col, row);
                     if (square === this.lastMove.from || square === this.lastMove.to) {
-                        this.ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
+                        this.ctx.fillStyle = this.highlightColor;
                         this.ctx.fillRect(x, y, this.squareSize, this.squareSize);
                     }
                 }
