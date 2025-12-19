@@ -9,7 +9,7 @@ class SocketClient {
         this.eventHandlers = new Map();
         
         // Server URL - Change this to your server address
-        this.serverUrl = 'http://localhost:3000';
+        this.serverUrl = window.location.origin;
     }
     
     connect() {
@@ -187,7 +187,9 @@ class SocketClient {
     getUsername() {
         return this.username;
     }
-    
+    getCurrentRoom() {
+    return this.currentRoom;
+}
     setCurrentRoom(roomId) {
         this.currentRoom = roomId;
     }
