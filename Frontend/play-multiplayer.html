@@ -190,7 +190,7 @@
                     <p class="panel-subtitle">You are <span id="yourColorDisplay">White</span> <i class="fa-solid fa-chess-king"></i></p>
                     
                     <div class="game-actions">
-                        <button onclick="offerDraw()" class="action-btn gold" id="drawBtn">
+                        <button onclick="showOfferDrawModal()" class="action-btn gold" id="drawBtn">
                             <i class="fa-solid fa-handshake"></i> Offer Draw
                         </button>
                         <button onclick="resign()" class="action-btn dark">
@@ -330,6 +330,147 @@
     <script src="./js/time-selector.js"></script>
     <script src="./js/utils.js"></script>   
     <script src="./js/play-multiplayer.js"></script>
+
+    <!-- CSS cho Chat System Messages -->
+    <style>
+        .chat-system-message {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #ccc;
+            text-align: center;
+            border-left: 3px solid #e2b714;
+        }
+        .chat-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .chat-btn {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+        .chat-btn:hover { opacity: 0.9; }
+        .chat-btn-yes { background: #81b64c; color: white; }
+        .chat-btn-no { background: #cc3333; color: white; }
+    </style>
+
+    <script>
+        // --- LOGIC XỬ LÝ CẦU HÒA TRONG CHAT ---
+        
+        // Helper: Thêm tin nhắn hệ thống vào khung chat
+        function addSystemMessage(html) {
+            const chatMessages = document.getElementById('chatMessages');
+            if (!chatMessages) return;
+            
+            // Xóa tin nhắn chào mừng nếu có
+            const welcomeMsg = chatMessages.querySelector('.chat-welcome');
+            if (welcomeMsg) welcomeMsg.remove();
+
+            const div = document.createElement('div');
+            div.className = 'chat-system-message';
+            div.innerHTML = html;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 1. Người chơi bấm nút "Offer Draw"
+        function showOfferDrawModal() {
+            const html = `
+                <div>Offer a draw to opponent?</div>
+                <div class="chat-actions">
+                    <button class="chat-btn chat-btn-yes" onclick="confirmOfferDraw(this)">Yes</button>
+                    <button class="chat-btn chat-btn-no" onclick="cancelDrawAction(this)">No</button>
+                </div>
+            `;
+            addSystemMessage(html);
+        }
+
+        // 2. Xác nhận gửi yêu cầu
+        function confirmOfferDraw(btn) {
+            // Xóa nút bấm để tránh bấm nhiều lần
+            if(btn) btn.closest('.chat-system-message').remove();
+            
+            const socket = window.socketClient?.socket;
+            const roomId = window.socketClient?.getCurrentRoom();
+            
+            if (socket && roomId) {
+                socket.emit('game:offer_draw', { roomId: roomId }); 
+                addSystemMessage("<i>Draw offer sent. Waiting for opponent...</i>");
+            } else {
+                addSystemMessage("<i>Error: Not connected to a game.</i>");
+            }
+        }
+
+        function cancelDrawAction(btn) {
+            if(btn) btn.closest('.chat-system-message').remove();
+        }
+
+        // 3. Setup Listeners (Nhận yêu cầu từ đối thủ)
+        function setupDrawListeners() {
+            const socket = window.socketClient?.socket;
+            if (socket) {
+                socket.off('game:draw_offered');
+                socket.off('game:draw_declined');
+                
+                // Khi đối thủ gửi yêu cầu hòa
+                socket.on('game:draw_offered', () => {
+                    const html = `
+                        <div>Opponent offers a draw</div>
+                        <div class="chat-actions">
+                            <button class="chat-btn chat-btn-yes" onclick="acceptDraw(this)">Accept</button>
+                            <button class="chat-btn chat-btn-no" onclick="declineDraw(this)">Decline</button>
+                        </div>
+                    `;
+                    addSystemMessage(html);
+                });
+
+                // Khi đối thủ từ chối
+                socket.on('game:draw_declined', () => {
+                    addSystemMessage("<i>Opponent declined the draw.</i>");
+                });
+                
+                console.log("✅ Draw listeners attached (Chat Mode)");
+            } else {
+                setTimeout(setupDrawListeners, 500);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            setupDrawListeners();
+        });
+
+        // 4. Chấp nhận hòa
+        function acceptDraw(btn) {
+            if(btn) btn.closest('.chat-system-message').remove();
+            const socket = window.socketClient?.socket;
+            const roomId = window.socketClient?.getCurrentRoom();
+            if (socket && roomId) {
+                socket.emit('game:accept_draw', { roomId: roomId });
+            }
+        }
+
+        // 5. Từ chối hòa
+        function declineDraw(btn) {
+            if(btn) {
+                const container = btn.closest('.chat-system-message');
+                container.innerHTML = "<i>You declined the draw.</i>";
+            }
+            const socket = window.socketClient?.socket;
+            const roomId = window.socketClient?.getCurrentRoom();
+            if (socket && roomId) {
+                socket.emit('game:decline_draw', { roomId: roomId });
+            }
+        }
+    </script>
 </body>
 </html>
 

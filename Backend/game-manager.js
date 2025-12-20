@@ -498,6 +498,7 @@ class GameManager {
 
             // Gửi kèm Elo của đối thủ xuống client luôn
             const opponentElo = (opponentObj.socketId === p1Obj.socketId) ? elo1 : elo2;
+            const myElo = (playerId === p1Obj.socketId) ? elo1 : elo2;
 
             const socket = this.io.sockets.sockets.get(playerId);
             if (socket) {
@@ -510,6 +511,7 @@ class GameManager {
                         color: room.getPlayerColor(opponentObj?.socketId),
                         elo: opponentElo // Gửi Elo xuống FE
                     },
+                    playerElo: myElo, // Gửi Elo của chính mình
                     timeControl: room.timeControl,
                     fen: room.game.fen()
                 });
@@ -627,8 +629,8 @@ class GameManager {
                 const playerIds = room.players;
                 const white = room.players.find(p => room.playerColors[p.socketId] === 'white');
                 const black = room.players.find(p => room.playerColors[p.socketId] === 'black');
-                const whiteUser = await User.findOne({ socketId: white?.socketId }) || {};
-                const blackUser = await User.findOne({ socketId: black?.socketId }) || {};
+                const whiteUser = await User.findById(white?.userId) || {};
+                const blackUser = await User.findById(black?.userId) || {};
 
                 // Chuyển moves sang dạng moveSchema
                 let moves = [];
@@ -665,13 +667,20 @@ class GameManager {
                 // Xác định kết quả
                 let result = 'ongoing';
                 let winner = null;
+                let terminationReason = reason;
+
                 if (room.status === 'finished') {
                     if (reason === 'checkmate' || reason === 'resignation' || reason === 'timeout') {
                         winner = room.playerColors[winnerId];
                         result = winner === 'white' ? 'white-win' : 'black-win';
                     } else if (reason === 'draw' || reason === 'stalemate' || reason === 'insufficient_material' || reason === 'repetition') {
-                        winner = 'draw';
+                        winner = null;
                         result = 'draw';
+                        
+                        // Map internal reasons to Schema enum
+                        if (reason === 'draw') terminationReason = 'draw-agreement';
+                        if (reason === 'repetition') terminationReason = 'threefold-repetition';
+                        if (reason === 'insufficient_material') terminationReason = 'insufficient-material';
                     }
                 }
 
@@ -692,7 +701,7 @@ class GameManager {
                     },
                     result,
                     winner,
-                    terminationReason: reason,
+                    terminationReason: terminationReason,
                     moves,
                     fen: {
                         initial: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
@@ -702,7 +711,7 @@ class GameManager {
                     startedAt: new Date(room.startedAt || room.createdAt),
                     endedAt: new Date(room.finishedAt || Date.now()),
                     roomId,
-                    rated: false
+                    rated: true
                 });
 
                 await gameHistory.save();
@@ -740,6 +749,42 @@ class GameManager {
             } catch (err) {
                 console.error('❌ Failed to save game history or update users:', err);
             }
+        }
+    }
+
+    // --- CÁC HÀM XỬ LÝ CẦU HÒA MỚI ---
+    offerDraw(roomId, socketId) {
+        const room = this.rooms.get(roomId);
+        if (!room || room.status !== 'playing') return;
+
+        const opponentId = room.getOpponent(socketId);
+        if (opponentId) {
+            // Gửi thông báo cho đối thủ
+            this.io.to(opponentId).emit('game:draw_offered', {
+                offeredBy: socketId
+            });
+        }
+    }
+
+    acceptDraw(roomId, socketId) {
+        const room = this.rooms.get(roomId);
+        if (!room || room.status !== 'playing') return;
+
+        // Nếu chấp nhận hòa, kết thúc game với lý do 'draw'
+        this.endGame(roomId, null, 'draw');
+        
+        // Thông báo cho cả phòng
+        this.io.to(roomId).emit('game:draw_accepted');
+    }
+
+    declineDraw(roomId, socketId) {
+        const room = this.rooms.get(roomId);
+        if (!room || room.status !== 'playing') return;
+
+        const opponentId = room.getOpponent(socketId);
+        if (opponentId) {
+            // Thông báo cho người gửi yêu cầu là đã bị từ chối
+            this.io.to(opponentId).emit('game:draw_declined');
         }
     }
     
