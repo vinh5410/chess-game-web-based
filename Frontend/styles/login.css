@@ -21,8 +21,8 @@ body {
     font-family: var(--font-body);
     background-color: var(--bg-dark);
     color: var(--text-main);
-    height: 100vh;
-    overflow: hidden; /* Khóa scroll trang chính */
+    min-height: 100vh;
+    overflow-y: auto; /* Cho phép scroll */
 }
 
 /* --- 2. GLOBAL BACKGROUND --- */
@@ -40,7 +40,7 @@ body {
 .split-container {
     display: grid;
     grid-template-columns: 45% 55%; /* Tỷ lệ chia màn hình */
-    height: 100vh;
+    min-height: 100vh;
     width: 100%;
 }
 
@@ -61,6 +61,7 @@ body {
     text-align: center;
     z-index: 2;
     animation: fadeSlideLeft 0.8s ease-out;
+    text-decoration: none;
 }
 
 .huge-logo {

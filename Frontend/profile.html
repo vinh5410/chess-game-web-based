@@ -6,107 +6,134 @@
     <title>My Profile - CHESSMATE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <link rel="stylesheet" href="./styles/navbar.css">
+    <link rel="stylesheet" href="./styles/basic.css">
     <link rel="stylesheet" href="./styles/index.css">
     <link rel="stylesheet" href="./styles/profile.css">
+    <link rel="stylesheet" href="./styles/navbar.css">
 </head>
 <body>
     <div class="bg-gradient"></div>
     <div class="bg-blur"></div>
 
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="/" class="navbar-brand">
-                <i class="fa-solid fa-chess-king"></i> CHESSMATE
-            </a>
-            
-            <ul class="navbar-menu">
-                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i> Multiplayer</a></li>
-                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i> VS Bot</a></li>
-                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i> Puzzles</a></li>
-                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i> Rankings</a></li>
-            </ul>
-            
-            <div class="navbar-actions">
-                <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Log In</a>
-                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
-                </div>
-                
-                <div id="user-menu">
-                    <div class="dropdown">
-                        <div class="user-info">
-                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
-                            <span id="username-display" class="username">User</span>
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar Component -->
+    <div id="navbar-placeholder"></div>
 
     <!-- Profile Content -->
     <div class="profile-container">
         <div class="profile-header">
             <img id="profile-avatar" src="" alt="Avatar" class="profile-avatar">
             <div class="profile-info">
-                <h1 id="profile-username" class="profile-username">Loading...</h1>
+                <h1 id="profile-username" class="profile-username">Loading...<span id="player-title" class="player-title">Beginner</span></h1>
                 <p id="profile-email" class="profile-email">Loading...</p>
                 <div class="profile-meta">
-                    <span id="profile-rating" class="rating">⭐ 1200</span>
-                    <span class="status" id="profile-status">🟢 Online</span>
-                    <span id="profile-joined">📅 Joined: Loading...</span>
+                    <span class="rating"><i class="fa-solid fa-star"></i> <span id="profile-rating">1200</span></span>
+                    <span class="status" id="profile-status"><i class="fa-solid fa-circle"></i> Online</span>
+                    <span id="profile-joined"><i class="fa-solid fa-calendar"></i> Joined: Loading...</span>
                 </div>
             </div>
-            <a href="/edit-profile.html" class="btn btn-primary">Edit Profile</a>
+            <a href="/edit-profile.html" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Edit Profile</a>
         </div>
 
         <div class="stats-container">
             <div class="stat-card">
-                <div class="stat-icon">🎮</div>
+                <div class="stat-icon"><i class="fa-solid fa-gamepad"></i></div>
                 <div class="stat-value" id="stat-games">0</div>
                 <div class="stat-label">Games Played</div>
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon">🏆</div>
+                <div class="stat-icon"><i class="fa-solid fa-trophy"></i></div>
                 <div class="stat-value" id="stat-won">0</div>
                 <div class="stat-label">Wins</div>
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon">❌</div>
+                <div class="stat-icon"><i class="fa-solid fa-xmark"></i></div>
                 <div class="stat-value" id="stat-lost">0</div>
                 <div class="stat-label">Losses</div>
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon">🤝</div>
+                <div class="stat-icon"><i class="fa-solid fa-handshake"></i></div>
                 <div class="stat-value" id="stat-draw">0</div>
                 <div class="stat-label">Draws</div>
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon">📊</div>
+                <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
                 <div class="stat-value" id="stat-winrate">0%</div>
                 <div class="stat-label">Win Rate</div>
             </div>
         </div>
+        
+        <!-- Match History Section -->
+        <h2 class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> Match History</h2>
+        <div class="history-card">
+            <div id="history-body">
+                <div class="loading">
+                    <i class="fa-solid fa-spinner"></i>
+                    <p>Loading history...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Replay Modal -->
+    <div class="replay-modal" id="replay-modal">
+        <div class="replay-container">
+            <div class="replay-header">
+                <h3><i class="fa-solid fa-chess"></i> Game Replay</h3>
+                <button class="close-modal" id="close-replay">&times;</button>
+            </div>
+            
+            <div class="replay-board-wrapper">
+                <!-- Opponent Info (Top) -->
+                <div class="replay-player-info player-top">
+                    <img class="player-avatar" id="replay-opponent-avatar" src="https://ui-avatars.com/api/?name=O&background=d4af37&color=0f172a" alt="Avatar">
+                    <div class="player-details">
+                        <span class="player-name" id="replay-opponent-name">Opponent</span>
+                    </div>
+                </div>
+                
+                <!-- Board -->
+                <div class="replay-board-square">
+                    <canvas id="replay-canvas" width="400" height="400"></canvas>
+                </div>
+                
+                <!-- Your Info (Bottom) -->
+                <div class="replay-player-info player-bottom">
+                    <img class="player-avatar" id="replay-player-avatar" src="https://ui-avatars.com/api/?name=Y&background=d4af37&color=0f172a" alt="Avatar">
+                    <div class="player-details">
+                        <span class="player-name" id="replay-player-name">You</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="replay-controls">
+                <button id="first-move"><i class="fa-solid fa-backward-fast"></i></button>
+                <button id="prev-move"><i class="fa-solid fa-backward-step"></i></button>
+                <span class="move-info" id="move-info">Starting Position</span>
+                <button id="next-move"><i class="fa-solid fa-forward-step"></i></button>
+                <button id="last-move"><i class="fa-solid fa-forward-fast"></i></button>
+            </div>
+        </div>
     </div>
 
+    <script src="./libs/chess.js/dist/cjs/chess.js"></script>
+    <script>
+        if (typeof Chess !== 'undefined') { window.Chess = Chess; } 
+        else { console.error('❌ Chess.js not found'); }
+    </script>
+    <script src="./js/components/loader.js"></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/chess-board-renderer.js"></script>
     <script src="./js/auth-check.js"></script>
-    <script src="./js/navbar.js"></script>
+    
     <script src="./js/profile.js"></script>
 </body>
 </html>
+

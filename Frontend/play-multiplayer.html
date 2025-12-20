@@ -7,57 +7,23 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="stylesheet" href="./styles/basic.css">
     <link rel="stylesheet" href="./styles/index.css">
-    <link rel="stylesheet" href="./styles/navbar.css">
     <link rel="stylesheet" href="./styles/play-multiplayer.css">
     <link rel="stylesheet" href="./styles/promote-ui.css">
+    <link rel="stylesheet" href="./styles/navbar.css">
 </head>
 <body>
     
     <div class="bg-gradient"></div>
     <div class="bg-blur"></div>
 
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="/" class="navbar-brand">
-                <i class="fa-solid fa-chess-king"></i> CHESSMATE
-            </a>
-            
-            <ul class="navbar-menu">
-                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i> Multiplayer</a></li>
-                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i> VS Bot</a></li>
-                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i> Puzzles</a></li>
-                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i> Rankings</a></li>
-            </ul>
-            
-            <div class="navbar-actions">
-                <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Log In</a>
-                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
-                </div>
-                
-                <div id="user-menu">
-                    <div class="dropdown">
-                        <div class="user-info">
-                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
-                            <span id="username-display" class="username">User</span>
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar Component -->
+    <div id="navbar-placeholder"></div>
 
     <div class="app">
         <div class="header" id="mainHeader">
@@ -103,7 +69,6 @@
             </div>
             
             <p id="gameStatus" class="status-text">Connecting to server...</p>
-            <p id="onlineUsers" class="online-users"><i class="fa-solid fa-circle"></i> Online: 0</p>
         </div>
 
         <!-- Random Match Screen -->
@@ -136,15 +101,26 @@
             
             <!-- Room Code Display (shown after room created) -->
             <div id="roomCodeSection" class="room-code-display hidden">
-                <h3>Room Code:</h3>
-                <input type="text" id="roomCodeDisplay" readonly />
-                <button class="copy-btn" onclick="copyRoomCode()">📋 Copy</button>
-                <p>Share this code with your friend!</p>
+                <div class="room-code-card">
+                    <div class="room-code-label">Your Room Code</div>
+                    <div class="room-code-value" id="roomCodeDisplay">------</div>
+                    <button class="copy-btn" onclick="copyRoomCode()">
+                        <i class="fa-solid fa-copy"></i> Copy Code
+                    </button>
+                </div>
+                <div class="room-code-hint">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    Share this code with your friend to start the game
+                </div>
+                <div class="waiting-indicator">
+                    <div class="waiting-spinner"></div>
+                    <span>Waiting for opponent to join...</span>
+                </div>
             </div>
             
             <div class="action-buttons">
                 <button class="action-btn danger" onclick="backToLobby()">
-                    <i class="fa-solid fa-arrow-left"></i> Back
+                    <i class="fa-solid fa-arrow-left"></i> Cancel
                 </button>
             </div>
         </div>
@@ -221,56 +197,100 @@
             
             <!-- Center: Chessboard -->
             <div class="game-center">
-                <div class="chessboard-container">
+                <div id="chessboardContainer" class="chessboard-container">
                     <!-- Opponent Info (Top) -->
-                    <div class="player-info-bar">
-                        <div class="player-avatar"><i class="fa-solid fa-user"></i></div>
+                    <div class="player-info player-top" id="playerTopInfo">
+                        <img class="player-avatar" id="opponentAvatarTop" src="https://ui-avatars.com/api/?name=O&background=d4af37&color=0f172a" alt="Avatar">
                         <div class="player-details">
-                            <span class="player-name"></span>
-                            <span class="player-rating"></span>
+                            <span class="player-name" id="opponentNameTop">Opponent</span>
+                            <span class="player-rating" id="opponentRatingTop">ELO: 1200</span>
                         </div>
-                        <div class="player-timer"></div>
+                        <div class="player-timer" id="opponentTimerTop">10:00</div>
                     </div>
 
-                    <!-- Chessboard Canvas -->
-                    <canvas id="chessCanvas" width="440" height="440"></canvas>
+                    <!-- Board Square Wrapper -->
+                    <div class="board-square">
+                        <canvas id="chessCanvas" width="640" height="640"></canvas>
+                    </div>
 
                     <!-- Player Info (Bottom) -->
-                    <div class="player-info-bar player-bottom">
-                        <div class="player-avatar"><i class="fa-solid fa-user"></i></div>
+                    <div class="player-info player-bottom" id="playerBottomInfo">
+                        <img class="player-avatar" id="playerAvatarBottom" src="https://ui-avatars.com/api/?name=Y&background=d4af37&color=0f172a" alt="Avatar">
                         <div class="player-details">
-                            <span class="player-name"></span>
-                            <span class="player-rating"></span>
+                            <span class="player-name" id="playerNameBottom">You</span>
+                            <span class="player-rating" id="playerRatingBottom">ELO: 1200</span>
                         </div>
-                        <div class="player-timer"></div>
+                        <div class="player-timer" id="playerTimerBottom">10:00</div>
                     </div>
 
-                    <!-- Replay Controls -->
-                    <div id="replayControls" style="display:block; margin-top:10px; text-align:center;">
-                        <button id="prevStepBtn" class="control-btn">⬅️</button>
-                        <span id="stepInfo">Bàn cờ ban đầu</span>
-                        <button id="nextStepBtn" class="control-btn">➡️</button>
-                    </div>
-                    <!-- Game Over Overlay (single instance) -->
+                    <!-- Game Over Overlay -->
                     <div id="gameOverOverlay" class="game-over hidden">
                         <div class="overlay-content">
                             <h2>Game Over</h2>
                             <p id="winnerText">Winner: White</p>
-                            <button onclick="backToLobby()" class="btn-primary">
+                            <button onclick="backToLobby()" class="btn-back">
                                 <i class="fa-solid fa-arrow-left"></i> Back to Lobby
                             </button>
                         </div>
                     </div>
+
+                    <!-- Resign Confirmation Modal -->
+                    <div id="resignModal" class="game-over hidden">
+                        <div class="overlay-content resign-confirm">
+                            <h2><i class="fa-solid fa-flag"></i> Resign?</h2>
+                            <p>Are you sure you want to resign? This will count as a loss.</p>
+                            <div class="modal-buttons">
+                                <button onclick="confirmResign()" class="btn-danger">
+                                    <i class="fa-solid fa-check"></i> Yes, Resign
+                                </button>
+                                <button onclick="cancelResign()" class="btn-secondary">
+                                    <i class="fa-solid fa-xmark"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Draw Offer Modal (You offering) -->
+                    <div id="drawOfferModal" class="game-over hidden">
+                        <div class="overlay-content draw-confirm">
+                            <h2><i class="fa-solid fa-handshake"></i> Offer Draw?</h2>
+                            <p>Send a draw offer to your opponent?</p>
+                            <div class="modal-buttons">
+                                <button onclick="confirmDrawOffer()" class="btn-gold">
+                                    <i class="fa-solid fa-check"></i> Yes, Offer
+                                </button>
+                                <button onclick="cancelDrawOffer()" class="btn-secondary">
+                                    <i class="fa-solid fa-xmark"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Draw Request Modal (Opponent offers) -->
+                    <div id="drawRequestModal" class="game-over hidden">
+                        <div class="overlay-content draw-confirm">
+                            <h2><i class="fa-solid fa-handshake"></i> Draw Offer</h2>
+                            <p id="drawOfferText">Opponent offers a draw. Accept?</p>
+                            <div class="modal-buttons">
+                                <button onclick="acceptDraw()" class="btn-gold">
+                                    <i class="fa-solid fa-check"></i> Accept
+                                </button>
+                                <button onclick="declineDraw()" class="btn-secondary">
+                                    <i class="fa-solid fa-xmark"></i> Decline
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Optional footer with current player quick info (keep or remove as you like) -->
-                <div class="game-footer">
-                    <div class="player-info current-player-info">
-                        <div class="player-timer small-timer"></div>
-                        <div class="player-details">
-                            <span class="player-name small-name"></span>
-                            <span class="player-color small-color"></span>
-                        </div>
+                <!-- Move History Controls -->
+                <div class="move-history-section-inline">
+                    <div class="move-history-controls">
+                        <button id="firstStepBtn" class="history-btn" title="First Move"><i class="fa-solid fa-backward-fast"></i></button>
+                        <button id="prevStepBtn" class="history-btn" title="Previous Move"><i class="fa-solid fa-backward-step"></i></button>
+                        <span id="stepInfo" class="history-position">0/0</span>
+                        <button id="nextStepBtn" class="history-btn" title="Next Move"><i class="fa-solid fa-forward-step"></i></button>
+                        <button id="lastStepBtn" class="history-btn" title="Last Move"><i class="fa-solid fa-forward-fast"></i></button>
                     </div>
                 </div>
             </div>
@@ -278,10 +298,17 @@
             <!-- Right Sidebar: Chat -->
             <div class="game-sidebar-right">
                 <div class="chat-panel glass-panel">
-                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-welcome">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <p>Chat with your opponent. Be respectful!</p>
+                        </div>
+                    </div>
                     <div class="chat-input-wrapper">
                         <input type="text" id="chatInput" placeholder="Type a message..." maxlength="200" />
-                        <button onclick="sendMessage()" class="send-btn">Send</button>
+                        <button onclick="sendMessage()" class="send-btn">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -294,15 +321,7 @@
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
-    <!-- ADD AUTH CHECK BEFORE OTHER SCRIPTS -->
-    <script src="./js/auth-check.js"></script>
-    
     <script>
-        // CHECK AUTH FIRST
-        if (!requireAuth()) {
-            // Will redirect to login if not authenticated
-        }
-        
         // Initialize Chess.js
         if (typeof Chess !== 'undefined') {
             window.Chess = Chess;
@@ -315,6 +334,10 @@
         }
     </script>
     
+    <!-- Load navbar first -->
+    <script src="./js/components/loader.js"></script>
+    <!-- Then auth check (needs navbar elements) -->
+    <script src="./js/auth-check.js"></script>
     <script src="./js/navbar.js"></script>
     <script src="./js/socket-client.js"></script>
     <script src="./js/time-controls-config.js"></script>
@@ -323,3 +346,5 @@
     <script src="./js/play-multiplayer.js"></script>
 </body>
 </html>
+
+

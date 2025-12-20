@@ -85,7 +85,12 @@ function updateNavbar() {
         // Show user menu
         if (userMenu) userMenu.style.display = 'flex';
         if (usernameDisplay) usernameDisplay.textContent = user.username;
-        if (userAvatar && user.avatar) userAvatar.src = user.avatar;
+        
+        // Set avatar with fallback to default
+        if (userAvatar) {
+            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=d4af37&color=0f172a`;
+            userAvatar.src = user.avatar || defaultAvatar;
+        }
     } else {
         // Show login/register buttons
         if (authButtons) authButtons.style.display = 'flex';
@@ -104,9 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
-                logout();
-            }
+            logout();
         });
     }
     
@@ -185,5 +188,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+    }
+    
+    // Auth icon trigger for mobile (when not logged in)
+    const authIconTrigger = document.querySelector('.auth-icon-trigger');
+    const authDropdown = document.querySelector('.auth-dropdown');
+    
+    if (authIconTrigger && authDropdown) {
+        console.log('Auth icon trigger found, setting up click handler');
+        authIconTrigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.innerWidth <= 768) {
+                console.log('Auth icon clicked, toggling dropdown');
+                authDropdown.classList.toggle('show');
+            }
+        });
+        
+        // Close auth dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#auth-buttons')) {
+                authDropdown.classList.remove('show');
+            }
+        });
+        // Hide dropdown if resizing to desktop
+        const syncAuthDropdown = () => {
+            if (window.innerWidth > 768) {
+                authDropdown.classList.remove('show');
+            }
+        };
+        syncAuthDropdown();
+        window.addEventListener('resize', () => {
+            // lightweight debounce via requestAnimationFrame
+            window.requestAnimationFrame(syncAuthDropdown);
+        });
+
+    } else {
+        console.log('Auth elements not found:', { authIconTrigger, authDropdown });
     }
 });

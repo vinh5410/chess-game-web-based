@@ -7,57 +7,23 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
     
-    <link rel="stylesheet" href="./styles/navbar.css">
     <link rel="stylesheet" href="./styles/index.css">
     <link rel="stylesheet" href="./styles/play-vs-bot.css">
+    <link rel="stylesheet" href="./styles/promote-ui.css">
     <link rel="stylesheet" href="./styles/basic.css">
+    <link rel="stylesheet" href="./styles/navbar.css">
 </head>
 <body>
     <div class="bg-gradient"></div>
     <div class="bg-blur"></div>
 
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="/" class="navbar-brand">
-                <i class="fa-solid fa-chess-king"></i> CHESSMATE
-            </a>
-            
-            <ul class="navbar-menu">
-                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i> Multiplayer</a></li>
-                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i> VS Bot</a></li>
-                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i> Puzzles</a></li>
-                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i> Rankings</a></li>
-            </ul>
-            
-            <div class="navbar-actions">
-                <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Log In</a>
-                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
-                </div>
-                
-                <div id="user-menu">
-                    <div class="dropdown">
-                        <div class="user-info">
-                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
-                            <span id="username-display" class="username">User</span>
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar Component -->
+    <div id="navbar-placeholder"></div>
 
     <div class="app">
         
@@ -132,95 +98,120 @@
         </div>
 
         <div id="colorMenu" class="difficulty-menu glass-panel">
-    <h2>Choose Your Side</h2>
-    <p class="difficulty-subtitle">Who makes the first move?</p>
-    
-    <div class="color-grid">
-        <div class="color-card">
-            <button onclick="selectColor('white')" class="color-btn white-side">
-                <div class="color-icon"><i class="fa-solid fa-chess-king"></i></div>
-                <div class="color-details">
-                    <div class="color-name">White</div>
-                    <div class="color-desc">First Move</div>
+            <h2>Choose Your Side</h2>
+            <p class="difficulty-subtitle">Who makes the first move?</p>
+            
+                    <div class="color-grid">
+                <div class="color-card">
+                    <button onclick="selectColor('white')" class="color-btn white-side">
+                        <div class="color-icon"><i class="fa-solid fa-chess-king"></i></div>
+                        <div class="color-details">
+                            <div class="color-name">White</div>
+                            <div class="color-desc">First Move</div>
+                        </div>
+                    </button>
                 </div>
-            </button>
-        </div>
-        <div class="color-card">
-            <button onclick="selectColor('random')" class="color-btn random-side">
-                <div class="color-icon"><i class="fa-solid fa-shuffle"></i></div>
-                <div class="color-details">
-                    <div class="color-name">Random</div>
-                    <div class="color-desc">50 / 50</div>
+                <div class="color-card">
+                    <button onclick="selectColor('random')" class="color-btn random-side">
+                        <div class="color-icon"><i class="fa-solid fa-shuffle"></i></div>
+                        <div class="color-details">
+                            <div class="color-name">Random</div>
+                            <div class="color-desc">50 / 50</div>
+                        </div>
+                    </button>
                 </div>
-            </button>
-        </div>
-        <div class="color-card">
-            <button onclick="selectColor('black')" class="color-btn black-side">
-                <div class="color-icon"><i class="fa-regular fa-chess-king"></i></div>
-                <div class="color-details">
-                    <div class="color-name">Black</div>
-                    <div class="color-desc">Second Move</div>
+                <div class="color-card">
+                    <button onclick="selectColor('black')" class="color-btn black-side">
+                        <div class="color-icon"><i class="fa-regular fa-chess-king"></i></div>
+                        <div class="color-details">
+                            <div class="color-name">Black</div>
+                            <div class="color-desc">Second Move</div>
+                        </div>
+                    </button>
                 </div>
-            </button>
+            </div>
         </div>
-    </div>
-    </div>
 
-        <div class="left-sidebar">
-            <div id="gameControls" class="game-controls glass-panel hidden">
-                <div class="bot-controls">
-                    <div class="info-group">
-                        <span class="bot-info" id="botLevelInfo"><i class="fa-solid fa-robot"></i> Bot Level 5</span>
-                        <span class="color-info" id="playerColorInfo">Playing White</span>
-                    </div>
-                    <div class="action-group">
-                        <button onclick="restartGame()" class="control-btn restart"><i class="fa-solid fa-rotate-right"></i> New Game</button>
-                        <button onclick="flipBoard()" class="control-btn flip"><i class="fa-solid fa-arrows-rotate"></i> Flip</button>
-                    </div>
+        <div class="game-sidebar-left" id="gameSidebarLeft" style="display:none;">
+            <!-- Header in left column -->
+            <div class="game-header-info">
+                <h1><i class="fa-solid fa-robot"></i> PvE Arena</h1>
+                <p class="subtitle">Challenge the AI</p>
+            </div>
+            
+            <div id="gameControls" class="game-info-panel glass-panel">
+                <h3 class="panel-title">Playing vs <span id="botLevelInfo">Bot Lv.5</span></h3>
+                <p class="panel-subtitle">You are <span id="playerColorInfo">White</span> <i class="fa-solid fa-chess-king"></i></p>
+                
+                <div class="game-actions">
+                    <button onclick="restartGame()" class="action-btn gold">
+                        <i class="fa-solid fa-rotate-right"></i> New Game
+                    </button>
+                    <button onclick="flipBoard()" class="action-btn dark">
+                        <i class="fa-solid fa-arrows-rotate"></i> Flip
+                    </button>
                 </div>
                 
-                <div class="status-divider"></div>
+                <div class="game-status-section">
+                    <h4><i class="fa-solid fa-hourglass-half"></i> STATUS</h4>
+                    <p id="gameStatus" class="status-message">—</p>
+                </div>
                 
-                <div class="status-section">
-                    <div class="status-label"><i class="fa-solid fa-hourglass-end"></i> Status</div>
-                    <div class="status-value" id="gameStatus">Waiting for your move...</div>
-                    
-                    <div class="status-info-row">
-                        <div class="info-item">
-                            <span class="info-label"><i class="fa-solid fa-user"></i> Turn:</span>
-                            <span class="info-value" id="currentTurn">White</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label"><i class="fa-solid fa-calculator"></i> Move:</span>
-                            <span class="info-value" id="moveCount">1</span>
-                        </div>
+                <div class="game-stats">
+                    <div class="stat-item">
+                        <span class="stat-label"><i class="fa-solid fa-user"></i> Turn:</span>
+                        <span class="stat-value" id="currentTurn">White</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label"><i class="fa-solid fa-list-ol"></i> Move:</span>
+                        <span class="stat-value" id="moveCount">1</span>
+                    </div>
+                </div>
+
+                <!-- Move History merged here -->
+                <div class="move-history-section-inline">
+                    <h4><i class="fa-solid fa-clock-rotate-left"></i> MOVE HISTORY</h4>
+                    <div class="move-history-controls">
+                        <button onclick="goToFirstMove()" class="history-btn" title="First Move"><i class="fa-solid fa-backward-fast"></i></button>
+                        <button onclick="goToPrevMove()" class="history-btn" title="Previous Move"><i class="fa-solid fa-backward-step"></i></button>
+                        <span id="historyPosition" class="history-position">0/0</span>
+                        <button onclick="goToNextMove()" class="history-btn" title="Next Move"><i class="fa-solid fa-forward-step"></i></button>
+                        <button onclick="goToLastMove()" class="history-btn" title="Last Move"><i class="fa-solid fa-forward-fast"></i></button>
+                    </div>
+                    <div id="moveHistoryList" class="move-history-list">
+                        <p class="no-moves-msg">No moves yet</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="chessboardContainer" class="chessboard-container hidden">
-            <!-- Bot Info (Top) -->
-            <div class="player-info player-top">
-                <div class="player-avatar">
+        <div class="game-center" id="gameCenter" style="display:none;">
+            <div id="chessboardContainer" class="chessboard-container">
+            <!-- Top Info Bar -->
+            <div class="player-info player-top" id="topInfoBar">
+                <div class="player-avatar bot-avatar" id="topBotAvatar">
                     <i class="fa-solid fa-robot"></i>
                 </div>
+                <img class="player-avatar" id="topPlayerAvatar" src="https://ui-avatars.com/api/?name=Y&background=d4af37&color=0f172a" alt="Avatar" style="display: none;">
                 <div class="player-details">
-                    <div class="player-name" id="botNameTop">Chess Bot</div>
-                    <div class="player-rating" id="botRatingTop">ELO: 1500</div>
+                    <div class="player-name" id="topName">Chess Bot</div>
+                    <div class="player-rating" id="topRating">LV 5</div>
                 </div>
             </div>
             
-            <canvas id="chessCanvas" width="640" height="640"></canvas>
+            <div class="board-square">
+                <canvas id="chessCanvas" width="640" height="640"></canvas>
+            </div>
             
-            <!-- Player Info (Bottom) -->
-            <div class="player-info player-bottom">
-                <div class="player-avatar">
-                    <i class="fa-solid fa-user"></i>
+            <!-- Bottom Info Bar -->
+            <div class="player-info player-bottom" id="bottomInfoBar">
+                <div class="player-avatar bot-avatar" id="bottomBotAvatar" style="display: none;">
+                    <i class="fa-solid fa-robot"></i>
                 </div>
+                <img class="player-avatar" id="bottomPlayerAvatar" src="https://ui-avatars.com/api/?name=Y&background=d4af37&color=0f172a" alt="Avatar">
                 <div class="player-details">
-                    <div class="player-name" id="playerNameBottom">You</div>
-                    <div class="player-rating" id="playerRatingBottom">ELO: 1200</div>
+                    <div class="player-name" id="bottomName">You</div>
+                    <div class="player-rating" id="bottomRating">ELO: 1200</div>
                 </div>
             </div>
             
@@ -231,7 +222,10 @@
                     <button onclick="restartGame()" class="btn btn-primary">Play Again</button>
                 </div>
             </div>
+            </div>
         </div>
+
+
     </div>
 
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
@@ -243,8 +237,12 @@
         });
     </script>
     
+    <script src="./js/components/loader.js"></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/promote-ui.js"></script>
     <script src="./js/play-vs-bot.js"></script>
-    <script src="./js/navbar.js"></script>
+    
     <script src="./js/auth-check.js"></script>
 </body>
 </html>
+

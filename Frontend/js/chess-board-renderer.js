@@ -1,5 +1,5 @@
 class ChessBoardRenderer {
-    constructor(canvasId) {
+    constructor(canvasId, options = {}) {
         this.canvas = document.getElementById(canvasId);
         if (!this.canvas) {
             throw new Error(`Canvas element '${canvasId}' not found`);
@@ -8,18 +8,24 @@ class ChessBoardRenderer {
         this.ctx = this.canvas.getContext('2d');
         this.game = new window.Chess();
         
-        // Canvas settings - RESPONSIVE
-        this.calculateResponsiveSize();
+        // Canvas settings - RESPONSIVE or FIXED
+        if (options.fixedSize) {
+            this.canvasSize = options.fixedSize;
+            this.squareSize = this.canvasSize / 8;
+        } else {
+            this.calculateResponsiveSize();
+        }
         this.canvas.width = this.canvasSize;
         this.canvas.height = this.canvasSize;
         
-        // Colors (có thể override)
-        this.lightSquareColor = '#f0d9b5';
-        this.darkSquareColor = '#b58863';
-        this.highlightColor = 'rgba(255, 255, 0, 0.4)';
-        this.legalMoveColor = 'rgba(0, 150, 0, 0.6)';
-        this.captureColor = 'rgba(200, 0, 0, 0.6)';
-        this.selectedColor = 'rgba(255, 200, 0, 0.6)';
+        // Colors - use GameConfig if available, else fallback
+        const colors = window.GameConfig?.colors || {};
+        this.lightSquareColor = colors.lightSquare || '#f0d9b5';
+        this.darkSquareColor = colors.darkSquare || '#b58863';
+        this.highlightColor = colors.highlight || 'rgba(255, 255, 0, 0.4)';
+        this.legalMoveColor = colors.legalMove || 'rgba(0, 150, 0, 0.6)';
+        this.captureColor = colors.capture || 'rgba(200, 0, 0, 0.6)';
+        this.selectedColor = colors.selected || 'rgba(255, 200, 0, 0.6)';
         
         // Game state
         this.selectedSquare = null;
@@ -168,23 +174,32 @@ class ChessBoardRenderer {
     }
     
     drawCoordinates() {
-        this.ctx.font = `${Math.max(10, this.squareSize * 0.15)}px Arial`;
-        this.ctx.fillStyle = '#333';
+        const fontSize = Math.max(10, this.squareSize * 0.15);
+        this.ctx.font = `bold ${fontSize}px Arial`;
         
-        // Files (a-h)
+        // Files (a-h) - draw at bottom of each square
         for (let file = 0; file < 8; file++) {
-            const letter = String.fromCharCode(97 + file);
-            const x = file * this.squareSize + 5;
-            const y = 8 * this.squareSize - 5;
+            const actualFile = this.isFlipped ? 7 - file : file;
+            const letter = String.fromCharCode(97 + actualFile);
+            const x = file * this.squareSize + 3;
+            const y = this.canvasSize - 3;
+            
+            // Color based on square color
+            const isLightSquare = (7 + file) % 2 === 0;
+            this.ctx.fillStyle = isLightSquare ? this.darkSquareColor : this.lightSquareColor;
             this.ctx.fillText(letter, x, y);
         }
         
-        // Ranks (1-8)
+        // Ranks (1-8) - draw at right side of each square
         for (let rank = 0; rank < 8; rank++) {
-            const number = this.isFlipped ? (rank + 1) : (8 - rank);
-            const x = 8 * this.squareSize - 15;
-            const y = rank * this.squareSize + 15;
-            this.ctx.fillText(number, x, y);
+            const actualRank = this.isFlipped ? rank + 1 : 8 - rank;
+            const x = this.canvasSize - fontSize + 2;
+            const y = rank * this.squareSize + fontSize;
+            
+            // Color based on square color
+            const isLightSquare = (rank + 7) % 2 === 0;
+            this.ctx.fillStyle = isLightSquare ? this.darkSquareColor : this.lightSquareColor;
+            this.ctx.fillText(actualRank, x, y);
         }
     }
     
@@ -404,51 +419,70 @@ class ChessBoardRenderer {
         if (!this.canInteract() || e.touches.length !== 1) return;
         
         const touch = e.touches[0];
-        const { square, x, y } = this.getTouchPosition(touch);
-        
-        if (!square) return;
-        
-        const piece = this.game.get(square);
-        if (piece && piece.color === this.getPlayerColor()) {
-            this.mousePos = { x, y };
-            this.startDrag(square, piece);
-            console.log('📱 Touch drag started:', square);
-        }
+        this.touchStartPos = { x: touch.clientX, y: touch.clientY };
+        this.touchMoved = false;
     }
     
     onTouchMove(e) {
         e.preventDefault();
         
-        if (!this.isDragging || e.touches.length !== 1) return;
+        if (e.touches.length !== 1) return;
         
         const touch = e.touches[0];
-        const { x, y } = this.getTouchPosition(touch);
         
-        this.mousePos = { x, y };
-        this.draw();
+        // Check if finger moved significantly
+        if (this.touchStartPos) {
+            const dx = touch.clientX - this.touchStartPos.x;
+            const dy = touch.clientY - this.touchStartPos.y;
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                // Start dragging if not already
+                if (!this.touchMoved) {
+                    this.touchMoved = true;
+                    const { square, x, y } = this.getTouchPosition({ clientX: this.touchStartPos.x, clientY: this.touchStartPos.y });
+                    if (square) {
+                        const piece = this.game.get(square);
+                        if (piece && piece.color === this.getPlayerColor()) {
+                            this.mousePos = { x, y };
+                            this.startDrag(square, piece);
+                        }
+                    }
+                }
+                
+                if (this.isDragging) {
+                    const { x, y } = this.getTouchPosition(touch);
+                    this.mousePos = { x, y };
+                    this.draw();
+                }
+            }
+        }
     }
     
     onTouchEnd(e) {
         e.preventDefault();
         
-        if (!this.isDragging || !this.dragStartSquare) return;
-        
-        // Get final position from last touch or changedTouches
         const touch = e.changedTouches[0];
-        const { square: targetSquare } = this.getTouchPosition(touch);
         
-        console.log('📱 Touch drag ended:', this.dragStartSquare, '→', targetSquare);
-        
-        if (targetSquare && targetSquare !== this.dragStartSquare) {
-            this.tryMove(this.dragStartSquare, targetSquare);
+        if (this.touchMoved && this.isDragging) {
+            // Was dragging - complete the move
+            const { square: targetSquare } = this.getTouchPosition(touch);
+            
+            if (targetSquare && targetSquare !== this.dragStartSquare) {
+                this.tryMove(this.dragStartSquare, targetSquare);
+            }
+            
+            this.isDragging = false;
+            this.dragPiece = null;
+            this.dragStartSquare = null;
+            this.selectedSquare = null;
+            this.legalMoves = [];
+            this.draw();
+        } else {
+            // Tap - treat as click
+            this.onClick({ clientX: touch.clientX, clientY: touch.clientY });
         }
         
-        this.isDragging = false;
-        this.dragPiece = null;
-        this.dragStartSquare = null;
-        this.selectedSquare = null;
-        this.legalMoves = [];
-        this.draw();
+        this.touchStartPos = null;
+        this.touchMoved = false;
     }
     
     getTouchPosition(touch) {

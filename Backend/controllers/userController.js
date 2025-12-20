@@ -71,8 +71,9 @@ exports.updateProfile = async (req, res) => {
             user.username = username;
         }
         
-        if (avatar) {
-            user.avatar = avatar;
+        // Allow avatar to be set to empty string (remove avatar)
+        if (avatar !== undefined) {
+            user.avatar = avatar || '';
         }
         
         await user.save();

@@ -1,6 +1,19 @@
 /* Play Multiplayer Styles */
 /* Note: Basic styles (body, navbar, variables) are inherited from index.css */
 
+/* CSS Variables for player bars */
+:root {
+    --player-bar-height: 64px;
+    --player-bars-total: calc(var(--player-bar-height) * 2);
+}
+
+/* Override body overflow for multiplayer page */
+body {
+    overflow: auto;
+    height: auto;
+    min-height: 100vh;
+}
+
 /* =========================================
    APP LAYOUT
    ========================================= */
@@ -22,7 +35,7 @@
 }
 
 .game-info h1 {
-    font-family: 'Cinzel', serif;
+    font-family: 'Inter', sans-serif;
     font-size: 2rem;
     color: var(--primary, #d4af37);
     text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
@@ -60,7 +73,7 @@
 }
 
 .lobby-menu h2 {
-    font-family: 'Cinzel', serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
     color: var(--text-main, #f8fafc);
@@ -116,7 +129,7 @@
 }
 
 .mode-name {
-    font-family: 'Cinzel', serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.1rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -171,7 +184,7 @@
 }
 
 .menu h2 {
-    font-family: 'Cinzel', serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.5rem;
     margin-bottom: 20px;
     color: var(--text-main, #f8fafc);
@@ -252,68 +265,74 @@
 .action-buttons {
     display: flex;
     justify-content: center;
-    gap: 1rem;
+    gap: 0.75rem;
     margin-top: 1.5rem;
     flex-wrap: wrap;
 }
 
 .action-btn {
-    padding: 0.9rem 2rem;
-    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
     font-weight: 600;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    min-width: 140px;
+    gap: 0.4rem;
+    min-width: 100px;
     justify-content: center;
 }
 
 .action-btn.primary {
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
 }
 
 .action-btn.primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
 }
 
 .action-btn.danger {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    color: white;
+    background: rgba(30, 41, 59, 0.8);
+    color: var(--text-main, #f8fafc);
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .action-btn.danger:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
+    background: rgba(51, 65, 85, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
 }
 
 .action-btn.success {
     background: linear-gradient(135deg, #27ae60, #2ecc71);
     color: white;
+    box-shadow: 0 2px 6px rgba(46, 204, 113, 0.25);
 }
 
 .action-btn.success:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(46, 204, 113, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.35);
 }
 
 /* =========================================
    JOIN FORM
    ========================================= */
 .join-form {
-    margin: 1.5rem 0;
+    margin: 1.5rem auto;
+    display: flex;
+    justify-content: center;
 }
 
 .join-form input {
     padding: 1rem 1.5rem;
     font-size: 1.5rem;
     text-align: center;
-    letter-spacing: 0.5rem;
+    letter-spacing: 0.4rem;
     text-transform: uppercase;
     border: 2px solid rgba(255,255,255,0.2);
     border-radius: 12px;
@@ -321,7 +340,8 @@
     color: var(--text-main, #f8fafc);
     outline: none;
     transition: all 0.3s;
-    width: 200px;
+    width: 220px;
+    max-width: 100%;
 }
 
 .join-form input:focus {
@@ -331,53 +351,107 @@
 
 .join-form input::placeholder {
     letter-spacing: normal;
-    font-size: 1rem;
+    font-size: 0.9rem;
     text-transform: none;
 }
 
 /* =========================================
    ROOM CODE DISPLAY
    ========================================= */
-.room-code-display h3 {
+.room-code-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.room-code-card {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 16px;
+    padding: 1.25rem 2rem 1.5rem;
+    text-align: center;
+    min-width: 280px;
+}
+
+.room-code-label {
     color: var(--text-muted, #94a3b8);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     margin-bottom: 0.5rem;
 }
 
-.room-code-display input {
-    padding: 1rem 1.5rem;
-    font-size: 2rem;
-    text-align: center;
+.room-code-value {
+    font-size: 2.5rem;
+    font-weight: 700;
     letter-spacing: 0.5rem;
-    font-weight: bold;
-    border: 2px solid var(--primary, #d4af37);
-    border-radius: 12px;
-    background: rgba(212, 175, 55, 0.1);
     color: var(--primary, #d4af37);
-    width: 200px;
-}
-
-.room-code-display p {
-    color: var(--text-muted, #94a3b8);
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
+    font-family: 'Roboto Mono', monospace;
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+    margin-bottom: 0.75rem;
+    user-select: all;
 }
 
 .copy-btn {
-    padding: 0.5rem 1rem;
-    margin-left: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.25rem;
     background: var(--primary, #d4af37);
     color: #0f172a;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
+    font-size: 0.85rem;
     transition: all 0.3s;
 }
 
 .copy-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+}
+
+.copy-btn.copied {
+    background: #22c55e;
+}
+
+.room-code-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.room-code-hint i {
+    color: var(--primary, #d4af37);
+}
+
+.waiting-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.85rem;
+}
+
+.waiting-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-top-color: var(--primary, #d4af37);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 /* =========================================
@@ -456,7 +530,7 @@
 }
 
 .time-option-btn .time-label {
-    font-family: 'Cinzel', serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
     font-weight: 700;
     color: var(--text-main, #f8fafc);
@@ -501,58 +575,6 @@
 .back-btn:hover {
     background: #da190b;
     transform: translateY(-2px);
-}
-
-/* Room Code Display */
-.room-code-display {
-    display: flex;
-    gap: 10px;
-    margin: 20px 0;
-}
-
-.room-code-display input {
-    flex: 1;
-    padding: 15px;
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    border: 2px solid #667eea;
-    border-radius: 10px;
-    background: #f0f0f0;
-    letter-spacing: 3px;
-}
-
-.copy-btn {
-    padding: 15px 25px;
-    background: #2196F3;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    transition: all 0.3s;
-}
-
-.copy-btn:hover {
-    background: #1976D2;
-    transform: scale(1.05);
-}
-
-/* Join Form */
-.join-form {
-    display: flex;
-    gap: 10px;
-    margin: 20px 0;
-}
-
-.join-form input {
-    flex: 1;
-    padding: 15px;
-    font-size: 18px;
-    border: 2px solid #ddd;
-    border-radius: 10px;
-    text-transform: uppercase;
 }
 
 /* Loading Animation */
@@ -652,24 +674,22 @@
 /* Game Screen */
 .game-screen {
     display: grid;
-    grid-template-columns: 280px 1fr 260px;
-    gap: 1rem;
-    max-width: 1200px;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 3rem;
+    max-width: 1500px;
     margin: 0 auto;
-    padding: 0.5rem 1rem;
+    padding: 0 1rem;
     align-items: start;
-    height: calc(100vh - 80px);
-    overflow: hidden;
+    justify-content: center;
+    min-height: calc(100vh - 80px);
+    overflow: visible;
 }
 
-/* =========================================
-   LEFT SIDEBAR: Header + Controls
-   ========================================= */
 .game-sidebar-left {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    max-height: calc(100vh - 100px);
+    height: fit-content;
 }
 
 /* Header in left sidebar - aligns with chessboard */
@@ -683,7 +703,7 @@
 }
 
 .game-header-info h1 {
-    font-family: 'Cinzel', serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.3rem;
     color: var(--primary, #d4af37);
     text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
@@ -706,7 +726,7 @@
 }
 
 .game-info-panel .panel-title {
-    font-family: 'Cinzel', serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1rem;
     color: var(--text-main, #f8fafc);
     margin-bottom: 0.2rem;
@@ -731,29 +751,39 @@
     font-size: 0.8rem;
     min-width: auto;
     flex: 1;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
 }
 
 .action-btn.gold {
-    background: var(--primary, #d4af37);
+    background: linear-gradient(135deg, var(--primary, #d4af37) 0%, #c9a227 100%);
     color: #0f172a;
-    border: none;
+    box-shadow: 0 2px 6px rgba(212, 175, 55, 0.25);
 }
 
 .action-btn.gold:hover {
-    background: var(--primary-hover, #f1c40f);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+    background: linear-gradient(135deg, var(--primary-hover, #f1c40f) 0%, var(--primary, #d4af37) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(212, 175, 55, 0.35);
 }
 
 .action-btn.dark {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(30, 41, 59, 0.8);
     color: var(--text-main, #f8fafc);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .action-btn.dark:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
+    background: rgba(51, 65, 85, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
 }
 
 .game-status-section {
@@ -810,110 +840,114 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-start;
     gap: 0;
     padding-top: 0;
+    margin-top: -30px;
+    width: 100%;
 }
 
-/* Chessboard Container - PvE Style */
+/* Chessboard Container - Grid Layout like PvE */
 .chessboard-container {
     position: relative;
-    padding: 8px;
-    background: #302e2b;
-    border-radius: 4px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
     width: 100%;
-    max-width: 460px;
+    display: grid;
+    grid-template-rows: var(--player-bar-height, 64px) auto var(--player-bar-height, 64px);
     box-sizing: border-box;
     z-index: 10;
 }
 
-/* Player Info Bar - PvE Style (separate rounded boxes) */
-.player-info-bar {
+/* Board square wrapper - viewport based sizing like PvE */
+.board-square {
+    /* Size by available height minus bars - will be constrained by container */
+    width: calc(100svh - var(--nav-height, 70px) - var(--player-bars-total) - 20px);
+    max-width: 100%;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    display: block;
+}
+
+.chessboard-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
+}
+
+/* Player Info Cards - like PvE */
+.player-info {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
+    gap: 12px;
+    padding: 0 15px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    margin-bottom: 6px;
+    margin: 0;
+    position: relative;
     width: 100%;
     box-sizing: border-box;
+    height: var(--player-bar-height, 64px);
 }
 
-.player-info-bar.player-bottom {
-    margin-top: 6px;
-    margin-bottom: 0;
-}
+.player-info.player-top { margin: 0; }
+.player-info.player-bottom { margin: 0; }
 
-.player-avatar {
-    width: 36px;
-    height: 36px;
-    background: linear-gradient(135deg, #d4af37, #f4d03f);
+.player-info .player-avatar {
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #1a1a2e;
-    font-size: 1.1rem;
+    background: linear-gradient(135deg, var(--primary, #d4af37), #f4d03f);
+    object-fit: cover;
     flex-shrink: 0;
+    border: 2px solid var(--primary, #d4af37);
 }
 
-.player-details {
+.player-info .player-details {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    min-width: 0;
 }
 
-.player-info-bar .player-name {
-    font-family: 'Cinzel', serif;
-    font-size: 0.9rem;
+.player-info .player-name {
+    font-family: var(--font-heading, 'Inter', sans-serif);
+    font-size: 1rem;
     font-weight: 700;
-    color: #ffffff;
-    text-transform: uppercase;
+    color: var(--text-main, #f8fafc);
+    margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.player-rating {
-    font-size: 0.8rem;
-    color: #d4af37;
+.player-info .player-rating {
+    color: var(--primary, #d4af37);
     font-weight: 600;
+    font-size: 0.85rem;
 }
 
-.player-timer {
+.player-info .player-timer {
     font-family: 'Roboto Mono', monospace;
     font-size: 1.2rem;
     font-weight: 700;
-    color: #ffffff;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 0.35rem 0.7rem;
-    border-radius: 6px;
-    min-width: 65px;
+    color: var(--text-main, #f8fafc);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    min-width: 70px;
     text-align: center;
 }
 
-.player-timer.low-time {
-    color: #ff4444;
-    animation: pulse-warning 1s infinite;
-}
-
-@keyframes pulse-warning {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-}
-
-#chessCanvas {
-    display: block;
-    cursor: pointer;
-    width: 100%;
-    max-width: 440px;
-    height: auto;
-    position: relative;
-    z-index: 10;
+.player-info .player-timer.low-time {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.2);
 }
 
 /* Game Over Overlay */
@@ -921,56 +955,278 @@
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     z-index: 100;
     backdrop-filter: blur(5px);
 }
 
 .game-over.hidden {
-    display: none;
+    display: none !important;
 }
 
-.game-over .overlay-content {
-    background: #0f172a;
-    border: 1px solid #d4af37;
+.overlay-content {
+    background: var(--bg-dark, #0f172a);
+    border: 1px solid var(--primary, #d4af37);
     padding: 2rem;
     border-radius: 12px;
     text-align: center;
     box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
 }
 
-.game-over h2 {
-    font-family: 'Cinzel', serif;
+.overlay-content h2 {
+    color: var(--primary, #d4af37);
     font-size: 2rem;
-    color: #d4af37;
     margin-bottom: 1rem;
 }
 
-.game-over p {
+.overlay-content p {
+    color: var(--text-main, #f8fafc);
     font-size: 1.2rem;
-    color: #ffffff;
     margin-bottom: 1.5rem;
 }
 
-.game-over .btn-primary {
-    background: #d4af37;
-    color: #000;
-    padding: 10px 20px;
+.overlay-content .btn-back {
+    background: transparent;
     border: none;
-    border-radius: 6px;
-    font-weight: 700;
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s;
 }
 
-.game-over .btn-primary:hover {
-    background: #f1c40f;
+.overlay-content .btn-back:hover {
+    color: var(--text-main, #f8fafc);
+}
+
+.overlay-content .btn-back i {
+    font-size: 0.85rem;
+}
+
+/* Resign Confirmation Modal */
+.resign-confirm {
+    max-width: 350px;
+}
+
+.resign-confirm h2 {
+    color: #ef4444;
+}
+
+.resign-confirm h2 i {
+    margin-right: 0.5rem;
+}
+
+.resign-confirm p {
+    font-size: 1rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+/* Draw Confirmation Modal */
+.draw-confirm {
+    max-width: 350px;
+}
+
+.draw-confirm h2 {
+    color: var(--primary, #d4af37);
+}
+
+.draw-confirm h2 i {
+    margin-right: 0.5rem;
+}
+
+.draw-confirm p {
+    font-size: 1rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
     transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.btn-gold {
+    background: linear-gradient(135deg, var(--primary, #d4af37) 0%, #c9a227 100%);
+    color: #0f172a;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-gold:hover {
+    background: linear-gradient(135deg, var(--primary-hover, #f1c40f) 0%, var(--primary, #d4af37) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.btn-secondary {
+    background: rgba(30, 41, 59, 0.9);
+    color: var(--text-main, #f8fafc);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+    background: rgba(51, 65, 85, 0.9);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Draw Declined Notification */
+.draw-declined-notification {
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.draw-declined-notification.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+}
+
+/* Hide game-footer to prevent overlap */
+.game-footer {
+    display: none;
+}
+
+/* Move History Section - inline style like PvE */
+.move-history-section-inline {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.move-history-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.history-btn {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
+    border: 1px solid var(--primary, #d4af37);
+    color: var(--primary, #d4af37);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+}
+
+.history-btn:hover:not(:disabled) {
+    background: var(--primary, #d4af37);
+    color: var(--bg-dark, #0f172a);
+    transform: scale(1.05);
+}
+
+.history-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.history-position {
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 0.8rem;
+    color: var(--text-main, #f8fafc);
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Legacy replay controls - hidden */
+#replayControls {
+    display: none;
+}
+
+.replay-controls {
+    display: none;
+}
+
+/* Ensure game over overlay doesn't block when hidden */
+#gameOverOverlay.hidden {
+    pointer-events: none;
 }
 
 /* =========================================
@@ -980,68 +1236,169 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    max-height: calc(100vh - 100px);
-}
-
-/* Spacer to align chat with control panel */
-.game-sidebar-right::before {
-    content: '';
-    display: block;
-    min-height: 60px;
+    height: fit-content;
+    padding-top: 68px; /* Căn ngang với game-info-panel (bỏ qua header PvP Arena) */
 }
 
 .chat-panel {
-    padding: 0.75rem;
-    flex: 1;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 180px);
+    overflow: hidden;
+    height: auto;
 }
 
+/* Chat Messages Area */
 .chat-panel .chat-messages {
-    flex: 1;
+    height: 300px;
+    max-height: 300px;
     overflow-y: auto;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    scroll-behavior: smooth;
+}
+
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-    min-height: 150px;
 }
 
-.chat-message {
-    margin-bottom: 0.4rem;
-    padding: 0.4rem 0.6rem;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+.chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Welcome Message */
+.chat-welcome {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    color: var(--text-muted, #94a3b8);
     font-size: 0.8rem;
-    color: var(--text-main, #f8fafc);
 }
 
-.chat-message strong {
+.chat-welcome i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.chat-welcome p {
+    margin: 0;
+}
+
+/* Chat Message Bubbles */
+.chat-message {
+    max-width: 85%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    word-wrap: break-word;
+    animation: messageSlide 0.2s ease-out;
+}
+
+@keyframes messageSlide {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Own messages - align right */
+.chat-message.own {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--primary, #d4af37), #b8860b);
+    color: #0f172a;
+    border-bottom-right-radius: 4px;
+}
+
+/* Opponent messages - align left */
+.chat-message.opponent {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main, #f8fafc);
+    border-bottom-left-radius: 4px;
+}
+
+.chat-message .message-sender {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+    opacity: 0.8;
+}
+
+.chat-message.own .message-sender {
+    color: #0f172a;
+}
+
+.chat-message.opponent .message-sender {
     color: var(--primary, #d4af37);
 }
 
+.chat-message .message-text {
+    display: block;
+}
+
+.chat-message .message-time {
+    display: block;
+    font-size: 0.6rem;
+    opacity: 0.6;
+    margin-top: 0.2rem;
+    text-align: right;
+}
+
+/* System messages */
+.chat-message.system {
+    align-self: center;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.7rem;
+    font-style: italic;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+}
+
+/* Chat Input */
 .chat-input-wrapper {
     display: flex;
-    gap: 0.4rem;
-    width: 100%;
-    box-sizing: border-box;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .chat-input-wrapper input {
     flex: 1;
     min-width: 0;
-    padding: 0.5rem 0.6rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-main, #f8fafc);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     outline: none;
+    transition: all 0.3s;
 }
 
 .chat-input-wrapper input:focus {
     border-color: var(--primary, #d4af37);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
 }
 
 .chat-input-wrapper input::placeholder {
@@ -1049,93 +1406,202 @@
 }
 
 .send-btn {
-    padding: 0.5rem 0.75rem;
+    width: 38px;
+    height: 38px;
+    padding: 0;
     background: var(--primary, #d4af37);
     color: #0f172a;
     border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.8rem;
+    border-radius: 50%;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
 }
 
 .send-btn:hover {
     background: var(--primary-hover, #f1c40f);
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+}
+
+.send-btn:active {
+    transform: scale(0.95);
 }
 
 /* =========================================
    RESPONSIVE
-   ========================================= */ */
+   ========================================= */
 @media (max-width: 1200px) {
     .game-screen {
         grid-template-columns: 1fr;
         gap: 1rem;
+        height: auto;
+        overflow: visible;
+        padding: 0.5rem;
+        max-width: 100%;
+        margin: 0 auto;
     }
     
     .game-sidebar-left,
     .game-sidebar-right {
         position: static;
+        max-height: none;
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+        padding-top: 0;
     }
     
+    /* Order: 1. Header/Controls (top) -> 2. Chessboard (middle) -> 3. Chat (bottom) */
     .game-sidebar-left {
-        order: 2;
+        order: 1;
     }
     
     .game-center {
-        order: 1;
+        order: 2;
+        position: relative;
+        z-index: 50;
+        margin-top: 0;
     }
     
     .game-sidebar-right {
         order: 3;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .game-sidebar-right::before {
+        display: none;
     }
     
     .chat-panel {
+        max-height: none;
         height: auto;
-        min-height: 300px;
+    }
+    
+    .chat-panel .chat-messages {
+        height: 150px;
+        max-height: 150px;
     }
     
     .chessboard-container {
         width: 100%;
-        max-width: 580px;
+        max-width: 100%;
+        margin: 0 auto;
+        display: grid !important;
+        grid-template-rows: 44px auto 44px !important;
+    }
+    
+    .chessboard-container .player-info {
+        width: 100% !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        max-height: 44px !important;
+    }
+    
+    .board-square {
+        width: calc(100vw - 1rem);
+        max-width: calc(100svh - var(--nav-height, 70px) - 88px - 150px);
+    }
+    
+    /* Make control panels match chessboard width */
+    .game-header-info,
+    .game-actions,
+    .game-info-panel,
+    .chat-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .game-header-info h1 {
+        font-size: 1.1rem;
+    }
+    
+    .game-header-info .subtitle {
+        font-size: 0.6rem;
     }
 }
 
 /* Responsive for mobile */
 @media (max-width: 768px) {
-    .player-info-bar {
-        padding: 8px 12px;
-        gap: 10px;
+    .player-info {
+        padding: 4px 8px !important;
+        gap: 8px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        max-height: 44px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
     }
     
-    .player-timer {
-        font-size: 1.1rem;
-        padding: 0.3rem 0.6rem;
-        min-width: 60px;
+    .player-info .player-avatar {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        flex-shrink: 0 !important;
     }
     
-    .player-avatar {
-        width: 32px;
-        height: 32px;
-        font-size: 0.9rem;
+    .player-info .player-details {
+        flex: 1 !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        text-align: left !important;
     }
     
-    .player-info-bar .player-name {
-        font-size: 0.85rem;
+    .player-info .player-name {
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        text-align: left !important;
     }
     
-    .player-rating {
-        font-size: 0.7rem;
+    .player-info .player-rating {
+        font-size: 0.7rem !important;
+        text-align: left !important;
+    }
+    
+    .player-info .player-timer {
+        font-size: 1rem !important;
+        padding: 0.2rem 0.4rem !important;
+        min-width: 50px !important;
+        flex-shrink: 0 !important;
+        margin-left: auto !important;
     }
     
     .game-actions .action-btn {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.7rem;
     }
     
     .chessboard-container {
-        padding: 8px;
+        padding: 0 !important;
+        display: grid !important;
+        grid-template-rows: 44px auto 44px !important;
+    }
+    
+    .move-history-section-inline {
+        padding: 0.3rem;
+    }
+    
+    .history-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 0.65rem;
+    }
+    
+    .history-position {
+        font-size: 0.7rem;
+        min-width: 35px;
     }
 }
 
@@ -1151,10 +1617,6 @@
 
 /* Responsive */
 @media (max-width: 1024px) {
-    .game-screen {
-        grid-template-columns: 1fr;
-    }
-    
     .chat-box {
         grid-column: 1 / 2;
         grid-row: auto;
@@ -1185,7 +1647,7 @@
     }
     
     .chessboard-container {
-        padding: 15px;
+        padding: 10px;
     }
     
     .game-controls {
@@ -1202,14 +1664,65 @@
         gap: 10px;
     }
     
-    .chat-messages {
-        min-height: 200px;
+    /* Chat Panel Mobile */
+    .chat-panel {
+        border-radius: 12px;
+    }
+    
+    .chat-panel .chat-messages {
+        height: 180px;
+        max-height: 180px;
+        padding: 0.5rem;
+    }
+    
+    .chat-header {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .chat-header h3 {
+        font-size: 0.8rem;
+    }
+    
+    .chat-message {
+        max-width: 90%;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
+        border-radius: 10px;
+    }
+    
+    .chat-message .message-sender {
+        font-size: 0.6rem;
+    }
+    
+    .chat-message .message-time {
+        font-size: 0.55rem;
+    }
+    
+    .chat-input-wrapper {
+        padding: 0.5rem;
+        gap: 0.4rem;
+    }
+    
+    .chat-input-wrapper input {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    
+    .chat-input-wrapper button {
+        width: 34px;
+        height: 34px;
+        font-size: 0.8rem;
     }
 }
 
 @media (max-width: 480px) {
     .app {
         padding: 10px;
+    }
+    
+    .game-screen {
+        padding: 0.5rem;
+        gap: 0.75rem;
     }
     
     .game-info h1 {
@@ -1225,15 +1738,133 @@
         padding: 15px;
     }
     
-    .room-code-display {
-        flex-direction: column;
+    .room-code-card {
+        min-width: auto;
+        width: 100%;
+        padding: 1.25rem 1rem;
     }
     
-    .copy-btn {
-        width: 100%;
+    .room-code-value {
+        font-size: 2rem;
+        letter-spacing: 0.4rem;
+    }
+    
+    .room-code-hint {
+        text-align: center;
+        flex-direction: column;
+        gap: 0.25rem;
     }
     
     .chessboard-container {
-        padding: 10px;
+        padding: 8px;
+    }
+    
+    /* Header and Control panels smaller */
+    .game-header-info {
+        padding: 0.5rem 0;
+        min-height: auto;
+    }
+    
+    .game-header-info h1 {
+        font-size: 1.1rem;
+    }
+    
+    .game-header-info .subtitle {
+        font-size: 0.55rem;
+    }
+    
+    .game-actions .action-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.7rem;
+    }
+    
+    .game-info-panel {
+        padding: 0.75rem;
+    }
+    
+    .game-info-panel h3 {
+        font-size: 0.75rem;
+    }
+    
+    .info-row {
+        font-size: 0.8rem;
+    }
+    
+    /* Chat Panel Mobile Small */
+    .chat-panel {
+        border-radius: 10px;
+    }
+    
+    .chat-panel .chat-messages {
+        height: 150px;
+        max-height: 150px;
+        padding: 0.4rem;
+        gap: 0.3rem;
+    }
+    
+    .chat-header {
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .chat-header h3 {
+        font-size: 0.75rem;
+        gap: 0.3rem;
+    }
+    
+    .chat-header h3 i {
+        font-size: 0.7rem;
+    }
+    
+    .chat-status {
+        font-size: 0.6rem;
+    }
+    
+    .chat-welcome {
+        padding: 1rem 0.5rem;
+        font-size: 0.7rem;
+    }
+    
+    .chat-welcome i {
+        font-size: 1.2rem;
+    }
+    
+    .chat-message {
+        max-width: 92%;
+        padding: 0.35rem 0.5rem;
+        font-size: 0.7rem;
+        border-radius: 8px;
+        line-height: 1.3;
+    }
+    
+    .chat-message .message-sender {
+        font-size: 0.55rem;
+        margin-bottom: 0.1rem;
+    }
+    
+    .chat-message .message-time {
+        font-size: 0.5rem;
+        margin-top: 0.1rem;
+    }
+    
+    .chat-input-wrapper {
+        padding: 0.4rem;
+        gap: 0.3rem;
+    }
+    
+    .chat-input-wrapper input {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.75rem;
+        border-radius: 16px;
+    }
+    
+    .chat-input-wrapper input::placeholder {
+        font-size: 0.7rem;
+    }
+    
+    .chat-input-wrapper button {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        font-size: 0.7rem;
     }
 }

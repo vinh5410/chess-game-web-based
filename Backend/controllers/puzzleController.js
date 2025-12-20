@@ -319,7 +319,7 @@ exports.getLeaderboard = async (req, res) => {
         const leaderboard = topUsers.map((up, index) => ({
             rank: index + 1,
             username: up.userId.username,
-            avatar: up.userId.avatar || '/assets/default-avatar.png',
+            avatar: up.userId.avatar || '',
             puzzleRating: up.puzzleRating,
             puzzlesSolved: up.puzzlesSolved,
             streak: up.streak.longest,
