@@ -88,8 +88,6 @@ class MultiplayerChess {
         }
         
         await this.loadPieceImages();
-<<<<<<< Updated upstream
-=======
         this.promotionUI = new PromotionUI(this.game, this.pieceImages, this.isFlipped);
         this.sound = window.Sound;
         this.setupEventListeners();
@@ -194,7 +192,6 @@ class MultiplayerChess {
                 }
             }
         });        
->>>>>>> Stashed changes
         const chatInput = document.getElementById('chatInput');
         if (chatInput) {
             chatInput.addEventListener('keypress', (e) => {
@@ -351,7 +348,6 @@ class MultiplayerChess {
             this.updateTimerDisplay();
             this.startTimer();
         });        
->>>>>>> Stashed changes
         io.on('game:invalid_move', (data) => {
             console.error('❌ Invalid move:', data);
             alert('Invalid move!');
@@ -547,16 +543,6 @@ class MultiplayerChess {
         if (gameOverOverlay) {
             gameOverOverlay.classList.add('hidden');
         }
-<<<<<<< Updated upstream
-        
-        document.getElementById('playerName').textContent = this.socket.getUsername() || 'You';
-        document.getElementById('opponentName').textContent = this.opponentName;
-        
-        // Update ELO displays
-        document.getElementById('playerElo').textContent = `ELO: ${this.playerElo}`;
-        document.getElementById('opponentElo').textContent = `ELO: ${this.opponentElo}`;
-        
-=======
 
 // ensure player/opponent info bars in container are correct
         this.updatePlayerInfoPosition();
@@ -667,7 +653,6 @@ class MultiplayerChess {
                 this.fullMoveHistory = this.game.history({ verbose: true });
                 this.viewStep = this.fullMoveHistory.length;
                 this.updateBoardView();              
->>>>>>> Stashed changes
                 this.lastMove = { from: move.from, to: move.to };
                 this.isMyTurn = true;
                 
@@ -1006,8 +991,6 @@ class MultiplayerChess {
     }
     
     tryMove(from, to) {
-<<<<<<< Updated upstream
-=======
         // Kiểm tra nếu là nước phong cấp
         const moves = this.game.moves({ square: from, verbose: true });
         const promotionMove = moves.find(m => m.to === to && m.promotion);
@@ -1046,7 +1029,6 @@ class MultiplayerChess {
         }
 
         // Xử lý nước đi bình thường (không phong cấp)
->>>>>>> Stashed changes
         try {
             const moveObj = this.game.move({
                 from,
@@ -1057,7 +1039,7 @@ class MultiplayerChess {
                 this.fullMoveHistory = this.game.history({ verbose: true });
                 this.viewStep = this.fullMoveHistory.length;
                 this.updateBoardView();
->>>>>>> Stashed changes
+
                 this.lastMove = { from: moveObj.from, to: moveObj.to };
                 this.isMyTurn = false;
                 this.socket.makeMove(moveObj.san);
@@ -1065,7 +1047,7 @@ class MultiplayerChess {
                 this.updateGameInfo();
                 updateGameStatus('⏳ Opponent\'s turn', this.game);
                 if (this.checkGameOver()) return true;
->>>>>>> Stashed changes
+
             }
         } catch (error) {
             console.log('❌ Invalid move');
@@ -1379,46 +1361,13 @@ class MultiplayerChess {
         
     // Update player info bar positions based on isFlipped state
     updatePlayerInfoPosition() {
-<<<<<<< Updated upstream
-        // Re-cache DOM elements if not found (in case they weren't available during init)
-        if (!this.chessboardContainerEl || !this.playerTopInfoEl || !this.playerBottomInfoEl) {
-            this.chessboardContainerEl = document.querySelector('.chessboard-container');
-            if (this.chessboardContainerEl) {
-                // Get all player-info-bar elements
-                const infoBars = this.chessboardContainerEl.querySelectorAll('.player-info-bar');
-                if (infoBars.length >= 2) {
-                    // First one is top (opponent), second one is bottom (player)
-                    this.playerTopInfoEl = infoBars[0];
-                    this.playerBottomInfoEl = infoBars[1];
-                }
-            }
-=======
         // Ensure cached refs exist and are current
         this.chessboardContainerEl = this.chessboardContainerEl || document.getElementById('chessboardContainer');
         if (!this.chessboardContainerEl) {
             console.warn('⚠️ chessboard container not found');
             return;
->>>>>>> Stashed changes
         }
 
-<<<<<<< Updated upstream
-        if (topEl && bottomEl && container && canvas) {
-            if (this.isFlipped) {
-                // Show player's info on top (when flipped)
-                container.insertBefore(bottomEl, canvas);
-                bottomEl.classList.remove('player-bottom');
-
-        // Identify bottom (player) and top (opponent) elements reliably:
-        // Prefer the element that currently has .player-bottom as the player bottom.
-        let bottomEl = this.chessboardContainerEl.querySelector('.player-info-bar.player-bottom');
-        let topEl = this.chessboardContainerEl.querySelector('.player-info-bar:not(.player-bottom)');
-
-                container.appendChild(bottomEl);
-                bottomEl.classList.add('player-bottom');
-            }
-        } else {
-            console.warn('⚠️ Could not find player info elements for swap');
-=======
         // Re-find info bars in container to avoid stale references
         const infoBars = Array.from(this.chessboardContainerEl.querySelectorAll('.player-info'));
         if (infoBars.length < 2) {
@@ -1456,7 +1405,6 @@ class MultiplayerChess {
             }
         } catch (err) {
             console.warn('⚠️ updatePlayerInfoPosition failed:', err);
->>>>>>> Stashed changes
         }
     }
     flipBoard() {
@@ -1610,8 +1558,8 @@ class MultiplayerChess {
             info.textContent = `${this.viewStep}/${history.length}`;
         }
     }
->>>>>>> Stashed changes
-}
+
+};
 
 // Global instance
 let gameInstance = null;
@@ -1914,8 +1862,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('⏳ Initializing game...');
     await gameInstance.init();
     console.log('✅ Game initialized');
-<<<<<<< Updated upstream
-=======
+
     // AUTO-LOGIN nếu đã có user
     document.getElementById('firstStepBtn').onclick = () => {
         gameInstance.viewStep = 0;
@@ -1957,10 +1904,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };   
     // Ẩn ngay loginScreen để tránh nhấp nháy
-    const loginScreen = document.getElementById('loginScreen');
-    if (loginScreen) loginScreen.classList.add('hidden');
->>>>>>> Stashed changes
-    
+ 
+
     // AUTO-LOGIN nếu đã có user
     document.getElementById('firstStepBtn').onclick = () => {
         gameInstance.viewStep = 0;
