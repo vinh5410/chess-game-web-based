@@ -7,6 +7,7 @@ class MultiplayerChess {
         // Canvas settings
         this.canvasSize = 440;
         this.squareSize = 55;
+        this.lastParentWidth = 0;
         
         // Colors
         this.lightSquareColor = '#f0d9b5';
@@ -22,6 +23,8 @@ class MultiplayerChess {
         this.opponentName = '';
         this.playerElo = 1200;
         this.opponentElo = 1200;
+        this.playerAvatar = 'https://ui-avatars.com/api/?name=Y&background=d4af37&color=0f172a';
+        this.opponentAvatar = 'https://ui-avatars.com/api/?name=O&background=d4af37&color=0f172a';
         this.isMyTurn = false;
         this.gameStarted = false;
         this.gameOver = false;
@@ -77,16 +80,22 @@ class MultiplayerChess {
         this.ctx = this.canvas.getContext('2d');
         this.game = new window.Chess();
         
-        // Cache player info DOM elements
-        this.chessboardContainerEl = document.querySelector('.chessboard-container');
+        // Cache player info DOM elements (updated class names)
+        this.chessboardContainerEl = document.getElementById('chessboardContainer');
         if (this.chessboardContainerEl) {
-            this.playerTopInfoEl = this.chessboardContainerEl.querySelector('.player-info-bar:not(.player-bottom)');
-            this.playerBottomInfoEl = this.chessboardContainerEl.querySelector('.player-info-bar.player-bottom');
+            this.playerTopInfoEl = this.chessboardContainerEl.querySelector('.player-info.player-top');
+            this.playerBottomInfoEl = this.chessboardContainerEl.querySelector('.player-info.player-bottom');
         }
         
         await this.loadPieceImages();
         this.promotionUI = new PromotionUI(this.game, this.pieceImages, this.isFlipped);
+        this.sound = window.Sound;
         this.setupEventListeners();
+        
+        // Initial resize - delay to ensure CSS layout is fully computed
+        setTimeout(() => {
+            this.handleResize(true);
+        }, 50);
         
         // Connect socket
         console.log('🔌 Connecting to socket...');
@@ -165,6 +174,9 @@ class MultiplayerChess {
         this.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
         this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
         this.canvas.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: false });
+        
+        // Resize event (simple, based on container width)
+        window.addEventListener('resize', this.handleResize.bind(this));
         
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
@@ -358,7 +370,8 @@ class MultiplayerChess {
         
         io.on('game:draw_declined', (data) => {
             console.log('❌ Draw declined');
-            alert('Draw offer declined');
+            // Show notification on web instead of alert
+            this.showDrawDeclinedNotification();
         });
         
         io.on('chat:message', (data) => {
@@ -439,7 +452,7 @@ class MultiplayerChess {
         const roomCodeSection = document.getElementById('roomCodeSection');
         if (roomCodeSection) {
             roomCodeSection.classList.remove('hidden');
-            document.getElementById('roomCodeDisplay').value = data.roomCode;
+            document.getElementById('roomCodeDisplay').textContent = data.roomCode;
             updateGameStatus(`Room created! Share code: ${data.roomCode}`);
         }
     }
@@ -473,8 +486,18 @@ class MultiplayerChess {
     
     onOpponentLeft(data) {
         console.log('👋 Opponent left');
-        alert('Opponent left the game');
-        this.gameOver = true;
+        
+        // Only show alert if game hasn't ended normally (checkmate, resign, draw, timeout)
+        // If gameOver is already true from normal game end, don't show disconnect alert
+        if (!this.gameOver) {
+            // Opponent disconnected unexpectedly during the game
+            document.getElementById('winnerText').textContent = 'Opponent disconnected. You win! 🏆';
+            document.getElementById('gameOverOverlay').classList.remove('hidden');
+            this.gameOver = true;
+            this.gameStarted = false;
+            this.stopTimer();
+        }
+        // If game already over normally, just log it silently
         updateGameStatus('Opponent left the game');
     }
     
@@ -495,6 +518,14 @@ class MultiplayerChess {
         }
         if (data.playerElo) {
             this.playerElo = data.playerElo;
+        }
+
+        // Capture avatars if provided
+        if (data.opponent && data.opponent.avatar) {
+            this.opponentAvatar = data.opponent.avatar;
+        }
+        if (data.playerAvatar) {
+            this.playerAvatar = data.playerAvatar;
         }
 
         // Reset timer từ timeControl
@@ -618,6 +649,7 @@ class MultiplayerChess {
         try {
             const move = this.game.move(data.move);
             if (move) {
+                if (this.sound) this.sound.playMove(move, this.game);
                 this.fullMoveHistory = this.game.history({ verbose: true });
                 this.viewStep = this.fullMoveHistory.length;
                 this.updateBoardView();              
@@ -668,8 +700,9 @@ class MultiplayerChess {
     }
     
     onDrawOffer(data) {
-        const accept = confirm(`${data.from} offers a draw. Accept?`);
-        this.socket.respondDraw(accept);
+        // Show draw request modal instead of browser confirm
+        document.getElementById('drawOfferText').textContent = `${data.from} offers a draw. Accept?`;
+        document.getElementById('drawRequestModal').classList.remove('hidden');
     }
     
     onDrawAccepted(data) {
@@ -678,6 +711,20 @@ class MultiplayerChess {
         this.stopTimer();
         document.getElementById('winnerText').textContent = 'Game drawn by agreement! 🤝';
         document.getElementById('gameOverOverlay').classList.remove('hidden');
+    }
+    
+    showDrawDeclinedNotification() {
+        // Show temporary notification that draw was declined
+        const notification = document.createElement('div');
+        notification.className = 'draw-declined-notification';
+        notification.innerHTML = '<i class="fa-solid fa-xmark"></i> Draw offer declined';
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
     }
     
     onChatMessage(data) {
@@ -963,6 +1010,7 @@ class MultiplayerChess {
                     promotion: selectedPiece
                 });
                 if (moveObj) {
+                    if (this.sound) this.sound.playMove(moveObj, this.game);
                     this.fullMoveHistory = this.game.history({ verbose: true });
                     this.viewStep = this.fullMoveHistory.length;
                     this.updateBoardView();
@@ -987,9 +1035,11 @@ class MultiplayerChess {
                 to
             });
             if (moveObj) {
+                if (this.sound) this.sound.playMove(moveObj, this.game);
                 this.fullMoveHistory = this.game.history({ verbose: true });
                 this.viewStep = this.fullMoveHistory.length;
                 this.updateBoardView();
+
                 this.lastMove = { from: moveObj.from, to: moveObj.to };
                 this.isMyTurn = false;
                 this.socket.makeMove(moveObj.san);
@@ -997,6 +1047,7 @@ class MultiplayerChess {
                 this.updateGameInfo();
                 updateGameStatus('⏳ Opponent\'s turn', this.game);
                 if (this.checkGameOver()) return true;
+
             }
         } catch (error) {
             console.log('❌ Invalid move');
@@ -1038,8 +1089,48 @@ class MultiplayerChess {
         return { x, y };
     }
     
+    handleResize(force = false) {
+        const boardSquare = this.canvas.parentElement;
+        if (!boardSquare) return;
+        
+        // Get computed size - use getBoundingClientRect for accurate measurement
+        const rect = boardSquare.getBoundingClientRect();
+        const parentWidth = rect.width;
+        
+        // Skip if element is not visible yet - retry later
+        if (parentWidth < 50) {
+            setTimeout(() => this.handleResize(true), 100);
+            return;
+        }
+        
+        // Only resize if width changed significantly or forced
+        if (!force && Math.abs(parentWidth - this.lastParentWidth) < 5) return;
+        this.lastParentWidth = parentWidth;
+        
+        // Use CSS pixel size for canvas
+        const cssSize = parentWidth;
+        
+        // DPR-aware sizing for crisp rendering
+        const dpr = window.devicePixelRatio || 1;
+        const backingSize = Math.round(cssSize * dpr);
+        
+        this.canvas.width = backingSize;
+        this.canvas.height = backingSize;
+        this.canvas.style.width = cssSize + 'px';
+        this.canvas.style.height = cssSize + 'px';
+        
+        this.canvasSize = cssSize;
+        this.squareSize = cssSize / 8;
+        
+        // Scale context for DPR
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        
+        this.draw();
+    }
+    
     draw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        // Clear using CSS pixel size (context is already scaled by DPR)
+        this.ctx.clearRect(0, 0, this.canvasSize, this.canvasSize);
         
         this.drawBoard();
         this.drawCoordinates();
@@ -1075,7 +1166,7 @@ class MultiplayerChess {
                 ? String.fromCharCode(104 - file)  // h to a when flipped
                 : String.fromCharCode(97 + file);  // a to h normally
             const x = file * this.squareSize + 2;
-            const y = 8 * this.squareSize - 2;
+            const y = this.canvasSize - 2; // Use CSS size
             // Bottom row: when not flipped, rank 1 (index 7), a1 is light (file+rank=0+0=even)
             const isDark = (file + 7) % 2 === 0;
             this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
@@ -1086,7 +1177,7 @@ class MultiplayerChess {
         this.ctx.textBaseline = 'top';
         for (let rank = 0; rank < 8; rank++) {
             const number = this.isFlipped ? rank + 1 : 8 - rank;
-            const x = this.canvas.width - fontSize + 2;
+            const x = this.canvasSize - fontSize + 2; // Use CSS size
             const y = rank * this.squareSize + 2;
             const isDark = (7 + rank) % 2 === 0;
             this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
@@ -1250,8 +1341,8 @@ class MultiplayerChess {
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         };
 
-        const topTimer = document.querySelector('.player-info-bar:not(.player-bottom) .player-timer');
-        const bottomTimer = document.querySelector('.player-info-bar.player-bottom .player-timer');
+        const topTimer = document.querySelector('.player-info.player-top .player-timer');
+        const bottomTimer = document.querySelector('.player-info.player-bottom .player-timer');
 
         // When info is NOT swapped: player at bottom, opponent at top
         // When info is swapped: opponent at bottom, player at top
@@ -1271,42 +1362,47 @@ class MultiplayerChess {
     // Update player info bar positions based on isFlipped state
     updatePlayerInfoPosition() {
         // Ensure cached refs exist and are current
-        this.chessboardContainerEl = this.chessboardContainerEl || document.querySelector('.chessboard-container');
+        this.chessboardContainerEl = this.chessboardContainerEl || document.getElementById('chessboardContainer');
         if (!this.chessboardContainerEl) {
             console.warn('⚠️ chessboard container not found');
             return;
         }
 
         // Re-find info bars in container to avoid stale references
-        const infoBars = Array.from(this.chessboardContainerEl.querySelectorAll('.player-info-bar'));
+        const infoBars = Array.from(this.chessboardContainerEl.querySelectorAll('.player-info'));
         if (infoBars.length < 2) {
-            console.warn('⚠️ Not enough player-info-bar elements found');
+            console.warn('⚠️ Not enough player-info elements found');
             return;
         }
 
         // Identify bottom (player) and top (opponent) elements reliably:
-        // Prefer the element that currently has .player-bottom as the player bottom.
-        let bottomEl = this.chessboardContainerEl.querySelector('.player-info-bar.player-bottom');
-        let topEl = this.chessboardContainerEl.querySelector('.player-info-bar:not(.player-bottom)');
+        let bottomEl = this.chessboardContainerEl.querySelector('.player-info.player-bottom');
+        let topEl = this.chessboardContainerEl.querySelector('.player-info.player-top');
 
         // If not found, fallback to first/second
         if (!bottomEl || !topEl) {
-            bottomEl = infoBars.find((el, idx) => idx === 1) || infoBars[1];
-            topEl = infoBars.find((el, idx) => idx === 0) || infoBars[0];
+            bottomEl = infoBars[1];
+            topEl = infoBars[0];
         }
 
-        const canvas = this.chessboardContainerEl.querySelector('canvas');
+        const boardSquare = this.chessboardContainerEl.querySelector('.board-square');
 
-        // Ensure topEl is before canvas and bottomEl is after canvas
+        // Ensure topEl is before board-square and bottomEl is after board-square
         try {
-            // remove player-bottom from all then add only to bottomEl
-            infoBars.forEach(el => el.classList.remove('player-bottom'));
+            // remove class markers then reassign
+            infoBars.forEach(el => {
+                el.classList.remove('player-bottom');
+                el.classList.remove('player-top');
+            });
 
-            if (topEl && canvas) this.chessboardContainerEl.insertBefore(topEl, canvas);
-            if (bottomEl && canvas) this.chessboardContainerEl.insertBefore(bottomEl, canvas.nextSibling);
-
-            // Mark bottomEl as player-bottom
-            if (bottomEl) bottomEl.classList.add('player-bottom');
+            if (topEl && boardSquare) {
+                this.chessboardContainerEl.insertBefore(topEl, boardSquare);
+                topEl.classList.add('player-top');
+            }
+            if (bottomEl) {
+                this.chessboardContainerEl.appendChild(bottomEl);
+                bottomEl.classList.add('player-bottom');
+            }
         } catch (err) {
             console.warn('⚠️ updatePlayerInfoPosition failed:', err);
         }
@@ -1321,11 +1417,11 @@ class MultiplayerChess {
 
     // Swap player info bars content when user manually flips board
     swapPlayerInfoBars() {
-        const container = document.querySelector('.chessboard-container');
+        const container = document.getElementById('chessboardContainer');
         if (!container) return;
 
-        const topBar = container.querySelector('.player-info-bar:not(.player-bottom)');
-        const bottomBar = container.querySelector('.player-info-bar.player-bottom');
+        const topBar = container.querySelector('.player-info.player-top');
+        const bottomBar = container.querySelector('.player-info.player-bottom');
 
         if (!topBar || !bottomBar) return;
 
@@ -1367,11 +1463,11 @@ class MultiplayerChess {
 
     // Update player info bars display - always player at bottom, opponent at top
     updatePlayerInfoDisplay() {
-        const container = document.querySelector('.chessboard-container');
+        const container = document.getElementById('chessboardContainer');
         if (!container) return;
 
-        const topBar = container.querySelector('.player-info-bar:not(.player-bottom)');
-        const bottomBar = container.querySelector('.player-info-bar.player-bottom');
+        const topBar = container.querySelector('.player-info.player-top');
+        const bottomBar = container.querySelector('.player-info.player-bottom');
 
         if (!topBar || !bottomBar) return;
 
@@ -1379,10 +1475,12 @@ class MultiplayerChess {
         const topName = topBar.querySelector('.player-name');
         const topRating = topBar.querySelector('.player-rating');
         const topTimer = topBar.querySelector('.player-timer');
+        const topAvatar = topBar.querySelector('.player-avatar');
 
         const bottomName = bottomBar.querySelector('.player-name');
         const bottomRating = bottomBar.querySelector('.player-rating');
         const bottomTimer = bottomBar.querySelector('.player-timer');
+        const bottomAvatar = bottomBar.querySelector('.player-avatar');
 
         const myName = this.socket.getUsername() || 'You';
         const myElo = `ELO: ${this.playerElo}`;
@@ -1398,6 +1496,7 @@ class MultiplayerChess {
         // Always: player at bottom, opponent at top
         if (bottomName) bottomName.textContent = myName;
         if (bottomRating) bottomRating.textContent = myElo;
+        if (bottomAvatar) bottomAvatar.src = this.playerAvatar;
         if (bottomTimer) {
             bottomTimer.textContent = formatTime(this.playerTime || 0);
             bottomTimer.classList.toggle('low-time', (this.playerTime || 0) <= 30);
@@ -1405,6 +1504,7 @@ class MultiplayerChess {
 
         if (topName) topName.textContent = oppName;
         if (topRating) topRating.textContent = oppElo;
+        if (topAvatar) topAvatar.src = this.opponentAvatar;
         if (topTimer) {
             topTimer.textContent = formatTime(this.opponentTime || 0);
             topTimer.classList.toggle('low-time', (this.opponentTime || 0) <= 30);
@@ -1458,7 +1558,8 @@ class MultiplayerChess {
             info.textContent = `${this.viewStep}/${history.length}`;
         }
     }
-}
+
+};
 
 // Global instance
 let gameInstance = null;
@@ -1518,6 +1619,13 @@ function showGameScreen() {
     // Hide main header when in game (because game has its own header in sidebar)
     const mainHeader = document.getElementById('mainHeader');
     if (mainHeader) mainHeader.classList.add('hidden');
+    
+    // Trigger resize after game screen becomes visible
+    setTimeout(() => {
+        if (window.multiplayerGame) {
+            window.multiplayerGame.handleResize(true);
+        }
+    }, 50);
 }
 
 function login() {
@@ -1599,16 +1707,17 @@ function cancelInvite() {
 }
 
 function copyRoomCode() {
-    const roomCodeInput = document.getElementById('roomCodeDisplay');
-    roomCodeInput.select();
-    document.execCommand('copy');
-    
-    const copyBtn = document.querySelector('.copy-btn');
-    const originalText = copyBtn.textContent;
-    copyBtn.textContent = '✅ Copied!';
-    setTimeout(() => {
-        copyBtn.textContent = originalText;
-    }, 2000);
+    const roomCode = document.getElementById('roomCodeDisplay').textContent;
+    navigator.clipboard.writeText(roomCode).then(() => {
+        const copyBtn = document.querySelector('.copy-btn');
+        const originalHTML = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+            copyBtn.innerHTML = originalHTML;
+            copyBtn.classList.remove('copied');
+        }, 2000);
+    });
 }
 
 function showJoinRoom() {
@@ -1648,15 +1757,45 @@ function backToLobby() {
 }
 
 function offerDraw() {
-    if (confirm('Offer draw to opponent?')) {
-        window.socketClient.offerDraw();
+    // Show custom draw offer modal
+    document.getElementById('drawOfferModal').classList.remove('hidden');
+}
+
+function confirmDrawOffer() {
+    document.getElementById('drawOfferModal').classList.add('hidden');
+    window.socketClient.offerDraw();
+}
+
+function cancelDrawOffer() {
+    document.getElementById('drawOfferModal').classList.add('hidden');
+}
+
+function acceptDraw() {
+    document.getElementById('drawRequestModal').classList.add('hidden');
+    if (gameInstance && gameInstance.socket) {
+        gameInstance.socket.respondDraw(true);
+    }
+}
+
+function declineDraw() {
+    document.getElementById('drawRequestModal').classList.add('hidden');
+    if (gameInstance && gameInstance.socket) {
+        gameInstance.socket.respondDraw(false);
     }
 }
 
 function resign() {
-    if (confirm('Are you sure you want to resign?')) {
-        window.socketClient.resign();
-    }
+    // Show custom resign confirmation modal
+    document.getElementById('resignModal').classList.remove('hidden');
+}
+
+function confirmResign() {
+    document.getElementById('resignModal').classList.add('hidden');
+    window.socketClient.resign();
+}
+
+function cancelResign() {
+    document.getElementById('resignModal').classList.add('hidden');
 }
 
 function flipBoard() {
@@ -1723,6 +1862,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('⏳ Initializing game...');
     await gameInstance.init();
     console.log('✅ Game initialized');
+
+    // AUTO-LOGIN nếu đã có user
+    document.getElementById('firstStepBtn').onclick = () => {
+        gameInstance.viewStep = 0;
+        gameInstance.updateBoardView();
+        if (window.Sound) window.Sound.play('move');
+    };
+    document.getElementById('prevStepBtn').onclick = () => {
+        if (gameInstance.viewStep > 0) {
+            gameInstance.viewStep--;
+            gameInstance.updateBoardView();
+            // Play sound for the move at this step
+            const history = gameInstance.fullMoveHistory;
+            if (gameInstance.viewStep > 0 && history[gameInstance.viewStep - 1]) {
+                if (window.Sound) window.Sound.playMove(history[gameInstance.viewStep - 1]);
+            } else {
+                if (window.Sound) window.Sound.play('move');
+            }
+        }
+    };
+    document.getElementById('nextStepBtn').onclick = () => {
+        const maxStep = gameInstance.fullMoveHistory.length;
+        if (gameInstance.viewStep < maxStep) {
+            gameInstance.viewStep++;
+            gameInstance.updateBoardView();
+            // Play sound for the move at this step
+            const history = gameInstance.fullMoveHistory;
+            if (history[gameInstance.viewStep - 1]) {
+                if (window.Sound) window.Sound.playMove(history[gameInstance.viewStep - 1]);
+            }
+        }
+    };
+    document.getElementById('lastStepBtn').onclick = () => {
+        gameInstance.viewStep = gameInstance.fullMoveHistory.length;
+        gameInstance.updateBoardView();
+        // Play sound for the last move
+        const history = gameInstance.fullMoveHistory;
+        if (history.length > 0) {
+            if (window.Sound) window.Sound.playMove(history[history.length - 1]);
+        }
+    };   
+    // Ẩn ngay loginScreen để tránh nhấp nháy
+ 
+
     // AUTO-LOGIN nếu đã có user
     document.getElementById('firstStepBtn').onclick = () => {
         gameInstance.viewStep = 0;

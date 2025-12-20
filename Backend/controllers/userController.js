@@ -71,8 +71,9 @@ exports.updateProfile = async (req, res) => {
             user.username = username;
         }
         
-        if (avatar) {
-            user.avatar = avatar;
+        // Allow avatar to be set to empty string (remove avatar)
+        if (avatar !== undefined) {
+            user.avatar = avatar || '';
         }
         
         await user.save();
@@ -144,8 +145,8 @@ exports.getLeaderboard = async (req, res) => {
     try {
         const users = await User.find()
             .sort({ rating: -1 })
-            .limit(50)
-            .select('_id username rating avatar gamesPlayed gamesWon gamesLost gamesDraw');
+            .limit(10)
+            .select('username rating avatar');
 
         res.status(200).json({
             success: true,

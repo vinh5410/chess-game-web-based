@@ -232,3 +232,148 @@ class GameUtils {
 // Make available globally
 window.GameUtils = GameUtils;
 console.log('✅ GameUtils loaded');
+
+// =========================
+// SOUND MANAGER
+// =========================
+class SoundManager {
+    constructor() {
+        this.enabled = true;
+        this.volume = 0.6;
+        this.audioMap = {
+            move: this.createAudio('./assets/sounds/move.mp3'),
+            capture: this.createAudio('./assets/sounds/capture.mp3'),
+            check: this.createAudio('./assets/sounds/check.mp3'),
+            checkmate: this.createAudio('./assets/sounds/checkmate.mp3'),
+            promote: this.createAudio('./assets/sounds/promote.mp3'),
+            castle: this.createAudio('./assets/sounds/castle.mp3')
+        };
+        this._unlockBound = this._unlockAudio.bind(this);
+        document.addEventListener('click', this._unlockBound, { once: true });
+        document.addEventListener('touchstart', this._unlockBound, { once: true });
+    }
+
+    createAudio(src) {
+        try {
+            const a = new Audio(src);
+            a.preload = 'auto';
+            a.volume = this.volume;
+            return a;
+        } catch {
+            return null;
+        }
+    }
+
+    _unlockAudio() {
+        // Attempt to play a silent sound to unlock iOS/Chrome
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            gain.gain.value = 0.0001;
+            osc.frequency.value = 200;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            setTimeout(() => { osc.stop(); ctx.close(); }, 30);
+        } catch {}
+    }
+
+    setEnabled(on) { this.enabled = !!on; }
+    setVolume(v) {
+        this.volume = Math.max(0, Math.min(1, v));
+        Object.values(this.audioMap).forEach(a => { if (a) a.volume = this.volume; });
+    }
+
+    play(type) {
+        if (!this.enabled) {
+            console.log('🔇 Sound disabled');
+            return;
+        }
+        const audio = this.audioMap[type];
+        console.log('🔊 Playing sound:', type, 'audio exists:', !!audio);
+        if (audio) {
+            try {
+                // Clone to allow overlapping plays
+                const inst = audio.cloneNode();
+                inst.volume = this.volume;
+                inst.play().then(() => {
+                    console.log('🔊 Sound played successfully:', type);
+                }).catch((err) => {
+                    console.warn('🔇 Sound play failed:', type, err.message);
+                    this._beep(type);
+                });
+            } catch (e) {
+                console.warn('🔇 Sound error:', e);
+                this._beep(type);
+            }
+        } else {
+            console.log('🔊 No audio, using beep for:', type);
+            this._beep(type);
+        }
+    }
+
+    playMove(move, game) {
+        if (!move) return;
+        const san = move.san || '';
+        const flags = move.flags || '';
+        const captured = move.captured;
+        
+        console.log('🔊 playMove:', { san, flags, captured });
+        
+        // Checkmate has highest priority
+        if (san.includes('#')) {
+            console.log('🔊 Playing: checkmate');
+            return this.play('checkmate');
+        }
+        // Check
+        if (san.includes('+')) {
+            console.log('🔊 Playing: check');
+            return this.play('check');
+        }
+        // Promotion (flag 'p')
+        if (flags.includes('p')) {
+            console.log('🔊 Playing: promote');
+            return this.play('promote');
+        }
+        // Capture (captured piece exists, or en passant flag 'e')
+        if (captured || flags.includes('e')) {
+            console.log('🔊 Playing: capture');
+            return this.play('capture');
+        }
+        // Castling (kingside 'k' or queenside 'q')
+        if (flags.includes('k') || flags.includes('q')) {
+            console.log('🔊 Playing: castle');
+            return this.play('castle');
+        }
+        // Normal move
+        console.log('🔊 Playing: move');
+        return this.play('move');
+    }
+
+    _beep(type) {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const map = {
+                move: 440,
+                capture: 220,
+                check: 660,
+                checkmate: 880,
+                promote: 550,
+                castle: 500
+            };
+            osc.frequency.value = map[type] || 400;
+            gain.gain.value = 0.04;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            setTimeout(() => { osc.stop(); ctx.close(); }, 120);
+        } catch {}
+    }
+}
+
+// Global instance
+window.Sound = new SoundManager();
+console.log('✅ SoundManager loaded');

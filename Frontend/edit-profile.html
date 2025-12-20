@@ -10,6 +10,7 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <link rel="stylesheet" href="./styles/basic.css">
     <link rel="stylesheet" href="./styles/index.css">
     <link rel="stylesheet" href="./styles/navbar.css">
     <style>
@@ -26,6 +27,9 @@
             min-height: 100vh;
             overflow-y: auto !important;
             overflow-x: hidden;
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 10% 20%, rgba(30, 58, 138, 0.4), transparent 50%),
+                              radial-gradient(circle at 90% 80%, rgba(51, 29, 44, 0.5), transparent 50%);
         }
         
         .profile-container {
@@ -87,6 +91,155 @@
             border-color: var(--primary);
             box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
             background: rgba(15, 23, 42, 0.8);
+        }
+        
+        .avatar-input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .avatar-input-group input {
+            flex: 1;
+        }
+        
+        .upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            background: rgba(212, 175, 55, 0.2);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            color: var(--primary);
+            cursor: pointer;
+            transition: 0.3s;
+            flex-shrink: 0;
+        }
+        
+        .upload-btn:hover {
+            background: var(--primary);
+            color: #0f172a;
+        }
+        
+        .input-hint {
+            display: block;
+            margin-top: 0.4rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        /* Avatar Section */
+        .avatar-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 1rem 0;
+        }
+        
+        .avatar-upload-area {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        
+        .avatar-upload-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: 4px solid var(--primary);
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        
+        .avatar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        
+        .avatar-upload-area:hover .avatar-overlay {
+            opacity: 1;
+        }
+        
+        .avatar-overlay-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .avatar-overlay-btn i {
+            font-size: 1.5rem;
+        }
+        
+        .avatar-info {
+            margin-bottom: 1rem;
+        }
+        
+        .avatar-info .name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.25rem;
+        }
+        
+        .avatar-info .email {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        .avatar-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .btn-avatar-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+        
+        .btn-avatar-action:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        .btn-avatar-action.btn-remove {
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        
+        .btn-avatar-action.btn-remove:hover {
+            background: rgba(239, 68, 68, 0.2);
         }
         
         .btn-submit {
@@ -161,92 +314,47 @@
             background: rgba(255, 255, 255, 0.1);
             margin: 1.5rem 0;
         }
-        
-        .avatar-preview {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-            padding-bottom: 1.25rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .avatar-preview img {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 3px solid var(--primary);
-            object-fit: cover;
-        }
-        
-        .avatar-info .name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-        
-        .avatar-info .email {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
     </style>
 </head>
 <body>
     <div class="bg-gradient"></div>
     <div class="bg-blur"></div>
 
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="/" class="navbar-brand">
-                <i class="fa-solid fa-chess-king"></i> CHESSMATE
-            </a>
-            
-            <ul class="navbar-menu">
-                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i><span class="nav-text"> Multiplayer</span></a></li>
-                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i><span class="nav-text"> VS Bot</span></a></li>
-                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i><span class="nav-text"> Puzzles</span></a></li>
-                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i><span class="nav-text"> Rankings</span></a></li>
-            </ul>
-            
-            <div class="navbar-actions">
-                <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Log In</a>
-                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
-                </div>
-                
-                <div id="user-menu">
-                    <div class="dropdown">
-                        <div class="user-info">
-                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
-                            <span id="username-display" class="username">User</span>
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar Component -->
+    <div id="navbar-placeholder"></div>
 
     <div class="profile-container">
         <div class="profile-card">
             
-            <!-- Avatar Preview -->
-            <div class="avatar-preview">
-                <img id="avatar-preview-img" src="https://ui-avatars.com/api/?name=User" alt="Avatar">
+            <!-- Avatar Section -->
+            <div class="avatar-section">
+                <div class="avatar-upload-area">
+                    <img id="avatar-preview-img" src="https://ui-avatars.com/api/?name=User" alt="Avatar">
+                    <div class="avatar-overlay">
+                        <label for="avatarFile" class="avatar-overlay-btn">
+                            <i class="fa-solid fa-camera"></i>
+                            <span>Change</span>
+                        </label>
+                    </div>
+                    <input type="file" id="avatarFile" accept="image/*" hidden>
+                </div>
                 <div class="avatar-info">
                     <div class="name" id="preview-username">Username</div>
                     <div class="email" id="preview-email">email@example.com</div>
                 </div>
+                <div class="avatar-actions">
+                    <label for="avatarFile" class="btn-avatar-action">
+                        <i class="fa-solid fa-upload"></i> Upload Photo
+                    </label>
+                    <button type="button" id="removeAvatarBtn" class="btn-avatar-action btn-remove">
+                        <i class="fa-solid fa-trash"></i> Remove
+                    </button>
+                </div>
             </div>
             
-            <h2><i class="fa-solid fa-user-pen"></i> Edit Profile</h2>
+            <div class="section-divider"></div>
+            
+            <h2><i class="fa-solid fa-user-pen"></i> Profile Settings</h2>
             
             <form id="editProfileForm">
                 <div class="form-group">
@@ -255,9 +363,13 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="avatar"><i class="fa-solid fa-image"></i> Avatar URL</label>
-                    <input type="url" id="avatar" name="avatar" placeholder="https://example.com/avatar.jpg">
+                    <label for="avatarUrl"><i class="fa-solid fa-link"></i> Avatar URL (optional)</label>
+                    <input type="text" id="avatarUrl" name="avatarUrl" placeholder="https://example.com/avatar.jpg">
+                    <small class="input-hint">Or paste a direct link to an image</small>
                 </div>
+                
+                <!-- Hidden input to store actual avatar value -->
+                <input type="hidden" id="avatar" name="avatar">
                 
                 <button type="submit" class="btn-submit">
                     <i class="fa-solid fa-save"></i> Save Changes
@@ -294,6 +406,7 @@
         </div>
     </div>
 
+    <script src="./js/components/loader.js"></script>
     <script src="./js/auth-check.js"></script>
     <script src="./js/navbar.js"></script>
     <script src="./js/edit-profile.js"></script>

@@ -18,13 +18,14 @@ class ChessBoardRenderer {
         this.canvas.width = this.canvasSize;
         this.canvas.height = this.canvasSize;
         
-        // Colors (có thể override)
-        this.lightSquareColor = '#f0d9b5';
-        this.darkSquareColor = '#b58863';
-        this.highlightColor = 'rgba(255, 255, 0, 0.4)';
-        this.legalMoveColor = 'rgba(0, 150, 0, 0.6)';
-        this.captureColor = 'rgba(200, 0, 0, 0.6)';
-        this.selectedColor = 'rgba(255, 200, 0, 0.6)';
+        // Colors - use GameConfig if available, else fallback
+        const colors = window.GameConfig?.colors || {};
+        this.lightSquareColor = colors.lightSquare || '#f0d9b5';
+        this.darkSquareColor = colors.darkSquare || '#b58863';
+        this.highlightColor = colors.highlight || 'rgba(255, 255, 0, 0.4)';
+        this.legalMoveColor = colors.legalMove || 'rgba(0, 150, 0, 0.6)';
+        this.captureColor = colors.capture || 'rgba(200, 0, 0, 0.6)';
+        this.selectedColor = colors.selected || 'rgba(255, 200, 0, 0.6)';
         
         // Game state
         this.selectedSquare = null;
@@ -173,23 +174,32 @@ class ChessBoardRenderer {
     }
     
     drawCoordinates() {
-        this.ctx.font = `${Math.max(10, this.squareSize * 0.15)}px Arial`;
-        this.ctx.fillStyle = '#333';
+        const fontSize = Math.max(10, this.squareSize * 0.15);
+        this.ctx.font = `bold ${fontSize}px Arial`;
         
-        // Files (a-h)
+        // Files (a-h) - draw at bottom of each square
         for (let file = 0; file < 8; file++) {
-            const letter = String.fromCharCode(97 + file);
-            const x = file * this.squareSize + 5;
-            const y = 8 * this.squareSize - 5;
+            const actualFile = this.isFlipped ? 7 - file : file;
+            const letter = String.fromCharCode(97 + actualFile);
+            const x = file * this.squareSize + 3;
+            const y = this.canvasSize - 3;
+            
+            // Color based on square color
+            const isLightSquare = (7 + file) % 2 === 0;
+            this.ctx.fillStyle = isLightSquare ? this.darkSquareColor : this.lightSquareColor;
             this.ctx.fillText(letter, x, y);
         }
         
-        // Ranks (1-8)
+        // Ranks (1-8) - draw at right side of each square
         for (let rank = 0; rank < 8; rank++) {
-            const number = this.isFlipped ? (rank + 1) : (8 - rank);
-            const x = 8 * this.squareSize - 15;
-            const y = rank * this.squareSize + 15;
-            this.ctx.fillText(number, x, y);
+            const actualRank = this.isFlipped ? rank + 1 : 8 - rank;
+            const x = this.canvasSize - fontSize + 2;
+            const y = rank * this.squareSize + fontSize;
+            
+            // Color based on square color
+            const isLightSquare = (rank + 7) % 2 === 0;
+            this.ctx.fillStyle = isLightSquare ? this.darkSquareColor : this.lightSquareColor;
+            this.ctx.fillText(actualRank, x, y);
         }
     }
     

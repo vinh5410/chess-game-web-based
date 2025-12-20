@@ -38,6 +38,9 @@ class ChessPuzzleGame {
         this.pieceImages = {};
         this.imagesLoaded = false;
 
+        // --- ÂM THANH ---
+        this.sound = window.Sound;
+
         // --- TIMER ---
         this.timerInterval = null;
         this.startTime = null;
@@ -415,7 +418,10 @@ class ChessPuzzleGame {
             return; 
         }
 
-        // 2. Cập nhật UI ngay lập tức
+        // 2. Phát âm thanh
+        if (this.sound) this.sound.playMove(move, this.game);
+
+        // 3. Cập nhật UI ngay lập tức
         this.addMoveToHistory(move.san);
         this.draw();
         this.isUserTurn = false; // Khóa bàn cờ chờ server
@@ -474,7 +480,10 @@ class ChessPuzzleGame {
         const to = uci.substring(2, 4);
         const promotion = uci.length > 4 ? uci.substring(4, 5) : undefined;
         const move = this.game.move({ from, to, promotion });
-        if(move) this.addMoveToHistory(move.san);
+        if(move) {
+            if (this.sound) this.sound.playMove(move, this.game);
+            this.addMoveToHistory(move.san);
+        }
     }
 
     puzzleSolved() {
@@ -578,11 +587,18 @@ class ChessPuzzleGame {
         window.addEventListener('orientationchange', () => {
             setTimeout(() => this.handleResize(true), 100);
         });
+        
+        // Debounced resize handler
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            // On mobile, ignore resize events (they fire on scroll)
-            if ('ontouchstart' in window && !this.isOrientationChange) return;
-            this.handleResize(false);
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                this.handleResize(true);
+            }, 100);
         });
+        
+        // Initial resize with delay (like PvP)
+        setTimeout(() => this.handleResize(true), 50);
     }
     
     // Touch handlers for mobile
@@ -734,21 +750,44 @@ class ChessPuzzleGame {
     }
 
     handleResize(force = false) {
-        const parent = this.canvas.parentElement;
-        if (parent) {
-            const parentWidth = parent.clientWidth;
-            // Only resize if width changed significantly (> 50px) or forced
-            const widthDiff = Math.abs(parentWidth - this.lastParentWidth);
-            if (!force && widthDiff < 50) return;
-            this.lastParentWidth = parentWidth;
-            
-            const maxSize = Math.min(parentWidth - 20, 440);
-            this.canvas.width = maxSize;
-            this.canvas.height = maxSize;
-            this.canvasSize = maxSize;
-            this.squareSize = maxSize / 8;
-            this.draw();
+        const boardSquare = this.canvas.parentElement;
+        if (!boardSquare) return;
+        
+        // Use getBoundingClientRect for accurate size (like PvP)
+        const rect = boardSquare.getBoundingClientRect();
+        const containerSize = Math.min(rect.width, rect.height);
+        
+        // If element not visible, retry later
+        if (containerSize < 50) {
+            setTimeout(() => this.handleResize(true), 100);
+            return;
         }
+        
+        // Only resize if size changed significantly or forced
+        const sizeDiff = Math.abs(containerSize - this.lastParentWidth);
+        if (!force && sizeDiff < 20) return;
+        this.lastParentWidth = containerSize;
+        
+        // DPR-aware canvas sizing (like PvP)
+        const dpr = window.devicePixelRatio || 1;
+        const size = Math.floor(containerSize);
+        
+        // Set display size
+        this.canvas.style.width = size + 'px';
+        this.canvas.style.height = size + 'px';
+        
+        // Set actual canvas resolution
+        this.canvas.width = size * dpr;
+        this.canvas.height = size * dpr;
+        
+        // Scale context for DPR
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        
+        // Update internal sizes
+        this.canvasSize = size;
+        this.squareSize = size / 8;
+        
+        this.draw();
     }
 
     // Helper UI

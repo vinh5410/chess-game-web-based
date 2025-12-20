@@ -1,15 +1,15 @@
-:root {
-    --primary: #d4af37;
-    --primary-hover: #f1c40f;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --glass-bg: rgba(30, 41, 59, 0.75);
-}
+/* =========================================
+   PROFILE PAGE - Page Specific Styles
+   Base styles are in: common.css
+   ========================================= */
 
 body {
     overflow: auto;
     height: auto;
     min-height: 100vh;
+    background-color: #0f172a;
+    background-image: radial-gradient(circle at 10% 20%, rgba(30, 58, 138, 0.4), transparent 50%),
+                      radial-gradient(circle at 90% 80%, rgba(51, 29, 44, 0.5), transparent 50%);
 }
 
 .profile-container {
@@ -122,7 +122,7 @@ body {
 /* Stats Container */
 .stats-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 1rem;
 }
 
@@ -390,16 +390,87 @@ body {
     width: 400px;
     height: 400px;
     margin: 0 auto;
-    background: #b58863;
-    border-radius: 8px;
-    overflow: hidden;
+    border: 3px solid var(--primary);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
 }
 
 .replay-board canvas {
     display: block;
     width: 400px;
     height: 400px;
-    border-radius: 8px;
+}
+
+/* Replay Board Wrapper - like PvP */
+.replay-board-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+
+.replay-board-square {
+    width: min(75vh - 180px, 550px);
+    min-width: 280px;
+    aspect-ratio: 1 / 1;
+    border: 3px solid var(--primary);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+.replay-board-square canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Replay Player Info - like PvP */
+.replay-player-info {
+    width: min(75vh - 180px, 550px);
+    min-width: 280px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 10px;
+    box-sizing: border-box;
+}
+
+.replay-player-info.player-top {
+    border-radius: 8px 8px 0 0;
+    border-bottom: none;
+}
+
+.replay-player-info.player-bottom {
+    border-radius: 0 0 8px 8px;
+    border-top: none;
+}
+
+.replay-player-info .player-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary);
+    flex-shrink: 0;
+}
+
+.replay-player-info .player-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.replay-player-info .player-name {
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.replay-player-info .player-rating {
+    color: var(--primary);
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
 .replay-controls {
@@ -440,7 +511,19 @@ body {
 /* Responsive */
 @media (max-width: 992px) {
     .stats-container {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(5, 1fr);
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .stat-icon {
+        font-size: 1.5rem;
     }
 }
 
@@ -456,7 +539,25 @@ body {
     }
     
     .stats-container {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .stat-card {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 1.2rem;
+    }
+    
+    .stat-label {
+        font-size: 0.65rem;
+    }
+    
+    .stat-icon {
+        font-size: 1.2rem;
+        margin-bottom: 0.25rem;
     }
     
     .profile-avatar {
@@ -471,21 +572,31 @@ body {
 
 @media (max-width: 480px) {
     .stats-container {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.3rem;
+    }
+    
+    .stat-card {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .stat-value {
+        font-size: 1rem;
+    }
+    
+    .stat-label {
+        font-size: 0.55rem;
+        letter-spacing: 0;
+    }
+    
+    .stat-icon {
+        font-size: 1rem;
     }
     
     .profile-header {
         padding: 1rem;
     }
-    
-    .stat-card {
-        padding: 1rem;
-    }
-    
-    .stat-value {
-        font-size: 1.5rem;
-    }
-    
+
     .profile-container {
         padding: 0 0.5rem;
         margin: 1rem auto;
@@ -506,14 +617,34 @@ body {
         gap: 0.5rem;
     }
     
-    .replay-board {
-        width: 300px;
-        height: 300px;
+    .replay-board-square,
+    .replay-player-info {
+        width: calc(100vw - 60px);
+        max-width: 350px;
+        min-width: 250px;
     }
-
-    .replay-board canvas {
-        width: 300px;
-        height: 300px;
+    
+    .replay-board-square {
+        width: calc(100vw - 60px);
+        max-width: 350px;
+    }
+    
+    .replay-player-info {
+        height: 44px;
+        padding: 0 10px;
+    }
+    
+    .replay-player-info .player-avatar {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .replay-player-info .player-name {
+        font-size: 0.8rem;
+    }
+    
+    .replay-player-info .player-rating {
+        font-size: 0.7rem;
     }
 
     .replay-controls {

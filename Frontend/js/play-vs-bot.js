@@ -7,6 +7,7 @@ class ChessCanvasVsBot {
         // Canvas settings
         this.canvasSize = 640;
         this.squareSize = 80;
+        this.lastParentWidth = 0;
         
         // Colors
         this.lightSquareColor = '#f0d9b5';
@@ -20,6 +21,7 @@ class ChessCanvasVsBot {
         this.selectedSquare = null;
         this.legalMoves = [];
         this.isFlipped = false;
+        this.manualFlipped = false; // Track manual flip from Flip button
         this.gameStarted = false;
         this.gameOver = false;
         this.isPlayerTurn = true;
@@ -77,6 +79,7 @@ class ChessCanvasVsBot {
         
         this.ctx = this.canvas.getContext('2d');
         this.game = new window.Chess();
+        this.sound = window.Sound;
         
         // Load piece images
         await this.loadPieceImages();
@@ -95,6 +98,8 @@ class ChessCanvasVsBot {
 
         // Setup event listeners
         this.setupEventListeners();
+        // Force initial resize to match .board-square size
+        this.handleResize(true);
         
         // Initial draw
         this.draw();
@@ -166,6 +171,7 @@ class ChessCanvasVsBot {
         this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
         this.canvas.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: false });
         
+        // Resize event đơn giản
         window.addEventListener('resize', this.handleResize.bind(this));
     }
     
@@ -217,17 +223,33 @@ class ChessCanvasVsBot {
         this.touchMoved = false;
     }
     
-    handleResize() {
-        const container = this.canvas.parentElement;
-        const maxSize = Math.min(container.clientWidth - 40, 640);
+    handleResize(force = false) {
+        const container = this.canvas.parentElement; // .board-square
+        if (!container) return;
+        const cssSize = container.clientWidth;
+        if (!force && Math.abs(cssSize - this.lastParentWidth) < 10) return;
+        this.lastParentWidth = cssSize;
+
+        // High-DPI crispness: scale backing store by devicePixelRatio
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        this.canvasSize = cssSize;
+        this.squareSize = cssSize / 8;
+
+        this.canvas.style.width = cssSize + 'px';
+        this.canvas.style.height = cssSize + 'px';
+        this.canvas.width = Math.floor(cssSize * dpr);
+        this.canvas.height = Math.floor(cssSize * dpr);
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         
-        if (maxSize !== this.canvasSize) {
-            this.canvasSize = maxSize;
-            this.squareSize = maxSize / 8;
-            this.canvas.width = maxSize;
-            this.canvas.height = maxSize;
-            this.draw();
-        }
+        // Update CSS var globally so sidebars match total height (top bar + board + bottom bar)
+        try {
+            const rootStyles = getComputedStyle(document.documentElement);
+            const barHStr = rootStyles.getPropertyValue('--player-bar-height') || '64px';
+            const barH = parseFloat(barHStr) || 64;
+            const total = cssSize + barH * 2;
+            document.documentElement.style.setProperty('--board-total-height', total + 'px');
+        } catch (e) {}
+        this.draw();
     }
     
     // Coordinate conversion
@@ -256,11 +278,9 @@ class ChessCanvasVsBot {
         if (!this.gameStarted || this.gameOver || !this.isPlayerTurn || this.isThinking) return;
         
         const rect = this.canvas.getBoundingClientRect();
-        // Scale coordinates based on actual canvas size vs displayed size
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        // Use CSS pixel coordinates; DPR handled by ctx transform
+        const x = (e.clientX - rect.left);
+        const y = (e.clientY - rect.top);
         
         const square = this.canvasToSquare(x, y);
         if (!square) return;
@@ -279,11 +299,9 @@ class ChessCanvasVsBot {
     
     onMouseMove(e) {
         const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
         this.mousePos = {
-            x: (e.clientX - rect.left) * scaleX,
-            y: (e.clientY - rect.top) * scaleY
+            x: (e.clientX - rect.left),
+            y: (e.clientY - rect.top)
         };
         
         if (this.isDragging) {
@@ -295,10 +313,8 @@ class ChessCanvasVsBot {
         if (!this.isDragging || !this.dragStartSquare) return;
         
         const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        const x = (e.clientX - rect.left);
+        const y = (e.clientY - rect.top);
         
         const targetSquare = this.canvasToSquare(x, y);
         
@@ -319,10 +335,8 @@ class ChessCanvasVsBot {
         if (this.isDragging) return;
         
         const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        const x = (e.clientX - rect.left);
+        const y = (e.clientY - rect.top);
         
         const square = this.canvasToSquare(x, y);
         if (!square) return;
@@ -378,6 +392,7 @@ class ChessCanvasVsBot {
                         console.log('✅ Player move:', move.san);
                         this.selectedSquare = null;
                         this.legalMoves = [];
+                        if (this.sound) this.sound.playMove(move, this.game);
                         this.onMove(move);
                     }
                 } catch (error) {
@@ -396,6 +411,7 @@ class ChessCanvasVsBot {
             
             if (move) {
                 console.log('✅ Player move:', move.san);
+                if (this.sound) this.sound.playMove(move, this.game);
                 this.onMove(move);
                 return true;
             }
@@ -430,7 +446,7 @@ class ChessCanvasVsBot {
     }
     
     _doDraw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.clearRect(0, 0, this.canvasSize, this.canvasSize);
         
         this.drawBoard();
         this.drawCoordinates();
@@ -476,7 +492,7 @@ class ChessCanvasVsBot {
         this.ctx.textBaseline = 'top';
         for (let rank = 0; rank < 8; rank++) {
             const number = this.isFlipped ? rank + 1 : 8 - rank;
-            const x = this.canvas.width - fontSize + 2;
+            const x = 8 * this.squareSize - fontSize + 2;
             const y = rank * this.squareSize + 2;
             const isDark = (7 + rank) % 2 === 0;
             this.ctx.fillStyle = isDark ? this.darkSquareColor : this.lightSquareColor;
@@ -615,6 +631,7 @@ class ChessCanvasVsBot {
             
             const move = this.game.move(selectedMove);
             console.log('🤖 Bot move:', move.san);
+            if (this.sound) this.sound.playMove(move, this.game);
             
             this.draw();
             this.updateGameStatus();
@@ -627,13 +644,13 @@ class ChessCanvasVsBot {
             
             this.isPlayerTurn = true;
             this.isThinking = false;
-            this.updateGameStatus('👤 Your turn');
+            this.updateGameStatus('⚪ Your turn!');
             
         } catch (error) {
             console.error('❌ Bot move error:', error);
             this.isPlayerTurn = true;
             this.isThinking = false;
-            this.updateGameStatus('Your turn');
+            this.updateGameStatus('⚪ Your turn!');
         }
     }
     
@@ -832,7 +849,11 @@ class ChessCanvasVsBot {
         // FIX: Flip khi player chọn BLACK (để quân đen xuống dưới)
         // Không flip khi player chọn WHITE (quân trắng đã ở dưới mặc định)
         this.isFlipped = (playerColor === 'black');
+        this.manualFlipped = false; // Reset manual flip on new game
         
+        // Ensure board is sized after UI becomes visible
+        this.handleResize(true);
+
         // Determine first turn
         if (playerColor === 'white') {
             this.isPlayerTurn = true;
@@ -847,54 +868,11 @@ class ChessCanvasVsBot {
         // Initialize move history UI
         updateMoveHistoryUI();
         
-        // Swap player info bars if flipped (when playing black)
-        this.updatePlayerInfoPosition();;
+        // Store difficulty for updatePlayerInfoPosition
+        this.selectedDifficulty = difficulty;
         
-        // Update UI - Bot Info
-        const botNameTop = document.getElementById('botNameTop');
-        const botRatingTop = document.getElementById('botRatingTop');
-        if (botNameTop) {
-            botNameTop.textContent = 'Chess Bot';
-        }
-        if (botRatingTop) {
-            botRatingTop.textContent = `LV ${difficulty}`;
-        }
-        
-        // Update UI - Player Info (Get ELO from ranking)
-        const playerNameBottom = document.getElementById('playerNameBottom');
-        const playerRatingBottom = document.getElementById('playerRatingBottom');
-        
-        // Get player username from localStorage
-        let username = 'Guest';
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-            try {
-                const user = JSON.parse(userStr);
-                username = user.username || user.name || 'Guest';
-            } catch (e) {
-                console.log('Error parsing user data');
-            }
-        }
-        
-        if (playerNameBottom) {
-            playerNameBottom.textContent = username;
-        }
-        
-        // Fetch player ELO from ranking API
-        if (playerRatingBottom) {
-            try {
-                const response = await fetch(`/api/user/${username}/stats`);
-                if (response.ok) {
-                    const data = await response.json();
-                    playerRatingBottom.textContent = `ELO: ${data.elo || 1200}`;
-                } else {
-                    playerRatingBottom.textContent = 'ELO: 1200';
-                }
-            } catch (error) {
-                console.log('Using default ELO:', error);
-                playerRatingBottom.textContent = 'ELO: 1200';
-            }
-        }
+        // Update player info bars based on isFlipped state
+        this.updatePlayerInfoPosition();
         
         // Update panel title and subtitle (new UI matching multiplayer)
         const botLevelInfo = document.getElementById('botLevelInfo');
@@ -909,14 +887,18 @@ class ChessCanvasVsBot {
         }
         
         if (playerColor === 'white') {
-            this.updateGameStatus('Your turn - Click a piece to move!');
+            this.updateGameStatus('⚪ Your turn!');
         } else {
-            this.updateGameStatus('Bot starts first...');
-            // Bot makes first move
-            setTimeout(() => this.makeBotMove(), 1000);
+            this.updateGameStatus('🤖 Bot is thinking...');
+            console.log('🎯 Player chose BLACK - scheduling bot first move');
+            // Bot makes first move - use arrow function to preserve 'this' context
+            setTimeout(() => {
+                console.log('🎯 Bot first move timeout fired, gameStarted:', this.gameStarted);
+                this.makeBotMove();
+            }, 1000);
         }
         
-        console.log('🏁 Canvas game setup complete - isFlipped:', this.isFlipped);
+        console.log('🏁 Canvas game setup complete - isFlipped:', this.isFlipped, 'playerColor:', playerColor);
     }
     checkGameOver() {
         try {
@@ -1062,38 +1044,83 @@ class ChessCanvasVsBot {
         }
     }
     
-    // Update player info bar positions based on isFlipped state
+    // Update player info bar positions based on manual flip state
+    // Initially: Player at bottom, Bot at top (regardless of chosen color)
+    // After manual flip: Player at top, Bot at bottom
     updatePlayerInfoPosition() {
-        const topEl = this.playerTopInfoEl;
-        const bottomEl = this.playerBottomInfoEl;
-        const container = this.chessboardContainerEl || (this.canvas && this.canvas.parentNode);
-        const canvas = this.canvas;
+        // Get all avatar elements
+        const topBotAvatar = document.getElementById('topBotAvatar');
+        const topPlayerAvatar = document.getElementById('topPlayerAvatar');
+        const bottomBotAvatar = document.getElementById('bottomBotAvatar');
+        const bottomPlayerAvatar = document.getElementById('bottomPlayerAvatar');
 
-        if (topEl && bottomEl && container && canvas) {
-            if (this.isFlipped) {
-                // Show player's info on top (when playing black)
-                container.insertBefore(bottomEl, canvas);
-                bottomEl.classList.remove('player-bottom');
-                bottomEl.classList.add('player-top');
+        // Get name/rating elements
+        const topName = document.getElementById('topName');
+        const topRating = document.getElementById('topRating');
+        const bottomName = document.getElementById('bottomName');
+        const bottomRating = document.getElementById('bottomRating');
 
-                container.appendChild(topEl);
-                topEl.classList.remove('player-top');
-                topEl.classList.add('player-bottom');
-            } else {
-                // Restore bot on top, player at bottom (when playing white)
-                container.insertBefore(topEl, canvas);
-                topEl.classList.remove('player-bottom');
-                topEl.classList.add('player-top');
+        // Get player info
+        let username = 'Guest';
+        let playerElo = 'ELO: 1200';
+        let playerAvatar = `https://ui-avatars.com/api/?name=Guest&background=d4af37&color=0f172a`;
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                username = user.username || user.name || 'Guest';
+                if (user.rating) {
+                    playerElo = `ELO: ${user.rating}`;
+                }
+                if (user.avatar) {
+                    playerAvatar = user.avatar;
+                } else {
+                    playerAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=d4af37&color=0f172a`;
+                }
+            } catch (e) {}
+        }
 
-                container.appendChild(bottomEl);
-                bottomEl.classList.remove('player-top');
-                bottomEl.classList.add('player-bottom');
+        const botName = 'Chess Bot';
+        const botRating = `LV ${this.selectedDifficulty || 5}`;
+
+        if (this.manualFlipped) {
+            // User clicked Flip button - swap info bars
+            // Top bar = Player (show player avatar, hide bot icon)
+            if (topBotAvatar) topBotAvatar.style.display = 'none';
+            if (topPlayerAvatar) {
+                topPlayerAvatar.style.display = '';
+                topPlayerAvatar.src = playerAvatar;
             }
+            if (topName) topName.textContent = username;
+            if (topRating) topRating.textContent = playerElo;
+
+            // Bottom bar = Bot (show bot icon, hide player avatar)
+            if (bottomBotAvatar) bottomBotAvatar.style.display = '';
+            if (bottomPlayerAvatar) bottomPlayerAvatar.style.display = 'none';
+            if (bottomName) bottomName.textContent = botName;
+            if (bottomRating) bottomRating.textContent = botRating;
+        } else {
+            // Normal state - Player at bottom, Bot at top
+            // Top bar = Bot (show bot icon, hide player avatar)
+            if (topBotAvatar) topBotAvatar.style.display = '';
+            if (topPlayerAvatar) topPlayerAvatar.style.display = 'none';
+            if (topName) topName.textContent = botName;
+            if (topRating) topRating.textContent = botRating;
+
+            // Bottom bar = Player (show player avatar, hide bot icon)
+            if (bottomBotAvatar) bottomBotAvatar.style.display = 'none';
+            if (bottomPlayerAvatar) {
+                bottomPlayerAvatar.style.display = '';
+                bottomPlayerAvatar.src = playerAvatar;
+            }
+            if (bottomName) bottomName.textContent = username;
+            if (bottomRating) bottomRating.textContent = playerElo;
         }
     }
     
     flipBoard() {
         this.isFlipped = !this.isFlipped;
+        this.manualFlipped = !this.manualFlipped; // Toggle manual flip state
         this.draw();
         this.updatePlayerInfoPosition();
         console.log('🔄 Board flipped:', this.isFlipped ? 'Black perspective' : 'White perspective');
@@ -1144,10 +1171,8 @@ function backToMenu() {
     
     // Hide game elements
     const sidebar = document.getElementById('gameSidebarLeft');
-    const sidebarRight = document.getElementById('gameSidebarRight');
     const gameCenter = document.getElementById('gameCenter');
     if (sidebar) sidebar.style.display = 'none';
-    if (sidebarRight) sidebarRight.style.display = 'none';
     if (gameCenter) gameCenter.style.display = 'none';
     
     document.getElementById('mainMenu').classList.add('hidden');      // Thay đổi: Luôn ẩn Main Menu
@@ -1155,7 +1180,7 @@ function backToMenu() {
     document.getElementById('difficultyMenu').classList.add('hidden');
     document.getElementById('gameOverOverlay').classList.add('hidden');
     
-    document.getElementById('gameStatus').textContent = 'Choose game mode to start';
+    document.getElementById('gameStatus').textContent = '—';
     
     selectedColor = null;
     
@@ -1186,13 +1211,15 @@ async function startBotGame(difficulty) {
     // Add class to body for layout switching
     document.body.classList.add('game-active');
     
-    // Show game screen (sidebar + board + right sidebar)
+    // Show game screen (sidebar + board)
     const sidebar = document.getElementById('gameSidebarLeft');
-    const sidebarRight = document.getElementById('gameSidebarRight');
     const gameCenter = document.getElementById('gameCenter');
     if (sidebar) sidebar.style.display = 'flex';
-    if (sidebarRight) sidebarRight.style.display = 'flex';
     if (gameCenter) gameCenter.style.display = 'flex';
+    // Ensure canvas sizes after becoming visible
+    if (gameInstance && typeof gameInstance.handleResize === 'function') {
+        gameInstance.handleResize(true);
+    }
     
     await gameInstance.startGame(difficulty, selectedColor);
 }
@@ -1224,6 +1251,13 @@ function goToPrevMove() {
         gameInstance.viewStep--;
         drawBoardAtStep(gameInstance.viewStep);
         updateMoveHistoryUI();
+        // Play sound for the move at this step
+        const history = gameInstance.game.history({ verbose: true });
+        if (gameInstance.viewStep > 0 && history[gameInstance.viewStep - 1]) {
+            if (window.Sound) window.Sound.playMove(history[gameInstance.viewStep - 1]);
+        } else {
+            if (window.Sound) window.Sound.play('move');
+        }
     }
 }
 
@@ -1234,6 +1268,10 @@ function goToNextMove() {
         gameInstance.viewStep++;
         drawBoardAtStep(gameInstance.viewStep);
         updateMoveHistoryUI();
+        // Play sound for the move at this step
+        if (history[gameInstance.viewStep - 1]) {
+            if (window.Sound) window.Sound.playMove(history[gameInstance.viewStep - 1]);
+        }
     }
 }
 
@@ -1252,6 +1290,12 @@ function goToMove(step) {
         gameInstance.viewStep = step;
         drawBoardAtStep(step);
         updateMoveHistoryUI();
+        // Play sound for the move at this step
+        if (step > 0 && history[step - 1]) {
+            if (window.Sound) window.Sound.playMove(history[step - 1]);
+        } else {
+            if (window.Sound) window.Sound.play('move');
+        }
     }
 }
 
@@ -1412,7 +1456,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (initialized) {
             console.log('✅ Canvas Chess ready to play!');
-            document.getElementById('gameStatus').textContent = 'Choose game mode to start';
+            document.getElementById('gameStatus').textContent = '—';
         } else {
             console.error('❌ Failed to initialize canvas chess');
             document.getElementById('gameStatus').textContent = '❌ Failed to initialize game';

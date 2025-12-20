@@ -10,6 +10,7 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <link rel="stylesheet" href="./styles/basic.css">
     <link rel="stylesheet" href="./styles/index.css">
     <link rel="stylesheet" href="./styles/puzzles.css">
     <link rel="stylesheet" href="./styles/navbar.css">
@@ -19,43 +20,8 @@
     <div class="bg-gradient"></div>
     <div class="bg-blur"></div>
 
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="/" class="navbar-brand">
-                <i class="fa-solid fa-chess-king"></i> CHESSMATE
-            </a>
-            
-            <ul class="navbar-menu">
-                <li><a href="/play-multiplayer.html"><i class="fa-solid fa-users"></i><span class="nav-text"> Multiplayer</span></a></li>
-                <li><a href="/play-vs-bot.html"><i class="fa-solid fa-robot"></i><span class="nav-text"> VS Bot</span></a></li>
-                <li><a href="/puzzles.html"><i class="fa-solid fa-puzzle-piece"></i><span class="nav-text"> Puzzles</span></a></li>
-                <li><a href="/leaderboard.html"><i class="fa-solid fa-trophy"></i><span class="nav-text"> Rankings</span></a></li>
-            </ul>
-            
-            <div class="navbar-actions">
-                <div id="auth-buttons">
-                    <a href="/login.html" class="btn btn-secondary">Log In</a>
-                    <a href="/register.html" class="btn btn-primary">Sign Up</a>
-                </div>
-                
-                <div id="user-menu">
-                    <div class="dropdown">
-                        <div class="user-info">
-                            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar" class="user-avatar">
-                            <span id="username-display" class="username">User</span>
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a href="/profile.html" class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</a>
-                            <a href="/edit-profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" id="logout-btn" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar Component -->
+    <div id="navbar-placeholder"></div>
 
     <!-- Main App Container -->
     <div class="app">
@@ -140,8 +106,10 @@
                         </div>
                     </div>
 
-                    <!-- Chessboard Canvas -->
-                    <canvas id="puzzleCanvas" width="440" height="440"></canvas>
+                    <!-- Board Square Wrapper -->
+                    <div class="board-square">
+                        <canvas id="puzzleCanvas" width="640" height="640"></canvas>
+                    </div>
 
                     <!-- Feedback (Bottom) -->
                     <div id="feedback" class="feedback hidden">
@@ -187,8 +155,10 @@
     </div>
 
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
+    <script src="./js/components/loader.js"></script>
     <script src="./js/auth-check.js"></script>
     <script src="./js/navbar.js"></script>
+    <script src="./js/utils.js"></script>
     <script src="./js/puzzle-renderer.js"></script>
     <script src="./js/puzzles.js"></script>
 </body>

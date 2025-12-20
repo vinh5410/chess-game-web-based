@@ -150,6 +150,7 @@ function renderHistory(games, currentUsername) {
         const oppInitialRating = opponent.rating || 1200;
         const oppRatingChange = opponent.ratingChange || 0;
         const oppFinalRating = oppInitialRating + oppRatingChange;
+
         
         // Use startedAt, endedAt, or createdAt (whichever is available)
         const gameDate = game.startedAt || game.endedAt || game.createdAt;

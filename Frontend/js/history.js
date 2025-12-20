@@ -90,12 +90,25 @@ function replayGame(game) {
         }
     }
     document.getElementById('nextBtn').onclick = () => {
-        if (moveIndex < flatMoves.length) moveIndex++;
-        showMove(moveIndex);
+        if (moveIndex < flatMoves.length) {
+            moveIndex++;
+            showMove(moveIndex);
+            // Play sound for the move
+            if (moveIndex > 0 && flatMoves[moveIndex - 1] && window.Sound) {
+                window.Sound.playMove(flatMoves[moveIndex - 1]);
+            }
+        }
     };
     document.getElementById('prevBtn').onclick = () => {
-        if (moveIndex > 0) moveIndex--;
-        showMove(moveIndex);
+        if (moveIndex > 0) {
+            // Play sound for the move we're going back to see
+            const prevMove = flatMoves[moveIndex - 1];
+            moveIndex--;
+            showMove(moveIndex);
+            if (prevMove && window.Sound) {
+                window.Sound.playMove(prevMove);
+            }
+        }
     };
 
     showMove(moveIndex);
