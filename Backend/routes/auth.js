@@ -6,9 +6,10 @@ const {
     login,
     logout,
     getMe,
-    changePassword, // NEW
+    changePassword,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    resendVerificationEmail
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
@@ -21,5 +22,6 @@ router.put('/password', protect, changePassword); // NEW
 
 router.post('/forgotpassword', forgotPassword);
 router.put('/resetpassword/:token', resetPassword);
+router.post('/resend-verification', resendVerificationEmail);
 
 module.exports = router;

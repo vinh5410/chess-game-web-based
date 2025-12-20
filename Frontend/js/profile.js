@@ -46,8 +46,7 @@ async function loadProfile(userId) {
 
 function displayProfile(user) {
     // Profile header
-    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=d4af37&color=0f172a`;
-    document.getElementById('profile-avatar').src = user.avatar || defaultAvatar;
+    document.getElementById('profile-avatar').src = user.avatar;
     
     // Set username and title
     const usernameEl = document.getElementById('profile-username');
@@ -72,19 +71,11 @@ function displayProfile(user) {
     document.getElementById('profile-joined').innerHTML = `<i class="fa-solid fa-calendar"></i> Joined: ${joinedDate}`;
     
     // Stats
-    document.getElementById('stat-games').textContent = user.gamesPlayed || 0;
-    document.getElementById('stat-won').textContent = user.gamesWon || 0;
-    document.getElementById('stat-lost').textContent = user.gamesLost || 0;
-    document.getElementById('stat-draw').textContent = user.gamesDraw || 0;
-    
-    // Calculate win rate if not provided
-    let winRate = user.winRate;
-    if (winRate === undefined || winRate === null) {
-        const played = user.gamesPlayed || 0;
-        const won = user.gamesWon || 0;
-        winRate = played > 0 ? Math.round((won / played) * 100) : 0;
-    }
-    document.getElementById('stat-winrate').textContent = `${winRate}%`;
+    document.getElementById('stat-games').textContent = user.gamesPlayed;
+    document.getElementById('stat-won').textContent = user.gamesWon;
+    document.getElementById('stat-lost').textContent = user.gamesLost;
+    document.getElementById('stat-draw').textContent = user.gamesDraw;
+    document.getElementById('stat-winrate').textContent = `${user.winRate}%`;
 }
 
 function getTitle(rating) {
@@ -151,13 +142,15 @@ function renderHistory(games, currentUsername) {
             resultText = isWhite ? 'LOSS' : 'WIN';
         }
         
-        // Tính rating sau trận = rating trước + ratingChange
-        const ratingChange = myPlayer.ratingChange || 0;
-        const ratingAfter = (myPlayer.rating || 1200) + ratingChange;
-        
-        // Tính rating sau trận của đối thủ
-        const opponentRatingChange = opponent.ratingChange || 0;
-        const opponentRatingAfter = (opponent.rating || 1200) + opponentRatingChange;
+        // Calculate final ratings
+        const myInitialRating = myPlayer.rating || 1200;
+        const myRatingChange = myPlayer.ratingChange || 0;
+        const myFinalRating = myInitialRating + myRatingChange;
+
+        const oppInitialRating = opponent.rating || 1200;
+        const oppRatingChange = opponent.ratingChange || 0;
+        const oppFinalRating = oppInitialRating + oppRatingChange;
+
         
         // Use startedAt, endedAt, or createdAt (whichever is available)
         const gameDate = game.startedAt || game.endedAt || game.createdAt;
@@ -178,12 +171,12 @@ function renderHistory(games, currentUsername) {
                 <div class="history-players">
                     <div class="player">
                         <span class="player-name">${currentUsername}</span>
-                        <span class="player-rating">(${ratingAfter})</span>
+                        <span class="player-rating">(${myFinalRating})</span>
                     </div>
                     <span class="vs">vs</span>
                     <div class="player">
                         <span class="player-name">${opponent.username}</span>
-                        <span class="player-rating">(${opponentRatingAfter})</span>
+                        <span class="player-rating">(${oppFinalRating})</span>
                     </div>
                 </div>
                 <span class="history-result ${result}">${resultText}</span>
@@ -217,32 +210,20 @@ async function openReplayModal(game) {
     // Wait a tick for modal to become visible before initializing renderer
     await new Promise(resolve => setTimeout(resolve, 50));
     
-    // Update player info - names based on color (White at bottom, Black at top)
-    const whiteName = game.whitePlayer?.username || game.white?.username || 'White';
-    const blackName = game.blackPlayer?.username || game.black?.username || 'Black';
-    const whiteAvatar = game.whitePlayer?.avatar || game.white?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(whiteName)}&background=d4af37&color=0f172a`;
-    const blackAvatar = game.blackPlayer?.avatar || game.black?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(blackName)}&background=d4af37&color=0f172a`;
-    
-    // Bottom = White, Top = Black (standard chess view)
-    document.getElementById('replay-player-name').textContent = whiteName;
-    document.getElementById('replay-opponent-name').textContent = blackName;
-    document.getElementById('replay-player-avatar').src = whiteAvatar;
-    document.getElementById('replay-opponent-avatar').src = blackAvatar;
-    
-    // Initialize renderer if needed - responsive mode
+    // Initialize renderer if needed
     if (!replayRenderer) {
         try {
-            replayRenderer = new ChessBoardRenderer('replay-canvas', { responsive: true });
+            replayRenderer = new ChessBoardRenderer('replay-canvas', { fixedSize: 400 });
             await replayRenderer.loadPieceImages();
             console.log('✅ Replay renderer initialized');
         } catch (error) {
             console.error('Failed to initialize replay renderer:', error);
             return;
         }
+    } else {
+        // Re-calculate size in case modal was resized
+        replayRenderer.handleResize();
     }
-    
-    // Handle resize for responsive canvas
-    handleReplayResize();
     
     // Flatten moves
     currentGameMoves = [];
@@ -255,41 +236,6 @@ async function openReplayModal(game) {
     currentMoveIndex = 0;
     
     showReplayMove(0);
-}
-
-function handleReplayResize() {
-    if (!replayRenderer) return;
-    
-    const boardSquare = document.querySelector('.replay-board-square');
-    if (!boardSquare) return;
-    
-    const rect = boardSquare.getBoundingClientRect();
-    const size = Math.min(rect.width, rect.height);
-    
-    if (size < 50) {
-        setTimeout(handleReplayResize, 100);
-        return;
-    }
-    
-    const dpr = window.devicePixelRatio || 1;
-    const canvas = replayRenderer.canvas;
-    
-    // Set display size
-    canvas.style.width = size + 'px';
-    canvas.style.height = size + 'px';
-    
-    // Set actual canvas resolution
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    
-    // Scale context for DPR
-    replayRenderer.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    
-    // Update internal sizes
-    replayRenderer.canvasSize = size;
-    replayRenderer.squareSize = size / 8;
-    
-    replayRenderer.draw();
 }
 
 function showReplayMove(index) {
@@ -328,32 +274,10 @@ function showReplayMove(index) {
 }
 
 function setupReplayControls() {
-    document.getElementById('first-move').addEventListener('click', () => {
-        if (currentMoveIndex > 0 && currentGameMoves[0] && window.Sound) {
-            window.Sound.playMove(currentGameMoves[0]);
-        }
-        showReplayMove(0);
-    });
-    document.getElementById('prev-move').addEventListener('click', () => {
-        if (currentMoveIndex > 0) {
-            const move = currentGameMoves[currentMoveIndex - 1];
-            if (move && window.Sound) window.Sound.playMove(move);
-        }
-        showReplayMove(currentMoveIndex - 1);
-    });
-    document.getElementById('next-move').addEventListener('click', () => {
-        if (currentMoveIndex < currentGameMoves.length) {
-            const move = currentGameMoves[currentMoveIndex];
-            if (move && window.Sound) window.Sound.playMove(move);
-        }
-        showReplayMove(currentMoveIndex + 1);
-    });
-    document.getElementById('last-move').addEventListener('click', () => {
-        if (currentMoveIndex < currentGameMoves.length && currentGameMoves[currentGameMoves.length - 1] && window.Sound) {
-            window.Sound.playMove(currentGameMoves[currentGameMoves.length - 1]);
-        }
-        showReplayMove(currentGameMoves.length);
-    });
+    document.getElementById('first-move').addEventListener('click', () => showReplayMove(0));
+    document.getElementById('prev-move').addEventListener('click', () => showReplayMove(currentMoveIndex - 1));
+    document.getElementById('next-move').addEventListener('click', () => showReplayMove(currentMoveIndex + 1));
+    document.getElementById('last-move').addEventListener('click', () => showReplayMove(currentGameMoves.length));
     
     document.getElementById('close-replay').addEventListener('click', () => {
         document.getElementById('replay-modal').classList.remove('active');
@@ -370,40 +294,10 @@ function setupReplayControls() {
     document.addEventListener('keydown', (e) => {
         if (!document.getElementById('replay-modal').classList.contains('active')) return;
         
-        if (e.key === 'ArrowLeft') {
-            if (currentMoveIndex > 0) {
-                const move = currentGameMoves[currentMoveIndex - 1];
-                if (move && window.Sound) window.Sound.playMove(move);
-            }
-            showReplayMove(currentMoveIndex - 1);
-        }
-        if (e.key === 'ArrowRight') {
-            if (currentMoveIndex < currentGameMoves.length) {
-                const move = currentGameMoves[currentMoveIndex];
-                if (move && window.Sound) window.Sound.playMove(move);
-            }
-            showReplayMove(currentMoveIndex + 1);
-        }
-        if (e.key === 'Home') {
-            if (currentMoveIndex > 0 && currentGameMoves[0] && window.Sound) {
-                window.Sound.playMove(currentGameMoves[0]);
-            }
-            showReplayMove(0);
-        }
-        if (e.key === 'End') {
-            if (currentMoveIndex < currentGameMoves.length && currentGameMoves[currentGameMoves.length - 1] && window.Sound) {
-                window.Sound.playMove(currentGameMoves[currentGameMoves.length - 1]);
-            }
-            showReplayMove(currentGameMoves.length);
-        }
+        if (e.key === 'ArrowLeft') showReplayMove(currentMoveIndex - 1);
+        if (e.key === 'ArrowRight') showReplayMove(currentMoveIndex + 1);
+        if (e.key === 'Home') showReplayMove(0);
+        if (e.key === 'End') showReplayMove(currentGameMoves.length);
         if (e.key === 'Escape') document.getElementById('replay-modal').classList.remove('active');
-    });
-    
-    // Resize handler for responsive replay board
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-        if (!document.getElementById('replay-modal').classList.contains('active')) return;
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => handleReplayResize(), 100);
     });
 }

@@ -155,7 +155,18 @@ module.exports = (io, userManager, gameManager) => {
                 });
             }
         });
-        socket.on('game:resign', async ({ roomId }) => {
+        // --- DRAW HANDLERS ---
+        socket.on('game:offer_draw', ({ roomId }) => {
+            gameManager.offerDraw(roomId, socket.id);
+        });
+
+        socket.on('game:accept_draw', ({ roomId }) => {
+            gameManager.acceptDraw(roomId, socket.id);
+        });
+
+        socket.on('game:decline_draw', ({ roomId }) => {
+            gameManager.declineDraw(roomId, socket.id);
+        });        socket.on('game:resign', async ({ roomId }) => {
             const room = gameManager.getRoom(roomId);
             if (room) {
                 // Logic: Tìm người còn lại là người thắng
