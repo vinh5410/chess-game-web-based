@@ -97,8 +97,7 @@ app.post('/api/bot/best-move', botController.getBestMove);
 // Socket.IO Connection Handler
 require('./socket/index')(io, userManager, gameManager);
 
-// Handle missing assets
-app.get('/assets/*', (req, res) => {
+app.get(/^\/assets\/.*$/, (req, res) => {
     console.log(`Missing asset: ${req.path}`);
     res.status(404).send('Asset not found');
 });
