@@ -289,7 +289,7 @@ exports.logout = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Logout error:', error);
+        console.error('Logout error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
@@ -322,7 +322,7 @@ exports.getMe = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get me error:', error);
+        console.error('Get me error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
@@ -360,7 +360,7 @@ exports.changePassword = async (req, res) => {
         user.password = newPassword;
         await user.save();
         
-        console.log(`✅ Password changed: ${user.username}`);
+        console.log(`Password changed: ${user.username}`);
         
         res.status(200).json({
             success: true,
@@ -368,7 +368,77 @@ exports.changePassword = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Change password error:', error);
+        console.error('Change password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+};
+
+// @desc    Resend verification email
+// @route   POST /api/auth/resend-verification
+// @access  Public
+exports.resendVerificationEmail = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide email address'
+            });
+        }
+
+        // Find user by email
+        const user = await User.findOne({ email: email.toLowerCase() });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'No account found with this email'
+            });
+        }
+
+        // Check if already verified
+        if (user.isVerified) {
+            return res.status(400).json({
+                success: false,
+                message: 'This account is already verified'
+            });
+        }
+
+        // Generate new verification token
+        const token = user.generateToken('verify');
+        await user.save({ validateBeforeSave: false });
+
+        // Create verification URL
+        const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verify/${token}`;
+
+        try {
+            // Send verification email
+            await sendEmail({
+                email: user.email,
+                subject: 'Resend: Kích hoạt tài khoản Chess Game',
+                message: `Click vào link sau để kích hoạt tài khoản: \n\n${verifyUrl}\n\nLink này sẽ hết hạn sau 24 giờ.`
+            });
+
+            console.log('Verification email resent to:', user.email);
+
+            res.status(200).json({
+                success: true,
+                message: 'Verification email sent successfully! Please check your inbox.'
+            });
+        } catch (err) {
+            console.error('Send email error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to send verification email. Please try again later.'
+            });
+        }
+
+    } catch (error) {
+        console.error('❌ Resend verification error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'

@@ -151,13 +151,14 @@ function renderHistory(games, currentUsername) {
             resultText = isWhite ? 'LOSS' : 'WIN';
         }
         
-        // Tính rating sau trận = rating trước + ratingChange
-        const ratingChange = myPlayer.ratingChange || 0;
-        const ratingAfter = (myPlayer.rating || 1200) + ratingChange;
-        
-        // Tính rating sau trận của đối thủ
-        const opponentRatingChange = opponent.ratingChange || 0;
-        const opponentRatingAfter = (opponent.rating || 1200) + opponentRatingChange;
+        // Calculate final ratings
+        const myInitialRating = myPlayer.rating || 1200;
+        const myRatingChange = myPlayer.ratingChange || 0;
+        const myFinalRating = myInitialRating + myRatingChange;
+
+        const oppInitialRating = opponent.rating || 1200;
+        const oppRatingChange = opponent.ratingChange || 0;
+        const oppFinalRating = oppInitialRating + oppRatingChange;
         
         // Use startedAt, endedAt, or createdAt (whichever is available)
         const gameDate = game.startedAt || game.endedAt || game.createdAt;
@@ -178,12 +179,12 @@ function renderHistory(games, currentUsername) {
                 <div class="history-players">
                     <div class="player">
                         <span class="player-name">${currentUsername}</span>
-                        <span class="player-rating">(${ratingAfter})</span>
+                        <span class="player-rating">(${myFinalRating})</span>
                     </div>
                     <span class="vs">vs</span>
                     <div class="player">
                         <span class="player-name">${opponent.username}</span>
-                        <span class="player-rating">(${opponentRatingAfter})</span>
+                        <span class="player-rating">(${oppFinalRating})</span>
                     </div>
                 </div>
                 <span class="history-result ${result}">${resultText}</span>
