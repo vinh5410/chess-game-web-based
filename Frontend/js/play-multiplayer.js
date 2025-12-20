@@ -92,7 +92,6 @@ class MultiplayerChess {
 =======
         this.promotionUI = new PromotionUI(this.game, this.pieceImages, this.isFlipped);
         this.sound = window.Sound;
->>>>>>> Stashed changes
         this.setupEventListeners();
         
         // Initial resize - delay to ensure CSS layout is fully computed
@@ -173,8 +172,6 @@ class MultiplayerChess {
         this.canvas.addEventListener('click', this.onClick.bind(this));
         this.canvas.addEventListener('contextmenu', e => e.preventDefault());
         
-<<<<<<< Updated upstream
-=======
         // Touch events (mobile)
         this.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
         this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
@@ -332,8 +329,6 @@ class MultiplayerChess {
             this.onOpponentMove(data);
         });
         
-<<<<<<< Updated upstream
-=======
         // Listen for move confirmation from server (for the player who made the move)
         io.on('game:move_applied', (data) => {
             console.log('✅ Move applied by server:', data);
@@ -519,12 +514,8 @@ class MultiplayerChess {
         this.gameStarted = true;
         this.gameOver = false;
         this.isFlipped = (this.playerColor === 'black');
-<<<<<<< Updated upstream
-        
-=======
         this.isInfoSwapped = false; // Reset swap state on new game
 
->>>>>>> Stashed changes
         // Capture ELO if provided
         if (data.opponent && data.opponent.elo) {
             this.opponentElo = data.opponent.elo;
@@ -532,9 +523,6 @@ class MultiplayerChess {
         if (data.playerElo) {
             this.playerElo = data.playerElo;
         }
-<<<<<<< Updated upstream
-        
-=======
 
         // Capture avatars if provided
         if (data.opponent && data.opponent.avatar) {
@@ -544,7 +532,6 @@ class MultiplayerChess {
             this.playerAvatar = data.playerAvatar;
         }
 
->>>>>>> Stashed changes
         // Reset timer từ timeControl
         if (data.timeControl) {
             this.playerTime = data.timeControl.initial;
@@ -577,7 +564,6 @@ class MultiplayerChess {
         // Update player info display based on flipped state
         this.updatePlayerInfoDisplay();
 
->>>>>>> Stashed changes
         // Update left sidebar info
         const opponentNameDisplay = document.getElementById('opponentNameDisplay');
         if (opponentNameDisplay) opponentNameDisplay.textContent = this.opponentName;
@@ -595,27 +581,13 @@ class MultiplayerChess {
         this.selectedSquare = null;
         this.legalMoves = [];
         this.lastMove = null;
-<<<<<<< Updated upstream
-        
-        // Update player info position FIRST if playing black (before timer starts)
-        if (this.isFlipped) {
-            this.updatePlayerInfoPosition();
-        }
-        
-=======
 
->>>>>>> Stashed changes
         this.updateTimerDisplay();
         this.updateGameInfo();
         this.startTimer();
         this.draw();
-<<<<<<< Updated upstream
-        
-        updateGameStatus(this.isMyTurn ? 'Your turn!' : 'Opponent\'s turn');
-=======
 
         updateGameStatus(this.isMyTurn ? '👤 Your turn!' : '⏳ Opponent\'s turn', this.game);
->>>>>>> Stashed changes
     }
     
     updateGameInfo() {
@@ -691,8 +663,6 @@ class MultiplayerChess {
         try {
             const move = this.game.move(data.move);
             if (move) {
-<<<<<<< Updated upstream
-=======
                 if (this.sound) this.sound.playMove(move, this.game);
                 this.fullMoveHistory = this.game.history({ verbose: true });
                 this.viewStep = this.fullMoveHistory.length;
@@ -1083,9 +1053,6 @@ class MultiplayerChess {
                 to
             });
             if (moveObj) {
-<<<<<<< Updated upstream
-                console.log('✅ Valid move:', moveObj.san);
-=======
                 if (this.sound) this.sound.playMove(moveObj, this.game);
                 this.fullMoveHistory = this.game.history({ verbose: true });
                 this.viewStep = this.fullMoveHistory.length;
@@ -1095,16 +1062,6 @@ class MultiplayerChess {
                 this.isMyTurn = false;
                 this.socket.makeMove(moveObj.san);
                 this.draw();
-<<<<<<< Updated upstream
-                this.updateTimerDisplay();
-                this.updateGameInfo();
-                updateGameStatus('Opponent\'s turn');
-                
-                if (this.checkGameOver()) {
-                    return true;
-                }
-                return true;
-=======
                 this.updateGameInfo();
                 updateGameStatus('⏳ Opponent\'s turn', this.game);
                 if (this.checkGameOver()) return true;
@@ -1401,28 +1358,6 @@ class MultiplayerChess {
             const secs = Math.max(0, seconds % 60);
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         };
-<<<<<<< Updated upstream
-        
-        const playerTimer = document.getElementById('playerTimer');
-        const opponentTimer = document.getElementById('opponentTimer');
-        
-        if (playerTimer) {
-            playerTimer.textContent = formatTime(this.playerTime);
-            // Add low-time warning
-            if (this.playerTime <= 30) {
-                playerTimer.classList.add('low-time');
-            } else {
-                playerTimer.classList.remove('low-time');
-            }
-        }
-        if (opponentTimer) {
-            opponentTimer.textContent = formatTime(this.opponentTime);
-            if (this.opponentTime <= 30) {
-                opponentTimer.classList.add('low-time');
-            } else {
-                opponentTimer.classList.remove('low-time');
-            }
-=======
 
         const topTimer = document.querySelector('.player-info.player-top .player-timer');
         const bottomTimer = document.querySelector('.player-info.player-bottom .player-timer');
@@ -1439,7 +1374,6 @@ class MultiplayerChess {
         if (topTimer) {
             topTimer.textContent = formatTime(topTime || 0);
             topTimer.classList.toggle('low-time', (topTime || 0) <= 30);
->>>>>>> Stashed changes
         }
     }
         
@@ -1532,8 +1466,6 @@ class MultiplayerChess {
         this.swapPlayerInfoBars();
         console.log('🔄 Board flipped:', this.isFlipped ? 'Flipped' : 'Normal');
     }
-<<<<<<< Updated upstream
-=======
 
     // Swap player info bars content when user manually flips board
     swapPlayerInfoBars() {

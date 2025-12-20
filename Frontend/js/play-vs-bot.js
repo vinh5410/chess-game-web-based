@@ -53,14 +53,11 @@ class ChessCanvasVsBot {
         this.playerBottomInfoEl = null;
         this.chessboardContainerEl = null;
         
-<<<<<<< Updated upstream
-=======
         // Render optimization
         this.needsRender = false;
         this.renderScheduled = false;
         
         this.viewStep = 0;
->>>>>>> Stashed changes
         this.initPromise = this.init();
     }
     
@@ -369,8 +366,6 @@ class ChessCanvasVsBot {
     }
     
     tryMove(from, to) {
-<<<<<<< Updated upstream
-=======
         if (this.viewStep !== this.game.history({ verbose: true }).length) return false;
         
         // Check if this is a promotion move
@@ -407,7 +402,6 @@ class ChessCanvasVsBot {
             return true;
         }
         
->>>>>>> Stashed changes
         try {
             const move = this.game.move({
                 from,
@@ -429,14 +423,9 @@ class ChessCanvasVsBot {
     
     onMove(move) {
         this.draw();
-<<<<<<< Updated upstream
-        this.updateGameStatus();
-        
-=======
         this.updateGameStatus('🤖 Bot is thinking...');
         this.viewStep = this.game.history({ verbose: true }).length;
         updateMoveHistoryUI();
->>>>>>> Stashed changes
         if (this.checkGameOver()) {
             return;
         }
@@ -646,11 +635,8 @@ class ChessCanvasVsBot {
             
             this.draw();
             this.updateGameStatus();
-<<<<<<< Updated upstream
-=======
             this.viewStep = this.game.history({ verbose: true }).length;
             updateMoveHistoryUI();
->>>>>>> Stashed changes
             
             if (this.checkGameOver()) {
                 return;
