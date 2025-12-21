@@ -22,7 +22,8 @@ class GameRoom {
         this.moves = [];
         this.chatHistory = [];
         this.timeControl = timeControl; // { initial, increment }
-        
+        this.playersReady = new Set(); // Lưu socketId của người đã bấm Ready
+
         // Timer related (server-side)
         // timers: socketId -> secondsLeft
         this.timers = {};
@@ -246,6 +247,15 @@ class GameRoom {
         // stop timers if running
         this.stopTimers();
     }
+
+    setPlayerReady(socketId) {
+        this.playersReady.add(socketId);
+        return this.playersReady.size === 2; // Trả về true nếu cả 2 đã ready
+    }
+
+    isPlayerReady(socketId) {
+        return this.playersReady.has(socketId);
+    }
 }
 
 class GameManager {
@@ -349,10 +359,10 @@ class GameManager {
                 }
                 
                 // Start game after short delay
-                setTimeout(() => {
-                    console.log(`🎮 Starting game in room ${roomId}...`);
-                    this.startGame(roomId);
-                }, 200);
+                // setTimeout(() => {
+                //     console.log(`🎮 Starting game in room ${roomId}...`);
+                //     this.startGame(roomId);
+                // }, 200);
                 
                 return {
                     matched: true,
@@ -448,6 +458,29 @@ class GameManager {
             success: true,
             room: room
         };
+    }
+
+    handlePlayerReady(roomId, socketId) {
+        const room = this.rooms.get(roomId);
+        if (!room) return;
+
+        // Đánh dấu người chơi đã sẵn sàng
+        const allReady = room.setPlayerReady(socketId);
+
+        // Báo cho đối thủ biết mình đã sẵn sàng
+        const opponentId = room.getOpponent(socketId);
+        if (opponentId) {
+            this.io.to(opponentId).emit('game:opponent_ready', { socketId });
+        }
+        
+        // Báo cho chính mình (để UI update trạng thái waiting)
+        this.io.to(socketId).emit('game:ready_success');
+
+        // Nếu cả 2 đã ready -> Start Game
+        if (allReady) {
+            console.log(`🚀 All players ready in room ${roomId}. Starting game...`);
+            this.startGame(roomId);
+        }
     }
        
     async startGame(roomId) {

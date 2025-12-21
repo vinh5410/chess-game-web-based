@@ -145,6 +145,213 @@
             </div>
         </div>
 
+        <div id="readyScreen" class="glass-panel hidden">
+            <h2><i class="fa-solid fa-handshake-simple"></i> Match Found!</h2>
+            <p class="menu-subtitle">Both players must accept to start</p>
+            
+            <div class="ready-container">
+                <div class="ready-card" id="readyPlayerMe">
+                    <img src="https://ui-avatars.com/api/?name=You" class="ready-avatar" id="myReadyAvatar">
+                    <div class="ready-name" id="myReadyName">You</div>
+                    <div class="ready-status pending" id="myReadyStatus">Not Ready</div>
+                </div>
+
+                <div class="ready-vs">VS</div>
+
+                <div class="ready-card" id="readyPlayerOpponent">
+                    <img src="https://ui-avatars.com/api/?name=Opponent" class="ready-avatar" id="oppReadyAvatar">
+                    <div class="ready-name" id="oppReadyName">Opponent</div>
+                    <div class="ready-status pending" id="oppReadyStatus">Waiting...</div>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="btnReady" class="action-btn primary big-btn" onclick="sendReadySignal()">
+                    <i class="fa-solid fa-check"></i> I AM READY
+                </button>
+            </div>
+            <p id="readyCountdown" class="status-text">Waiting for players...</p>
+        </div>
+
+<style>
+    /* --- Container chính của phần Ready --- */
+    .ready-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 30px; /* Tăng khoảng cách cho thoáng */
+        margin: 40px 0;
+        position: relative;
+    }
+
+    /* --- Thẻ người chơi (Player Card) --- */
+    .ready-card {
+        background: rgba(15, 23, 42, 0.6); /* Nền tối mờ */
+        backdrop-filter: blur(10px);
+        padding: 25px 20px;
+        border-radius: 16px;
+        text-align: center;
+        width: 160px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255, 255, 255, 0.1); /* Viền kính mỏng */
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Hiệu ứng khi chưa Ready (Pending) */
+    .ready-card:not(.ready):hover {
+        transform: translateY(-5px);
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(30, 41, 59, 0.8);
+    }
+
+    /* Hiệu ứng khi Đã Ready (Success) */
+    .ready-card.ready {
+        border-color: #22c55e; /* Xanh lá */
+        background: rgba(20, 83, 45, 0.4); /* Nền xanh tối */
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); /* Glow xanh */
+    }
+
+    /* Avatar */
+    .ready-avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        margin-bottom: 15px;
+        border: 3px solid #334155; /* Viền xám mặc định */
+        transition: 0.3s;
+        object-fit: cover;
+    }
+
+    /* Avatar khi Ready */
+    .ready-card.ready .ready-avatar {
+        border-color: #22c55e;
+        box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+    }
+
+    /* Tên người chơi */
+    .ready-name {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+        color: #f8fafc;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* --- Trạng thái (Badge) --- */
+    .ready-status {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 20px; /* Bo tròn kiểu viên thuốc */
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-block;
+    }
+
+    .ready-status.pending {
+        color: #94a3b8;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: pulseGray 2s infinite;
+    }
+
+    .ready-status.success {
+        color: #fff;
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        border: 1px solid #4ade80;
+        box-shadow: 0 2px 10px rgba(34, 197, 94, 0.3);
+    }
+
+    /* --- Chữ VS --- */
+    .ready-vs {
+        font-family: 'Roboto Mono', monospace; /* Hoặc Cinzel nếu có */
+        font-weight: 900;
+        font-size: 2rem;
+        color: #d4af37; /* Màu vàng Gold chủ đạo */
+        text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        z-index: 2;
+    }
+
+    /* --- Nút bấm Ready --- */
+    .big-btn {
+        padding: 16px 40px;
+        font-size: 1.1rem;
+        width: 100%;
+        max-width: 300px; /* Giới hạn chiều rộng nút */
+        border-radius: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        
+        /* Màu chủ đạo (Xanh dương) */
+        background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+        color: #0f172a;
+        box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+    }
+
+    .big-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+        filter: brightness(1.1);
+    }
+
+    .big-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Vùng chứa nút bấm */
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    /* Text đếm ngược */
+    #readyCountdown {
+        margin-top: 20px;
+        font-family: 'Roboto Mono', monospace;
+        color: #94a3b8;
+        font-size: 0.9rem;
+    }
+
+    /* Animation nhấp nháy nhẹ cho trạng thái chờ */
+    @keyframes pulseGray {
+        0% { opacity: 0.6; }
+        50% { opacity: 1; }
+        100% { opacity: 0.6; }
+    }
+
+    /* Responsive mobile */
+    @media (max-width: 600px) {
+        .ready-container {
+            gap: 10px;
+        }
+        .ready-card {
+            width: 120px;
+            padding: 15px 10px;
+        }
+        .ready-avatar {
+            width: 60px;
+            height: 60px;
+        }
+        .ready-vs {
+            font-size: 1.2rem;
+        }
+        .big-btn {
+            font-size: 0.9rem;
+            padding: 12px 20px;
+        }
+    }
+</style>
+
         <!-- Online Users List -->
         <div id="onlineUsersList" class="online-list hidden">
             <h3>Online Players</h3>
