@@ -1,35 +1,268 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resend Verification Email - Chess Game</title>
-    <link rel="stylesheet" href="./styles/auth.css">
+    <title>Resend Verification - CHESSMATE</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./styles/login.css">
+    
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --primary: #d4af37;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Background Effects */
+        .bg-gradient, .bg-blur {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .bg-gradient {
+            background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+        }
+        .bg-blur {
+            background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.08), transparent 60%);
+            backdrop-filter: blur(80px);
+        }
+
+        /* Card Container */
+        .auth-container {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .auth-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header */
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .brand-logo {
+            font-family: 'Cinzel', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .auth-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .auth-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            transition: 0.3s;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px 12px 45px; /* Padding left lớn để tránh icon */
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        input:focus + i, input:focus ~ i {
+            color: var(--primary);
+        }
+
+        /* Button */
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), #b8860b);
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Message */
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none; /* Ẩn mặc định */
+        }
+        .message:not(:empty) { display: block; }
+
+        .message.success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Footer Links */
+        .auth-footer {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 20px;
+            color: var(--text-muted);
+        }
+
+        .auth-footer p { margin: 8px 0; }
+
+        .auth-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+            color: #fce7a3;
+        }
+    </style>
 </head>
 <body>
+    
+    <div class="bg-gradient"></div>
+    <div class="bg-blur"></div>
+
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <i class="fas fa-envelope-circle-check"></i>
-                <h1>Resend Verification Email</h1>
-                <p>Enter your email to receive a new verification link</p>
+                <div class="brand-logo">
+                    <i class="fa-solid fa-chess-king"></i> CHESSMATE
+                </div>
+                <h1>Verification Issue?</h1>
+                <p>Don't worry. Enter your email below and we'll send you a fresh verification link.</p>
             </div>
 
             <form id="resendForm" class="auth-form">
                 <div class="form-group">
-                    <label for="email">
+                    <label for="email">Email Address</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            placeholder="name@example.com"
+                            required 
+                            autocomplete="email"
+                        >
                         <i class="fas fa-envelope"></i>
-                        Email Address
-                    </label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        placeholder="Enter your email"
-                        required 
-                        autocomplete="email"
-                    >
+                    </div>
                 </div>
 
                 <button type="submit" class="btn-submit">
@@ -41,14 +274,16 @@
             </form>
 
             <div class="auth-footer">
-                <p>Already verified? <a href="/login.html">Login here</a></p>
-                <p>Don't have an account? <a href="/register.html">Register here</a></p>
+                <p>Verified already? <a href="/login.html">Login now</a></p>
+                <p>New here? <a href="/register.html">Create account</a></p>
             </div>
         </div>
     </div>
 
     <script src="./js/utils.js"></script>
     <script>
+        // --- LOGIC GỐC ĐƯỢC GIỮ NGUYÊN ---
+        
         // Redirect if already logged in
         if (localStorage.getItem('token')) {
             window.location.href = '/index.html';
