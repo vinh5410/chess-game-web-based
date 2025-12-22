@@ -26,6 +26,8 @@ class GameRoom {
         // Timer related (server-side)
         // timers: socketId -> secondsLeft
         this.timers = {};
+        // Reconnect tracking: socketId -> { timeoutId, disconnectedAt }
+        this.disconnectedPlayers = {}; 
         this.lastUpdate = null; // timestamp ms
         this.timerInterval = null; // Node interval reference
     }
@@ -256,7 +258,34 @@ class GameManager {
         this.roomCodes = new Map(); // roomCode -> roomId
         this.matchmakingQueue = []; // [socketId]
     }
-    
+    // schedule forfeit only when it's the disconnected player's turn
+    scheduleForfeit(roomId, socketId, waitMs = 60_000) {
+        const room = this.getRoom(roomId);
+        if (!room) return;
+        room.disconnectedPlayers = room.disconnectedPlayers || {};
+        const entry = room.disconnectedPlayers[socketId];
+        if (!entry || entry.scheduled) return; // nothing to do or already scheduled
+
+        const timeoutId = setTimeout(() => {
+            this._handleForfeit(roomId, socketId);
+        }, waitMs);
+
+        entry.timeoutId = timeoutId;
+        entry.scheduled = true;
+        entry.scheduledAt = Date.now();
+        entry.waitMs = waitMs;
+
+        // Notify opponent(s) to start countdown UI
+        const opponentId = room.getOpponent(socketId);
+        if (opponentId) {
+            this.io.to(opponentId).emit('game:opponent_disconnected', {
+                socketId,
+                waitMs
+            });
+        }
+
+        console.log(`⏳ Started forfeit countdown for disconnected player: room=${roomId}, socket=${socketId}, waitMs=${waitMs}`);
+    }  
     // Matchmaking
     async addToMatchmaking(socketId, userId, timeControl = 300) {
         // Check if already in queue
@@ -486,7 +515,18 @@ class GameManager {
             currentTurnSocketId
         });
         // Start server-side tick for countdown
-        room.startTimers(this.io);        
+        room.startTimers(this.io);     
+        // If the player who has the current turn is currently marked disconnected,
+        // start the forfeit countdown now.
+        if (room.disconnectedPlayers && currentTurnSocketId && room.disconnectedPlayers[currentTurnSocketId]) {
+            const entry = room.disconnectedPlayers[currentTurnSocketId];
+            const elapsed = entry.disconnectedAt ? (Date.now() - entry.disconnectedAt) : 0;
+            const DEFAULT_WAIT = 60_000;
+            const configuredWait = entry.waitMs || DEFAULT_WAIT;
+            const remaining = Math.max(0, configuredWait - elapsed);
+            // If remaining is 0, schedule immediate forfeit (this._handleForfeit will run after 0ms)
+            this.scheduleForfeit(roomId, currentTurnSocketId, remaining);
+        }           
         console.log(`🎮 Starting game in room ${roomId} with timeControl:`, room.timeControl);
         
         // Notify both players
@@ -670,20 +710,23 @@ class GameManager {
                 let terminationReason = reason;
 
                 if (room.status === 'finished') {
-                    if (reason === 'checkmate' || reason === 'resignation' || reason === 'timeout') {
+                    // Win reasons (including disconnect forfeit)
+                    if (['checkmate', 'resignation', 'timeout', 'disconnect_forfeit'].includes(reason)) {
+                        // winnerId is the winning player's socketId passed into endGame
                         winner = room.playerColors[winnerId];
                         result = winner === 'white' ? 'white-win' : 'black-win';
+                        // keep terminationReason as the reason (disconnect_forfeit will be allowed by schema after edit A)
                     } else if (reason === 'draw' || reason === 'stalemate' || reason === 'insufficient_material' || reason === 'repetition') {
                         winner = null;
                         result = 'draw';
-                        
-                        // Map internal reasons to Schema enum
+
+                        // Map internal reasons to Schema enum values
                         if (reason === 'draw') terminationReason = 'draw-agreement';
                         if (reason === 'repetition') terminationReason = 'threefold-repetition';
                         if (reason === 'insufficient_material') terminationReason = 'insufficient-material';
+                        if (reason === 'stalemate') terminationReason = 'stalemate';
                     }
                 }
-
                 // Tạo bản ghi lịch sử
                 const gameHistory = new GameHistory({
                     gameType: 'pvp',
@@ -818,7 +861,163 @@ class GameManager {
         
         return rooms;
     }
-    
+    // Called when a socket disconnects: schedule forfeit only if it's their turn
+    handleDisconnect(socketId) {
+        const rooms = this.getUserRooms(socketId);
+        rooms.forEach(roomId => {
+            const room = this.getRoom(roomId);
+            if (!room) return;
+
+            if (room.status === 'playing' && room.hasPlayer(socketId)) {
+                room.disconnectedPlayers = room.disconnectedPlayers || {};
+                if (room.disconnectedPlayers[socketId]) return; // already recorded
+
+                const disconnectedAt = Date.now();
+                room.disconnectedPlayers[socketId] = {
+                    disconnectedAt,
+                    scheduled: false,
+                    timeoutId: null,
+                    waitMs: null
+                };
+
+                // If they disconnected while it was their turn -> start forfeit countdown immediately
+                const isTheirTurn = room.playerColors[socketId] === room.currentTurn;
+                const DEFAULT_WAIT = 60_000;
+                if (isTheirTurn) {
+                    // start full WAIT (or compute remaining if you want to deduct elapsed)
+                    this.scheduleForfeit(roomId, socketId, DEFAULT_WAIT);
+                } else {
+                    // Notify opponent(s) that player disconnected but countdown not started yet
+                    const opponentId = room.getOpponent(socketId);
+                    if (opponentId) {
+                        this.io.to(opponentId).emit('game:opponent_disconnected', {
+                            socketId,
+                            scheduled: false
+                        });
+                    }
+                }
+
+                console.log(`ℹ️ Marked disconnected: room=${roomId}, socket=${socketId}, theirTurn=${isTheirTurn}`);
+            } else {
+                // Not a playing game -> remove room immediately (cleanup)
+                this.removeRoom(roomId);
+            }
+        });
+    }
+
+    // Called when a DB user reconnects (userId is DB _id) with a new socket id
+    async handleReconnect(userId, newSocketId) {
+        const uid = userId ? userId.toString() : null;
+        if (!uid) return;
+
+        for (const [roomId, room] of this.rooms.entries()) {
+            if (!room) continue;
+            // find player entry by userId
+            const playerObj = room.players.find(p => p.userId && p.userId.toString() === uid);
+            if (!playerObj) continue;
+
+            const oldSocketId = playerObj.socketId;
+            if (oldSocketId === newSocketId) return;
+
+            // Update player socket id in room
+            playerObj.socketId = newSocketId;
+
+            // Move color mapping and timers to new socket id
+            const color = room.playerColors[oldSocketId];
+            if (color) {
+                room.playerColors[newSocketId] = color;
+                delete room.playerColors[oldSocketId];
+            }
+
+            if (room.timers && typeof room.timers === 'object') {
+                room.timers[newSocketId] = room.timers[oldSocketId];
+                delete room.timers[oldSocketId];
+            }
+
+            // Clear any pending forfeit for old socket
+            room.disconnectedPlayers = room.disconnectedPlayers || {};
+            if (room.disconnectedPlayers[oldSocketId]) {
+                clearTimeout(room.disconnectedPlayers[oldSocketId].timeoutId);
+                delete room.disconnectedPlayers[oldSocketId];
+            }
+
+            // Update userManager state
+            try {
+                this.userManager.setUserInGame(newSocketId, true, roomId);
+            } catch (e) {
+                console.warn('Could not set user in-game for reconnect:', e);
+            }
+
+            // Make the new socket join the room (if socket connected)
+            const newSocket = this.io.sockets.sockets.get(newSocketId);
+            if (newSocket) {
+                newSocket.join(roomId);
+
+                // Send full game state to reconnected client
+                const currentPlayerObj = room.players.find(p => room.playerColors[p.socketId] === room.currentTurn);
+                const currentTurnSocketId = currentPlayerObj ? currentPlayerObj.socketId : null;
+
+                newSocket.emit('game:reconnected', {
+                    roomId,
+                    fen: room.game.fen(),
+                    timers: { ...room.timers },
+                    currentTurnSocketId,
+                    playerColor: room.playerColors[newSocketId],
+                    moves: room.moves
+                });
+
+                // Notify opponent that player reconnected
+                const opponentId = room.getOpponent(newSocketId);
+                if (opponentId) {
+                    this.io.to(opponentId).emit('game:opponent_reconnected', {
+                        socketId: newSocketId,
+                        cancelled: true
+                    });
+                }
+
+                console.log(`🔌 Player reconnected: userId=${uid}, newSocket=${newSocketId}, room=${roomId}`);
+            }
+
+            // handle just first match
+            return;
+        }
+    }
+
+    // internal: execute forfeit when waiting period expires
+    async _handleForfeit(roomId, socketId) {
+        const room = this.getRoom(roomId);
+        if (!room) return;
+
+        const entry = room.disconnectedPlayers && room.disconnectedPlayers[socketId];
+        if (!entry) return; // maybe reconnected
+
+        // Check if socket became online again
+        const isOnline = this.userManager.isUserOnline(socketId);
+        if (isOnline) {
+            clearTimeout(entry.timeoutId);
+            delete room.disconnectedPlayers[socketId];
+            return;
+        }
+
+        // Determine opponent and declare opponent winner
+        const opponentId = room.getOpponent(socketId);
+        if (opponentId) {
+            const winnerColor = room.playerColors[opponentId] || null;
+
+            this.io.to(roomId).emit('game:over', {
+                winner: winnerColor,
+                reason: 'disconnect_forfeit',
+                fen: room.game.fen()
+            });
+
+            console.log(`🏁 Forfeit due to disconnect: room=${roomId}, disconnected=${socketId}, winner=${opponentId}`);
+
+            await this.endGame(roomId, opponentId, 'disconnect_forfeit');
+        } else {
+            // no opponent present -> clean up room
+            this.removeRoom(roomId);
+        }
+    }   
     getActiveGamesCount() {
         let count = 0;
         for (const room of this.rooms.values()) {

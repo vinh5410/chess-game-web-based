@@ -252,18 +252,46 @@ class ChessPuzzleGame {
                 // --- SỬA LẠI LOGIC NÀY ---
                 // Kiểm tra xem Server có gửi initialMove không
                 if (this.currentPuzzle.initialMove) {
-                    console.log("Opponent blunder:", this.currentPuzzle.initialMove);
-                    
-                    // Thực hiện nước đi của đối thủ
-                    const move = this.makeMoveInternal(this.currentPuzzle.initialMove);
-                    
-                    if (move) {
-                        this.addMoveToHistory(move.san);
-                        // QUAN TRỌNG: User bắt đầu giải từ index 1
-                        this.moveIndex = 1; 
+                    // --- HANDLE INITIAL OPPONENT MOVE: show FEN first, pause, then play opponent ---
+                    this.game.load(this.currentPuzzle.fen);
+                    this.isSolving = true;
+
+                    // Initially assume user not to move until we determine after potential opponent blunder
+                    this.moveIndex = 0;
+                    this.isUserTurn = false;
+
+                    // Ensure visuals and assets settled, start timer so user sees elapsed while waiting
+                    this.draw();
+                    this.startTimer();
+
+                    // If server provided an initial opponent move, wait briefly then apply it
+                    if (this.currentPuzzle.initialMove) {
+                        const delay = (ms) => new Promise(res => setTimeout(res, ms));
+                        const initialDelayMs = 1000; // 1 second pause before opponent's first move
+
+                        // Wait so player sees the starting position first
+                        await delay(initialDelayMs);
+
+                        // Perform opponent move now
+                        const move = this.makeMoveInternal(this.currentPuzzle.initialMove);
+                        if (move) {
+                            this.addMoveToHistory(move.san);
+                            // User's next expected move index is 1 (opponent move consumed)
+                            this.moveIndex = 1;
+                        } else {
+                            // If move couldn't be applied (data mismatch), keep index at 0
+                            this.moveIndex = 0;
+                        }
+
+                        // After opponent move, it's user's turn
+                        this.isUserTurn = true;
+                        // Redraw to reflect the move
+                        this.draw();
                     } else {
-                        // Phòng trường hợp FEN đã bao gồm nước đi này rồi (dữ liệu không đồng nhất)
+                        // No initial opponent move — user moves from the FEN directly
                         this.moveIndex = 0;
+                        this.isUserTurn = true;
+                        this.draw();
                     }
                 } else {
                     // Fallback cho dữ liệu cũ
@@ -359,53 +387,74 @@ class ChessPuzzleGame {
     }
 
     async showSolution() {
-        console.log('🔍 showSolution called, isSolving:', this.isSolving, 'puzzle:', this.currentPuzzle?.puzzleId);
-        
-        if (!this.isSolving) {
-            console.log('❌ Cannot show solution - not solving');
-            return;
-        }
-        
+        console.log('🔍 showSolution called, puzzle:', this.currentPuzzle?.puzzleId);
+
         if (!this.currentPuzzle || !this.currentPuzzle.puzzleId) {
             console.log('❌ No puzzle loaded');
             return;
         }
 
-        // 1. Xác nhận thua cuộc
-        this.submitResult(false); // Gửi kết quả thua lên server
-        this.isSolving = false;   // Dừng game
+        // Mark failed once and stop user interaction
+        this.submitResult(false);
+        this.isSolving = false;
         this.stopTimer();
-        
-        // 2. Lấy nước đi đúng (Hack: Gọi API hint để lấy nước đi tiếp theo)
+        this.isUserTurn = false;
+
         const token = localStorage.getItem('token');
+        const fromIndex = Math.max(0, this.moveIndex || 0);
+        const solutionUrl = `/api/puzzles/${this.currentPuzzle.puzzleId}/solution?fromIndex=${fromIndex}`;
+
+        // Disable buttons while replaying
+        const solutionBtn = document.getElementById('solution-btn');
+        const hintBtn = document.getElementById('hint-btn');
+        if (solutionBtn) solutionBtn.disabled = true;
+        if (hintBtn) hintBtn.disabled = true;
+
         try {
-            const url = `/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`;
-            console.log('📡 Fetching solution:', url);
-            
-            const res = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch(solutionUrl, { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
-            console.log('📡 Solution response:', data);
+            if (!data.success || !Array.isArray(data.moves) || data.moves.length === 0) {
+                this.showFeedback('incorrect', 'Solution not available.');
+                return;
+            }
 
-            if (data.success && data.hint) {
-                // 3. Thực hiện nước đi trên bàn cờ cho người xem
-                const move = this.game.move({
-                    from: data.hint.from,
-                    to: data.hint.to,
-                    promotion: 'q'
+            const delay = (ms) => new Promise(r => setTimeout(r, ms));
+            const initialPause = 1000;    // ms before first move (let UI update)
+            const perMoveDelay = 700;    // ms between moves — tăng/giảm tuỳ thích
+            this.draw();
+            // short initial pause so board and UI settle
+            await delay(initialPause);
+
+            // Apply every move object sequentially
+            for (let i = 0; i < data.moves.length; i++) {
+                const m = data.moves[i];
+                const moveObj = this.game.move({
+                    from: m.from,
+                    to: m.to,
+                    promotion: m.promotion || 'q'
                 });
-
-                if (move) {
-                    this.addMoveToHistory(move.san);
-                    this.hintSquares = null; // Xóa hint cũ nếu có
+                if (moveObj) {
+                    if (this.sound) this.sound.playMove(moveObj, this.game);
+                    this.addMoveToHistory(moveObj.san);
                     this.draw();
                 }
-                
-                this.showFeedback('incorrect', 'Solution shown. You failed this puzzle.');
+                // pause so user can watch the move
+                await delay(perMoveDelay);
             }
-        } catch (error) {
-            console.error('Show solution error:', error);
+
+            // advance local moveIndex to end-of-solution
+            this.moveIndex = fromIndex + data.moves.length;
+
+            this.showFeedback('incorrect', 'Solution shown. You failed this puzzle.');
+        } catch (err) {
+            console.error('Show solution error:', err);
+            this.showFeedback('incorrect', 'Error showing solution.');
+        } finally {
+            if (solutionBtn) solutionBtn.disabled = false;
+            if (hintBtn) hintBtn.disabled = false;
+            this.isUserTurn = false;
+            this.isSolving = false;
+            this.draw();
         }
     }
     async onDropPiece(from, to) {

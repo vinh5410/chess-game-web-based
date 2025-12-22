@@ -6,7 +6,8 @@ const {
     submitPuzzle,
     getUserStats,
     getLeaderboard,
-    getHint
+    getHint,
+    getSolution
 } = require('../controllers/puzzleController');
 const { protect } = require('../middleware/auth');
 
@@ -19,5 +20,5 @@ router.post('/verify', protect, verifyMove);
 router.post('/submit', protect, submitPuzzle);
 router.get('/stats', protect, getUserStats);
 router.get('/:puzzleId/hint', protect, getHint);
-
+router.get('/:puzzleId/solution', protect, getSolution);
 module.exports = router;

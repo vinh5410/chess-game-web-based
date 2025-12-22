@@ -62,7 +62,44 @@ class MultiplayerChess {
         this.viewStep = 0; // Số bước đang xem lại (0 = bàn cờ ban đầu) 
         this.fullMoveHistory = [];     
     }
-    
+    // --- Reconnect countdown helpers ---
+    startReconnectCountdown(waitMs = 60000) {
+        // Ensure single interval
+        this.clearReconnectCountdown();
+
+        this._reconnectExpiresAt = Date.now() + (waitMs || 60000);
+        const noticeEl = document.getElementById('reconnectNotice');
+
+        const tick = () => {
+            const remainingMs = Math.max(0, this._reconnectExpiresAt - Date.now());
+            const remaining = Math.ceil(remainingMs / 1000);
+            if (noticeEl) noticeEl.textContent = `Opponent disconnected — waiting ${remaining}s`;
+            if (typeof updateGameStatus === 'function') updateGameStatus(`Opponent disconnected — waiting ${remaining}s to reconnect...`);
+
+            if (remainingMs <= 0) {
+                // expired
+                this.clearReconnectCountdown();
+                if (noticeEl) noticeEl.textContent = '';
+                if (typeof updateGameStatus === 'function') updateGameStatus('Opponent did not reconnect');
+            }
+        };
+
+        // run immediately then every second
+        tick();
+        this._reconnectCountdown = setInterval(tick, 1000);
+    }
+
+    clearReconnectCountdown() {
+        if (this._reconnectCountdown) {
+            clearInterval(this._reconnectCountdown);
+            this._reconnectCountdown = null;
+        }
+        if (this._reconnectExpiresAt) {
+            delete this._reconnectExpiresAt;
+        }
+        const noticeEl = document.getElementById('reconnectNotice');
+        if (noticeEl) noticeEl.textContent = '';
+    }    
     async init() {
         console.log('🎮 Initializing Multiplayer Chess...');
         
@@ -378,14 +415,160 @@ class MultiplayerChess {
             console.log('💬 Chat message:', data);
             this.onChatMessage(data);
         });
-        
+        io.on('game:reconnected', (data) => {
+            console.log('🔌 game:reconnected', data);
+
+            if (data.roomId) this.socket.setCurrentRoom(data.roomId);
+
+            // Safely hide other screens and show game screen without throwing
+            const hideIf = (id) => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); };
+            const showIf = (id) => { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); };
+            // after showing game screen:
+            hideIf('lobbyScreen');
+            hideIf('randomMatchScreen');
+            hideIf('inviteFriendScreen');
+            hideIf('joinRoomScreen');
+            showIf('gameScreen');
+
+            // Also ensure chessboard container is visible
+            showIf('chessboardContainer');
+            // Clear any reconnect countdown now that player returned
+            if (typeof this.clearReconnectCountdown === 'function') this.clearReconnectCountdown();
+            // hide overlay if any
+            const gameOverOverlay = document.getElementById('gameOverOverlay');
+            if (gameOverOverlay) gameOverOverlay.classList.add('hidden');
+
+            // ensure canvas/context refs
+            if (!this.canvas) this.canvas = document.getElementById('chessCanvas');
+            if (!this.ctx && this.canvas) this.ctx = this.canvas.getContext('2d');
+
+            // Rebuild game state from server payload (FEN preferred, fallback to moves)
+            this.game = new window.Chess();
+            if (data && data.fen) {
+                try {
+                    if (typeof this.game.load === 'function') this.game.load(data.fen);
+                    else this.game = new window.Chess(data.fen);
+                    console.log('✅ Loaded FEN from server:', data.fen);
+                } catch (e) {
+                    console.warn('⚠️ Failed to load FEN, will rebuild from moves', e);
+                    this.game = new window.Chess();
+                }
+            }
+
+            if (Array.isArray(data.moves) && data.moves.length > 0) {
+                try {
+                    this.game.reset();
+                    for (const mv of data.moves) {
+                        if (!mv) continue;
+                        if (typeof mv === 'string') this.game.move(mv);
+                        else if (mv.from && mv.to) this.game.move({ from: mv.from, to: mv.to, promotion: mv.promotion || undefined });
+                        else if (mv.san) this.game.move(mv.san);
+                    }
+                    console.log('✅ Rebuilt game from moves, move count:', this.game.history().length);
+                } catch (e) {
+                    console.warn('⚠️ Failed to rebuild moves, keeping FEN if available', e);
+                }
+            }
+
+            // move history
+            try {
+                this.fullMoveHistory = this.game.history({ verbose: true }) || [];
+                this.viewStep = this.fullMoveHistory.length;
+            } catch (e) {
+                this.fullMoveHistory = [];
+                this.viewStep = 0;
+            }
+
+            // timers
+            if (data.timers) {
+                const myId = this.socket.getUserId();
+                if (myId && data.timers[myId] !== undefined) {
+                    this.playerTime = data.timers[myId];
+                    const opponentId = Object.keys(data.timers).find(id => id !== myId);
+                    if (opponentId) this.opponentTime = data.timers[opponentId];
+                }
+            }
+
+            // color/turn
+            if (data.playerColor) {
+                this.playerColor = data.playerColor;
+                this.isFlipped = (this.playerColor === 'black');
+            }
+            this.isMyTurn = (data.currentTurnSocketId === this.socket.getUserId());
+            this.gameStarted = true;
+            this.gameOver = false;
+
+            // Update UI (safe calls)
+            if (typeof this.updatePlayerInfoPosition === 'function') this.updatePlayerInfoPosition();
+            if (typeof this.updatePlayerInfoDisplay === 'function') this.updatePlayerInfoDisplay();
+            if (typeof this.updateTimerDisplay === 'function') this.updateTimerDisplay();
+            if (typeof this.updateGameInfo === 'function') this.updateGameInfo();
+
+            // Ensure images loaded then resize+draw after layout is visible
+            const doDraw = () => {
+                requestAnimationFrame(() => {
+                    if (typeof this.handleResize === 'function') try { this.handleResize(true); } catch (e) {}
+                    if (typeof this.updateBoardView === 'function') try { this.updateBoardView(); } catch (e) {}
+                    if (typeof this.draw === 'function') try { this.draw(); } catch (e) {}
+                    if (typeof this.updateTimerDisplay === 'function') try { this.updateTimerDisplay(); } catch (e) {}
+                    if (typeof updateGameStatus === 'function') updateGameStatus(this.isMyTurn ? 'Your turn — reconnected' : 'Opponent\'s turn — reconnected');
+                });
+            };
+
+            if (!this.imagesLoaded) {
+                console.log('🎨 Loading piece images before draw...');
+                this.loadPieceImages().then(() => { this.imagesLoaded = true; doDraw(); }).catch(() => doDraw());
+            } else {
+                setTimeout(doDraw, 80);
+            }
+        });
+
+        io.on('game:opponent_disconnected', (data) => {
+            console.log('⚠️ game:opponent_disconnected', data);
+
+            // If server provided waitMs -> start countdown. Otherwise show informational notice
+            if (data && typeof data.waitMs === 'number') {
+                const waitMs = Number(data.waitMs) || 60000;
+                this.startReconnectCountdown(waitMs);
+            } else {
+                const noticeEl = document.getElementById('reconnectNotice');
+                if (noticeEl) noticeEl.textContent = 'Opponent disconnected — countdown will start when it becomes their turn';
+                if (typeof updateGameStatus === 'function') updateGameStatus('Opponent disconnected — waiting until their turn to start timeout');
+            }
+        });
+
+        io.on('game:opponent_reconnected', (data) => {
+            console.log('✅ game:opponent_reconnected', data);
+            // Clear any countdown
+            this.clearReconnectCountdown();
+
+            if (data && data.cancelled) {
+                if (typeof updateGameStatus === 'function') updateGameStatus('Opponent reconnected — countdown cancelled');
+            } else {
+                if (typeof updateGameStatus === 'function') updateGameStatus('Opponent reconnected — game resumed');
+            }
+});  
         console.log('✅ All socket listeners registered on:', io.id);
     }
     
     onLoginSuccess(data) {
-        hideAllScreens();
-        document.getElementById('lobbyScreen').classList.remove('hidden');
+        // Update status first
         updateGameStatus(`Welcome, ${data.username}!`);
+
+        // Don't force-show lobby if already in a room or game restored
+        const currentRoom = this.socket && typeof this.socket.getCurrentRoom === 'function'
+            ? this.socket.getCurrentRoom()
+            : null;
+
+        if (currentRoom || this.gameStarted) {
+            console.log('⚡ Login success while in-game, keeping current view');
+            return;
+        }
+
+        // Otherwise show lobby as normal
+        hideAllScreens();
+        const lobby = document.getElementById('lobbyScreen');
+        if (lobby) lobby.classList.remove('hidden');
     }
     
     updateOnlineUsers(users) {
@@ -1857,7 +2040,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Initialize game instance
     gameInstance = new MultiplayerChess();
-    
+    window.multiplayerGame = gameInstance;
     // Đợi init hoàn thành
     console.log('⏳ Initializing game...');
     await gameInstance.init();
@@ -1939,8 +2122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('✅ Auto-login as:', user.username);
         
         // Hiện lobby
-        hideAllScreens();
-        document.getElementById('lobbyScreen').classList.remove('hidden');
+        // Let server events decide which screen to show (don't force lobby here)
         updateGameStatus(`Logging in as ${user.username}...`);
         
         // Gọi socket login

@@ -86,7 +86,7 @@ const gameHistorySchema = new mongoose.Schema({
     
     terminationReason: {
         type: String,
-        enum: ['checkmate', 'resignation', 'timeout', 'draw-agreement', 'stalemate', 'insufficient-material', 'threefold-repetition', 'fifty-move-rule', null],
+        enum: ['checkmate', 'resignation', 'timeout', 'disconnect_forfeit', 'draw-agreement', 'stalemate', 'insufficient-material', 'threefold-repetition', 'fifty-move-rule', null],
         default: null
     },
     

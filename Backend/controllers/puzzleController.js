@@ -380,3 +380,38 @@ exports.getHint = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+// @desc    Get puzzle solution (moves array) starting from given index
+// @route   GET /api/puzzles/:puzzleId/solution?fromIndex=0
+// @access  Private
+exports.getSolution = async (req, res) => {
+    try {
+        const { puzzleId } = req.params;
+        const fromIndex = Math.max(0, parseInt(req.query.fromIndex || '0'));
+
+        const puzzle = await Puzzle.findOne({ puzzleId });
+        if (!puzzle) {
+            return res.status(404).json({ success: false, message: 'Puzzle not found' });
+        }
+
+        if (fromIndex >= puzzle.moves.length) {
+            return res.status(200).json({ success: true, moves: [] });
+        }
+
+        const slice = puzzle.moves.slice(fromIndex).map(m => {
+            return {
+                uci: m, // e.g. "e2e4" or "e7e8q"
+                from: m.substring(0,2),
+                to: m.substring(2,4),
+                promotion: m.length > 4 ? m.substring(4) : null
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            moves: slice
+        });
+    } catch (error) {
+        console.error('Get solution error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};

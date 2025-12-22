@@ -24,6 +24,13 @@ module.exports = (io, userManager, gameManager) => {
                     if (userDB) {
                         userDB.socketId = socket.id;
                         await userDB.save();
+
+                        // If this account was in a playing game, handle reconnect
+                        try {
+                            await gameManager.handleReconnect(userDB._id, socket.id);
+                        } catch (e) {
+                            console.warn('Reconnect handling failed:', e);
+                        }
                     }
                 } catch (dbErr) {
                     console.warn(' DB update skipped:', dbErr.message);
@@ -121,6 +128,10 @@ module.exports = (io, userManager, gameManager) => {
                     currentTurnSocketId,
                     by: socket.id
                 });
+                // nếu socket hiện tại (người nhận lượt) đang bị disconnect -> bắt countdown
+                if (room && room.disconnectedPlayers && currentTurnSocketId && room.disconnectedPlayers[currentTurnSocketId]) {
+                gameManager.scheduleForfeit(roomId, currentTurnSocketId, /* optional override */ 60000);
+                }                
                 socket.emit('game:move_applied', {
                     fen: result.fen,
                     timers: timersSnapshot,
@@ -282,20 +293,22 @@ module.exports = (io, userManager, gameManager) => {
             if (user) {
                 console.log(`❌ Disconnected: ${user.username}`);
                 
-                // Xử lý thoát game, thoát hàng đợi
-                const activeRooms = gameManager.getUserRooms(socket.id);
-                activeRooms.forEach(roomId => {
-                    socket.to(roomId).emit('room:opponent_left', { reason: 'disconnected' });
-                    gameManager.removeRoom(roomId);
-                });
-                
+                // Handle disconnect: schedule forfeit if in a playing game
+                // Handle disconnect: schedule forfeit if in a playing game
+                try {
+                    gameManager.handleDisconnect(socket.id);
+                } catch (e) {
+                    console.error('Error handling disconnect in gameManager:', e);
+                }
+
+                // Remove from matchmaking immediately
                 gameManager.removeFromMatchmaking(socket.id);
                 userManager.removeUser(socket.id);
-                
+
                 io.emit('users:update', { users: userManager.getAllUsers() });
             }
         });
-// handle client leaving a room (explicit leave -> notify opponent and remove room)
+        // handle client leaving a room (explicit leave -> notify opponent and remove room)
         socket.on('room:leave', ({ roomId }) => {
             try {
                 const room = gameManager.getRoom(roomId);
