@@ -2,36 +2,27 @@ const User = require('./models/User');
 
 class UserManager {
     constructor() {
-        this.users = new Map();
-        this.disconnectedUsers = new Map(); // username -> timestamp
+        this.users = new Map(); // socketId -> user
+        this.usernames = new Map(); // usernameLower -> Set(socketId)
+        this.disconnectedUsers = new Map(); // usernameLower -> timestamp
     }
 
     async addUser(socketId, username) {
-        const existingUser = Array.from(this.users.entries())
-            .find(([id, u]) => u.username.toLowerCase() === username.toLowerCase());
+        const nameKey = username.toLowerCase().trim();
 
-        if (existingUser) {
-            const [oldSocketId, oldUser] = existingUser;
-
-            if (oldSocketId === socketId) {
-                return {
-                    success: false,
-                    message: 'Already logged in'
-                };
-            }
-
-            // Check if user disconnected recently (within 30 seconds)
-            const disconnectTime = this.disconnectedUsers.get(username.toLowerCase());
+        // If username currently present (one or more sockets), allow additional session.
+        // But still support reconnect window: if user was recently disconnected, we also allow.
+        const existingSet = this.usernames.get(nameKey);
+        if (existingSet && existingSet.size > 0) {
+            console.log(`ℹ️ Additional session for username: ${username}`);
+            // continue to create new socket entry
+        } else {
+            // If no existing live session, check disconnectedUsers (reconnect window)
+            const disconnectTime = this.disconnectedUsers.get(nameKey);
             if (disconnectTime && (Date.now() - disconnectTime) < 30000) {
-                // Allow reconnect within 30 seconds
+                // reconnect allowed: clear disconnected timestamp
+                this.disconnectedUsers.delete(nameKey);
                 console.log(`✅ Reconnect allowed for ${username}`);
-                this.users.delete(oldSocketId);
-                this.disconnectedUsers.delete(username.toLowerCase());
-            } else {
-                return {
-                    success: false,
-                    message: 'Username already taken'
-                };
             }
         }
 
@@ -56,7 +47,12 @@ class UserManager {
             rating: dbRating
         };
 
+        // store by socket
         this.users.set(socketId, user);
+
+        // record in usernames map
+        if (!this.usernames.has(nameKey)) this.usernames.set(nameKey, new Set());
+        this.usernames.get(nameKey).add(socketId);
 
         return {
             success: true,
@@ -67,13 +63,21 @@ class UserManager {
     removeUser(socketId) {
         const user = this.users.get(socketId);
         if (user) {
-            // Mark disconnect time
-            this.disconnectedUsers.set(user.username.toLowerCase(), Date.now());
-
-            // Auto cleanup after 30 seconds
-            setTimeout(() => {
-                this.disconnectedUsers.delete(user.username.toLowerCase());
-            }, 30000);
+            const nameKey = user.username.toLowerCase();
+            // Remove socket from username set
+            const set = this.usernames.get(nameKey);
+            if (set) {
+                set.delete(socketId);
+                if (set.size === 0) {
+                    // mark disconnect time only when last socket for username goes away
+                    this.usernames.delete(nameKey);
+                    this.disconnectedUsers.set(nameKey, Date.now());
+                    // Auto cleanup after 30 seconds
+                    setTimeout(() => {
+                        this.disconnectedUsers.delete(nameKey);
+                    }, 30000);
+                }
+            }
         }
         this.users.delete(socketId);
         return user;
@@ -84,15 +88,26 @@ class UserManager {
     }
 
     getAllUsers() {
-        return Array.from(this.users.values()).map(user => ({
-            id: user.id,
-            username: user.username,
-            inGame: user.inGame
-        }));
+        // Return unique usernames (one entry per username) to avoid duplicates in UI.
+        const result = [];
+        for (const [nameKey, set] of this.usernames.entries()) {
+            // pick the first socketId in set to represent the user
+            const firstSocket = set.values().next().value;
+            const u = this.users.get(firstSocket);
+            if (u) {
+                result.push({
+                    id: firstSocket,
+                    username: u.username,
+                    inGame: u.inGame
+                });
+            }
+        }
+        return result;
     }
 
     getOnlineCount() {
-        return this.users.size;
+        // count unique usernames
+        return this.usernames.size;
     }
 
     setUserInGame(socketId, inGame, roomId = null) {
@@ -100,6 +115,7 @@ class UserManager {
         if (user) {
             user.inGame = inGame;
             user.currentRoom = roomId;
+            this.users.set(socketId, user);
         }
     }
 
@@ -107,7 +123,6 @@ class UserManager {
         return this.users.has(socketId);
     }
 
-    // Get user rating from memory first, fallback to DB
     async getUserRating(socketId) {
         const user = this.users.get(socketId);
         if (!user) return 1200;
@@ -130,7 +145,6 @@ class UserManager {
         }
     }
 
-    // Update rating in DB & memory
     async updateUserRating(socketId, newRating) {
         const user = this.users.get(socketId);
         if (!user) return;
