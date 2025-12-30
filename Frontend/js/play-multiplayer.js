@@ -412,11 +412,11 @@ class MultiplayerChess {
         });
         
         io.on('chat:message', (data) => {
-            console.log('💬 Chat message:', data);
+            console.log('Chat message:', data);
             this.onChatMessage(data);
         });
         io.on('game:reconnected', (data) => {
-            console.log('🔌 game:reconnected', data);
+            console.log('game:reconnected', data);
 
             if (data.roomId) this.socket.setCurrentRoom(data.roomId);
 
@@ -495,6 +495,20 @@ class MultiplayerChess {
                 this.isFlipped = (this.playerColor === 'black');
             }
             this.isMyTurn = (data.currentTurnSocketId === this.socket.getUserId());
+            if (data.opponent) {
+                if (data.opponent.username) this.opponentName = data.opponent.username;
+                if (typeof data.opponent.elo !== 'undefined' && data.opponent.elo !== null) {
+                    const n = Number(data.opponent.elo);
+                    if (!Number.isNaN(n)) this.opponentElo = n;
+                }
+                if (data.opponent.avatar) this.opponentAvatar = data.opponent.avatar;
+            }
+            if (typeof data.playerElo !== 'undefined' && data.playerElo !== null) {
+                const np = Number(data.playerElo);
+                if (!Number.isNaN(np)) this.playerElo = np;
+            }
+            // debug: confirm values used for UI
+            console.log('reconnected: playerElo=', this.playerElo, 'opponentElo=', this.opponentElo, 'opponentName=', this.opponentName);          
             this.gameStarted = true;
             this.gameOver = false;
 

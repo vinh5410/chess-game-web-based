@@ -94,13 +94,12 @@ class GameRoom {
         }
         this.lastUpdate = Date.now();
     }
-    
     // Start server tick for this room
-    startTimers(io) {
+    startTimers(io, gameManager) {
         // guard
         if (this.timerInterval) return;
         this.lastUpdate = Date.now();
-        this.timerInterval = setInterval(() => {
+        this.timerInterval = setInterval(async () => {
             const now = Date.now();
             const elapsedSec = Math.floor((now - this.lastUpdate) / 1000);
             if (elapsedSec <= 0) return;
@@ -117,7 +116,7 @@ class GameRoom {
             });
             // handle timeout
             if (this.timers[curId] <= 0) {
-                // current player lost by timeout
+                // stop interval
                 clearInterval(this.timerInterval);
                 this.timerInterval = null;
                 // determine winner socketId
@@ -132,6 +131,14 @@ class GameRoom {
                 this.status = 'finished';
                 this.finishedAt = Date.now();
                 this.winner = winner;
+                // Ensure GameManager handles end-of-game tasks (ELO, history, DB updates)
+                try {
+                    if (gameManager && typeof gameManager.endGame === 'function') {
+                        await gameManager.endGame(this.id, winner, 'timeout');
+                    }
+                } catch (err) {
+                    console.error('❌ Error ending game after timeout:', err);
+                }
             }
         }, 1000);
     }
@@ -515,7 +522,7 @@ class GameManager {
             currentTurnSocketId
         });
         // Start server-side tick for countdown
-        room.startTimers(this.io);     
+        room.startTimers(this.io,this);     
         // If the player who has the current turn is currently marked disconnected,
         // start the forfeit countdown now.
         if (room.disconnectedPlayers && currentTurnSocketId && room.disconnectedPlayers[currentTurnSocketId]) {
@@ -605,56 +612,85 @@ class GameManager {
                     const p1SocketId = p1Obj.socketId;
                     const p2SocketId = p2Obj.socketId;
 
-                    try {
-                        // 1. Lấy Elo CŨ
-                        const oldR1 = await this.userManager.getUserRating(p1SocketId);
-                        const oldR2 = await this.userManager.getUserRating(p2SocketId);
-                        
-                        // Lấy username để log cho đẹp
-                        const name1 = this.userManager.getUser(p1SocketId)?.username || 'P1';
-                        const name2 = this.userManager.getUser(p2SocketId)?.username || 'P2';
-
-                        let newR1 = oldR1;
-                        let newR2 = oldR2;
-
-                        const isDraw = ['draw', 'stalemate', 'repetition', 'insufficient_material'].includes(reason);
-
-                        // 2. Tính toán Elo MỚI
-                        if (isDraw) {
-                            newR1 = calculateElo(oldR1, oldR2, 0.5);
-                            newR2 = calculateElo(oldR2, oldR1, 0.5);
-                        } else if (winnerId) {
-                            // Xác định ai thắng
-                            const isP1Winner = (winnerId === p1SocketId);
-                            
-                            // Tính toán
-                            if (isP1Winner) {
-                                newR1 = calculateElo(oldR1, oldR2, 1); // P1 thắng
-                                newR2 = calculateElo(oldR2, oldR1, 0); // P2 thua
-                            } else {
-                                newR1 = calculateElo(oldR1, oldR2, 0); // P1 thua
-                                newR2 = calculateElo(oldR2, oldR1, 1); // P2 thắng
-                            }
-                        }
-
-                        // 3. Cập nhật vào DB & Memory
-                        await this.userManager.updateUserRating(p1SocketId, newR1);
-                        await this.userManager.updateUserRating(p2SocketId, newR2);
-
-                        // 4. LOG CHI TIẾT SỰ THAY ĐỔI (YÊU CẦU CỦA BẠN)
-                        const diff1 = newR1 - oldR1;
-                        const diff2 = newR2 - oldR2;
-                        const sign1 = diff1 >= 0 ? '+' : '';
-                        const sign2 = diff2 >= 0 ? '+' : '';
-
-                        console.log('\n📊 ================ ELO UPDATE ================');
-                        console.log(`👤 ${name1}: ${oldR1} -> ${newR1} (${sign1}${diff1})`);
-                        console.log(`👤 ${name2}: ${oldR2} -> ${newR2} (${sign2}${diff2})`);
-                        console.log('📊 ============================================\n');
-
-                    } catch (err) {
-                        console.error("❌ Elo Error:", err);
+                // 1. Lấy Elo CŨ (robust: ưu tiên DB bằng userId nếu có, fallback sang userManager)
+                let oldR1 = 1200, oldR2 = 1200;
+                try {
+                    if (p1Obj && p1Obj.userId) {
+                        const db1 = await User.findById(p1Obj.userId).select('rating username').lean();
+                        if (db1 && typeof db1.rating === 'number') oldR1 = db1.rating;
                     }
+                    if (p2Obj && p2Obj.userId) {
+                        const db2 = await User.findById(p2Obj.userId).select('rating username').lean();
+                        if (db2 && typeof db2.rating === 'number') oldR2 = db2.rating;
+                    }
+                } catch (e) {
+                    console.warn('Could not load ratings from DB, falling back to memory:', e);
+                }
+
+                // fallback to memory if DB not available
+                try {
+                    if ((!oldR1 || oldR1 === 1200) && p1Obj) {
+                        const memR1 = await this.userManager.getUserRating(p1Obj.socketId);
+                        if (memR1) oldR1 = memR1;
+                    }
+                    if ((!oldR2 || oldR2 === 1200) && p2Obj) {
+                        const memR2 = await this.userManager.getUserRating(p2Obj.socketId);
+                        if (memR2) oldR2 = memR2;
+                    }
+                } catch (e) {
+                    console.warn('Fallback memory rating failed:', e);
+                }
+
+                // Lấy username để log cho đẹp
+                const name1 = (p1Obj && p1Obj.userId) ? (await User.findById(p1Obj.userId).select('username').lean())?.username || this.userManager.getUser(p1Obj.socketId)?.username || 'P1' : this.userManager.getUser(p1Obj.socketId)?.username || 'P1';
+                const name2 = (p2Obj && p2Obj.userId) ? (await User.findById(p2Obj.userId).select('username').lean())?.username || this.userManager.getUser(p2Obj.socketId)?.username || 'P2' : this.userManager.getUser(p2Obj.socketId)?.username || 'P2';
+
+                let newR1 = oldR1;
+                let newR2 = oldR2;
+
+                const isDraw = ['draw', 'stalemate', 'repetition', 'insufficient_material'].includes(reason);
+
+                // 2. Tính toán Elo MỚI
+                if (isDraw) {
+                    newR1 = calculateElo(oldR1, oldR2, 0.5);
+                    newR2 = calculateElo(oldR2, oldR1, 0.5);
+                } else if (winnerId) {
+                    const isP1Winner = (winnerId === p1SocketId);
+                    if (isP1Winner) {
+                        newR1 = calculateElo(oldR1, oldR2, 1);
+                        newR2 = calculateElo(oldR2, oldR1, 0);
+                    } else {
+                        newR1 = calculateElo(oldR1, oldR2, 0);
+                        newR2 = calculateElo(oldR2, oldR1, 1);
+                    }
+                }
+
+                // 3. Cập nhật vào DB & Memory (DB luôn được cập nhật nếu userId có sẵn)
+                try {
+                    if (p1Obj && p1Obj.userId) {
+                        await User.findByIdAndUpdate(p1Obj.userId, { rating: newR1 }).exec();
+                    }
+                    if (p2Obj && p2Obj.userId) {
+                        await User.findByIdAndUpdate(p2Obj.userId, { rating: newR2 }).exec();
+                    }
+
+                    // Update memory if user still connected
+                    await this.userManager.updateUserRating(p1SocketId, newR1).catch(() => {});
+                    await this.userManager.updateUserRating(p2SocketId, newR2).catch(() => {});
+
+                    // 4. LOG CHI TIẾT SỰ THAY ĐỔI
+                    const diff1 = newR1 - oldR1;
+                    const diff2 = newR2 - oldR2;
+                    const sign1 = diff1 >= 0 ? '+' : '';
+                    const sign2 = diff2 >= 0 ? '+' : '';
+
+                    console.log('\n📊 ================ ELO UPDATE ================');
+                    console.log(`👤 ${name1}: ${oldR1} -> ${newR1} (${sign1}${diff1})`);
+                    console.log(`👤 ${name2}: ${oldR2} -> ${newR2} (${sign2}${diff2})`);
+                    console.log('📊 ============================================\n');
+                } catch (err) {
+                    console.error('❌ Elo persist/update Error:', err);
+                }
                 }
             }
             
@@ -953,18 +989,85 @@ class GameManager {
             if (newSocket) {
                 newSocket.join(roomId);
 
-                // Send full game state to reconnected client
-                const currentPlayerObj = room.players.find(p => room.playerColors[p.socketId] === room.currentTurn);
-                const currentTurnSocketId = currentPlayerObj ? currentPlayerObj.socketId : null;
+            // Send full game state to reconnected client (robust: prefer DB values, fallback to memory)
+            const currentPlayerObj = room.players.find(p => room.playerColors[p.socketId] === room.currentTurn);
+            const currentTurnSocketId = currentPlayerObj ? currentPlayerObj.socketId : null;
 
-                newSocket.emit('game:reconnected', {
-                    roomId,
-                    fen: room.game.fen(),
-                    timers: { ...room.timers },
-                    currentTurnSocketId,
-                    playerColor: room.playerColors[newSocketId],
-                    moves: room.moves
-                });
+            let playerElo = 1200;
+            let playerName = this.userManager.getUser(newSocketId)?.username || null;
+            try {
+                // Prefer DB rating/username if userId available on playerObj
+                if (playerObj && playerObj.userId) {
+                    const dbPlayer = await User.findById(playerObj.userId).select('rating username').lean();
+                    if (dbPlayer) {
+                        if (typeof dbPlayer.rating === 'number') playerElo = dbPlayer.rating;
+                        if (dbPlayer.username) playerName = dbPlayer.username;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not load player info from DB for reconnect:', e);
+            }
+            // Fallback to memory rating if DB not available / inconclusive
+            if (!playerElo || playerElo === 1200) {
+                try {
+                    const mem = await this.userManager.getUserRating(newSocketId);
+                    if (mem) playerElo = mem;
+                } catch (e) {
+                    console.warn('Could not load player rating from memory for reconnect:', e);
+                }
+            }
+
+            // Determine opponent object
+            const opponentObj = room.players.find(p => p.socketId !== newSocketId);
+            let opponentName = null;
+            let opponentElo = 1200;
+
+            // Try to get opponent from memory first
+            const opponentUserMem = opponentObj ? this.userManager.getUser(opponentObj.socketId) : null;
+            if (opponentUserMem && opponentUserMem.username) opponentName = opponentUserMem.username;
+
+            // Prefer DB lookup when possible (userId), otherwise try by username, otherwise fallback to memory getter
+            try {
+                if (opponentObj && opponentObj.userId) {
+                    const dbOpp = await User.findById(opponentObj.userId).select('username rating').lean();
+                    if (dbOpp) {
+                        if (dbOpp.username) opponentName = opponentName || dbOpp.username;
+                        if (typeof dbOpp.rating === 'number') opponentElo = dbOpp.rating;
+                    }
+                } else if (opponentUserMem && opponentUserMem.username) {
+                    const dbOpp = await User.findOne({ username: opponentUserMem.username }).select('username rating').lean();
+                    if (dbOpp) {
+                        if (dbOpp.username) opponentName = opponentName || dbOpp.username;
+                        if (typeof dbOpp.rating === 'number') opponentElo = dbOpp.rating;
+                    }
+                } else if (opponentObj && opponentObj.socketId) {
+                    // last resort: use userManager which may fetch DB if user still in memory
+                    const memOpp = await this.userManager.getUserRating(opponentObj.socketId);
+                    if (memOpp) opponentElo = memOpp;
+                }
+            } catch (e) {
+                console.warn('Could not load opponent info for reconnect (DB/memory):', e);
+            }
+
+            // Extra debug log to help trace why 1200 appears
+            console.log(`🔁 Reconnect payload build: player=${playerName || newSocketId} (${playerElo}), opponent=${opponentName || opponentObj?.socketId} (${opponentElo})`);
+
+            newSocket.emit('game:reconnected', {
+                roomId,
+                fen: room.game.fen(),
+                timers: { ...room.timers },
+                currentTurnSocketId,
+                playerColor: room.playerColors[newSocketId],
+                moves: room.moves,
+                opponent: {
+                    id: opponentObj ? opponentObj.socketId : null,
+                    username: opponentName || null,
+                    color: opponentObj ? room.getPlayerColor(opponentObj.socketId) : null,
+                    elo: typeof opponentElo === 'number' ? opponentElo : null
+                },
+                playerElo: typeof playerElo === 'number' ? playerElo : null,
+                playerUsername: playerName || null
+            });
 
                 // Notify opponent that player reconnected
                 const opponentId = room.getOpponent(newSocketId);
@@ -975,7 +1078,7 @@ class GameManager {
                     });
                 }
 
-                console.log(`🔌 Player reconnected: userId=${uid}, newSocket=${newSocketId}, room=${roomId}`);
+                console.log(`Player reconnected: userId=${uid}, newSocket=${newSocketId}, room=${roomId}`);
             }
 
             // handle just first match
@@ -1010,7 +1113,7 @@ class GameManager {
                 fen: room.game.fen()
             });
 
-            console.log(`🏁 Forfeit due to disconnect: room=${roomId}, disconnected=${socketId}, winner=${opponentId}`);
+            console.log(`Forfeit due to disconnect: room=${roomId}, disconnected=${socketId}, winner=${opponentId}`);
 
             await this.endGame(roomId, opponentId, 'disconnect_forfeit');
         } else {
