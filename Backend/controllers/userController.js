@@ -35,7 +35,7 @@ exports.getUserProfile = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get profile error:', error);
+        console.error('Get profile error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
@@ -78,7 +78,7 @@ exports.updateProfile = async (req, res) => {
         
         await user.save();
         
-        console.log(`✅ Profile updated: ${user.username}`);
+        console.log(`Profile updated: ${user.username}`);
         
         res.status(200).json({
             success: true,
@@ -93,7 +93,7 @@ exports.updateProfile = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Update profile error:', error);
+        console.error('Update profile error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
@@ -130,7 +130,7 @@ exports.getUserStats = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get stats error:', error);
+        console.error('Get stats error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
@@ -153,7 +153,7 @@ exports.getLeaderboard = async (req, res) => {
             leaderboard: users
         });
     } catch (error) {
-        console.error('❌ Get leaderboard error:', error);
+        console.error('Get leaderboard error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'

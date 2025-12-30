@@ -7,26 +7,26 @@ const Puzzle = require('../models/Puzzle');
 
 // Kết nối MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ MongoDB Connected'))
+    .then(() => console.log('MongoDB Connected'))
     .catch(err => {
-        console.error('❌ MongoDB Connection Error:', err);
+        console.error('MongoDB Connection Error:', err);
         process.exit(1);
     });
 
 async function clearDatabase() {
     try {
-        console.log('⏳ Checking database...');
+        console.log('Checking database...');
         
         // Đếm số lượng hiện có
         const count = await Puzzle.countDocuments();
-        console.log(`📊 Found ${count.toLocaleString()} puzzles in database.`);
+        console.log(`Found ${count.toLocaleString()} puzzles in database.`);
 
         if (count === 0) {
-            console.log('✅ Database is already empty.');
+            console.log('Database is already empty.');
             process.exit(0);
         }
 
-        console.log('🚀 Deleting all puzzles... This may take a moment.');
+        console.log('Deleting all puzzles... This may take a moment.');
 
         // LỆNH XÓA TOÀN BỘ
         // Cách 1: deleteMany (Giữ lại Indexes, chỉ xóa dữ liệu) - Khuyên dùng nếu bạn định import lại
@@ -35,14 +35,14 @@ async function clearDatabase() {
         // Cách 2: collection.drop() (Xóa cả Collection và Indexes - Sạch sẽ nhất để giải phóng dung lượng ngay lập tức)
         // await mongoose.connection.db.dropCollection('puzzles'); 
 
-        console.log('✅ Delete complete!');
-        console.log(`🗑️  Deleted count: ${result.deletedCount.toLocaleString()}`);
+        console.log('Delete complete!');
+        console.log(`Deleted count: ${result.deletedCount.toLocaleString()}`);
 
     } catch (error) {
-        console.error('❌ Error deleting puzzles:', error);
+        console.error('Error deleting puzzles:', error);
     } finally {
         mongoose.connection.close();
-        console.log('👋 Database connection closed.');
+        console.log('Database connection closed.');
         process.exit(0);
     }
 }

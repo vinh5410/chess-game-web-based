@@ -4,12 +4,12 @@ class MultiplayerChess {
         this.ctx = null;
         this.game = null;
         
-        // Canvas settings
+        
         this.canvasSize = 440;
         this.squareSize = 55;
         this.lastParentWidth = 0;
         
-        // Colors
+        
         this.lightSquareColor = '#f0d9b5';
         this.darkSquareColor = '#b58863';
         this.highlightColor = 'rgba(255, 255, 0, 0.4)';
@@ -18,7 +18,7 @@ class MultiplayerChess {
         this.selectedColor = 'rgba(255, 200, 0, 0.6)';
         this.lastMoveColor = 'rgba(255, 255, 0, 0.3)';
         
-        // Game state
+        
         this.playerColor = null;
         this.opponentName = '';
         this.playerElo = 1200;
@@ -34,17 +34,17 @@ class MultiplayerChess {
         this.isFlipped = false;
         this.isInfoSwapped = false; // Track if info bars are swapped from initial state
         
-        // Mouse interaction
+        
         this.isDragging = false;
         this.dragPiece = null;
         this.dragStartSquare = null;
         this.mousePos = { x: 0, y: 0 };
         
-        // Piece images
+        
         this.pieceImages = {};
         this.imagesLoaded = false;
         
-        // Timer
+        
         this.playerTime = 300;
         this.opponentTime = 300;
         this.timerInterval = null;
@@ -54,7 +54,7 @@ class MultiplayerChess {
         this.playerBottomInfoEl = null;
         this.chessboardContainerEl = null;
         
-        // Socket client
+        
         this.socket = window.socketClient;
         this.replayMode = false;
         this.replayIndex = 0;
@@ -62,9 +62,8 @@ class MultiplayerChess {
         this.viewStep = 0; // Số bước đang xem lại (0 = bàn cờ ban đầu) 
         this.fullMoveHistory = [];     
     }
-    // --- Reconnect countdown helpers ---
     startReconnectCountdown(waitMs = 60000) {
-        // Ensure single interval
+        
         this.clearReconnectCountdown();
 
         this._reconnectExpiresAt = Date.now() + (waitMs || 60000);
@@ -77,7 +76,7 @@ class MultiplayerChess {
             if (typeof updateGameStatus === 'function') updateGameStatus(`Opponent disconnected — waiting ${remaining}s to reconnect...`);
 
             if (remainingMs <= 0) {
-                // expired
+            
                 this.clearReconnectCountdown();
                 if (noticeEl) noticeEl.textContent = '';
                 if (typeof updateGameStatus === 'function') updateGameStatus('Opponent did not reconnect');
@@ -101,16 +100,16 @@ class MultiplayerChess {
         if (noticeEl) noticeEl.textContent = '';
     }    
     async init() {
-        console.log('🎮 Initializing Multiplayer Chess...');
+        console.log('Initializing Multiplayer Chess...');
         
         if (typeof window.Chess !== 'function') {
-            console.error('❌ Chess.js not available');
+            console.error('Chess.js not available');
             return false;
         }
         
         this.canvas = document.getElementById('chessCanvas');
         if (!this.canvas) {
-            console.error('❌ Canvas element not found');
+            console.error('Canvas element not found');
             return false;
         }
         
@@ -134,15 +133,14 @@ class MultiplayerChess {
             this.handleResize(true);
         }, 50);
         
-        // Connect socket
-        console.log('🔌 Connecting to socket...');
+        console.log('Connecting to socket...');
         this.socket.connect();
         
         // Đợi socket connect
         await new Promise((resolve) => {
             const checkConnection = () => {
                 if (this.socket.isConnected() && this.socket.socket) {
-                    console.log('✅ Socket connected:', this.socket.socket.id);
+                    console.log('Socket connected:', this.socket.socket.id);
                     resolve();
                 } else {
                     setTimeout(checkConnection, 100);
@@ -151,16 +149,15 @@ class MultiplayerChess {
             checkConnection();
         });
         
-        // Setup socket listeners SAU KHI connect
-        console.log('🔌 Setting up socket listeners...');
+        console.log('Setting up socket listeners...');
         this.setupSocketListeners();
         
-        console.log('✅ Multiplayer Chess initialized');
+        console.log('Multiplayer Chess initialized');
         return true;
     }
     
     async loadPieceImages() {
-        console.log('🎨 Loading piece images...');
+        console.log('Loading piece images...');
         const pieces = ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP', 'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'];
         const loadPromises = [];
         
@@ -169,7 +166,7 @@ class MultiplayerChess {
             const promise = new Promise((resolve) => {
                 img.onload = () => resolve();
                 img.onerror = () => {
-                    console.warn(`⚠️ Failed to load ${piece}.png, using fallback`);
+                    console.warn(`Failed to load ${piece}.png, using fallback`);
                     const cdnUrl = `https://upload.wikimedia.org/wikipedia/commons/${this.getWikipediaPath(piece)}`;
                     img.src = cdnUrl;
                     img.onload = () => resolve();
@@ -184,7 +181,7 @@ class MultiplayerChess {
         
         await Promise.all(loadPromises);
         this.imagesLoaded = true;
-        console.log('✅ Piece images loaded');
+        console.log('Piece images loaded');
     }
     
     getWikipediaPath(piece) {
@@ -200,14 +197,14 @@ class MultiplayerChess {
     }
     
     setupEventListeners() {
-        // Mouse events (desktop)
+        
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
         this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
         this.canvas.addEventListener('click', this.onClick.bind(this));
         this.canvas.addEventListener('contextmenu', e => e.preventDefault());
         
-        // Touch events (mobile)
+        
         this.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
         this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
         this.canvas.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: false });
@@ -246,39 +243,39 @@ class MultiplayerChess {
     
     
     setupSocketListeners() {
-        console.log('🔌 Setting up socket listeners...');
+        console.log('Setting up socket listeners...');
         
         // Get socket.io instance
         const io = this.socket.socket;
         
         if (!io) {
-            console.error('❌ Socket.IO instance not found! Connection may not be ready.');
+            console.error('Socket.IO instance not found! Connection may not be ready.');
             return;
         }
         
-        console.log('✅ Socket.IO instance found:', io.id);
+        console.log('Socket.IO instance found:', io.id);
         
         // Clear any existing listeners first
         io.removeAllListeners();
         
         io.on('user:login_success', (data) => {
-            console.log('✅ Login success:', data);
+            console.log('Login success:', data);
             this.onLoginSuccess(data);
         });
         
         io.on('user:login_error', (data) => {
-            console.error('❌ Login error:', data);
+            console.error('Login error:', data);
             alert(data.message || 'Login failed');
         });
         
         io.on('users:update', (data) => {
-            console.log('👥 Users update received:', data);
-            console.log('📊 Number of users:', data.users.length);
+            console.log('Users update received:', data);
+            console.log('Number of users:', data.users.length);
             this.updateOnlineUsers(data.users);
         });
         
         io.on('matchmaking:match_found', (data) => {
-            console.log('🎉 Match found!', data);
+            console.log('Match found!', data);
             this.onMatchFound(data);
         });
         io.on('game:timer_update', (data) => {
@@ -290,7 +287,7 @@ class MultiplayerChess {
                 if (data && data.timers) {
                     if (myId && data.timers[myId] !== undefined) {
                         this.playerTime = data.timers[myId];
-                        // find opponent id
+                        
                         const opponentId = Object.keys(data.timers).find(id => id !== myId);
                         if (opponentId) this.opponentTime = data.timers[opponentId];
                     } else {
@@ -312,7 +309,7 @@ class MultiplayerChess {
             }
         });        
         io.on('matchmaking:waiting', (data) => {
-            console.log('⏳ Waiting for match...', data);
+            console.log('Waiting for match...', data);
             const statusEl = document.getElementById('searchStatus');
             if (statusEl) {
                 statusEl.textContent = `Searching... (${data.queue} players in queue)`;
@@ -320,32 +317,32 @@ class MultiplayerChess {
         });
         
         io.on('room:created', (data) => {
-            console.log('🔐 Room created:', data);
+            console.log('Room created:', data);
             this.onRoomCreated(data);
         });
         
         io.on('room:joined', (data) => {
-            console.log('🔗 Room joined:', data);
+            console.log('Room joined:', data);
             this.onRoomJoined(data);
         });
         
         io.on('room:error', (data) => {
-            console.error('❌ Room error:', data);
+            console.error('Room error:', data);
             alert(data.message || 'Room error');
         });
         
         io.on('room:opponent_joined', (data) => {
-            console.log('👥 Opponent joined:', data);
+            console.log('Opponent joined:', data);
             this.onOpponentJoined(data);
         });
         
         io.on('room:opponent_left', (data) => {
-            console.log('👋 Opponent left:', data);
+            console.log('Opponent left:', data);
             this.onOpponentLeft(data);
         });
         
         io.on('game:start', (data) => {
-            console.log('🎮 Game starting:', data);
+            console.log('Game starting:', data);
             this.onGameStart(data);
         });
         
@@ -353,19 +350,19 @@ class MultiplayerChess {
             // Ignore moves emitted by ourselves (defensive)
             try {
                 if (data && data.by && data.by === this.socket.getUserId()) {
-                    console.log('♟️ Ignoring own move broadcast (by):', data.move);
+                    console.log('Ignoring own move broadcast (by):', data.move);
                     return;
                 }
             } catch (e) {
                 // continue if any error reading id
             }
-            console.log('♟️ Move received:', data);
+            console.log('Move received:', data);
             this.onOpponentMove(data);
         });
         
         // Listen for move confirmation from server (for the player who made the move)
         io.on('game:move_applied', (data) => {
-            console.log('✅ Move applied by server:', data);
+            console.log('Move applied by server:', data);
             // Update timers from server
             if (data.timers) {
                 const myId = this.socket.getUserId();
@@ -386,27 +383,27 @@ class MultiplayerChess {
             this.startTimer();
         });        
         io.on('game:invalid_move', (data) => {
-            console.error('❌ Invalid move:', data);
+            console.error('Invalid move:', data);
             alert('Invalid move!');
         });
         
         io.on('game:over', (data) => {
-            console.log('🏁 Game over:', data);
+            console.log('Game over:', data);
             this.onGameOver(data);
         });
         
         io.on('game:draw_offer', (data) => {
-            console.log('🤝 Draw offer received');
+            console.log('Draw offer received');
             this.onDrawOffer(data);
         });
         
         io.on('game:draw_accepted', (data) => {
-            console.log('🤝 Draw accepted');
+            console.log('Draw accepted');
             this.onDrawAccepted(data);
         });
         
         io.on('game:draw_declined', (data) => {
-            console.log('❌ Draw declined');
+            console.log('Draw declined');
             // Show notification on web instead of alert
             this.showDrawDeclinedNotification();
         });
@@ -445,12 +442,12 @@ class MultiplayerChess {
             // Rebuild game state from server payload (FEN preferred, fallback to moves)
             this.game = new window.Chess();
             if (data && data.fen) {
-                try {
-                    if (typeof this.game.load === 'function') this.game.load(data.fen);
-                    else this.game = new window.Chess(data.fen);
-                    console.log('✅ Loaded FEN from server:', data.fen);
-                } catch (e) {
-                    console.warn('⚠️ Failed to load FEN, will rebuild from moves', e);
+                    try {
+                        if (typeof this.game.load === 'function') this.game.load(data.fen);
+                        else this.game = new window.Chess(data.fen);
+                        console.log('Loaded FEN from server:', data.fen);
+                    } catch (e) {
+                        console.warn('Failed to load FEN, will rebuild from moves', e);
                     this.game = new window.Chess();
                 }
             }
@@ -464,13 +461,13 @@ class MultiplayerChess {
                         else if (mv.from && mv.to) this.game.move({ from: mv.from, to: mv.to, promotion: mv.promotion || undefined });
                         else if (mv.san) this.game.move(mv.san);
                     }
-                    console.log('✅ Rebuilt game from moves, move count:', this.game.history().length);
+                    console.log('Rebuilt game from moves, move count:', this.game.history().length);
                 } catch (e) {
-                    console.warn('⚠️ Failed to rebuild moves, keeping FEN if available', e);
+                    console.warn('Failed to rebuild moves, keeping FEN if available', e);
                 }
             }
 
-            // move history
+            
             try {
                 this.fullMoveHistory = this.game.history({ verbose: true }) || [];
                 this.viewStep = this.fullMoveHistory.length;
@@ -479,7 +476,7 @@ class MultiplayerChess {
                 this.viewStep = 0;
             }
 
-            // timers
+            
             if (data.timers) {
                 const myId = this.socket.getUserId();
                 if (myId && data.timers[myId] !== undefined) {
@@ -530,7 +527,7 @@ class MultiplayerChess {
             };
 
             if (!this.imagesLoaded) {
-                console.log('🎨 Loading piece images before draw...');
+                console.log('Loading piece images before draw...');
                 this.loadPieceImages().then(() => { this.imagesLoaded = true; doDraw(); }).catch(() => doDraw());
             } else {
                 setTimeout(doDraw, 80);
@@ -538,7 +535,7 @@ class MultiplayerChess {
         });
 
         io.on('game:opponent_disconnected', (data) => {
-            console.log('⚠️ game:opponent_disconnected', data);
+            console.log('game:opponent_disconnected', data);
 
             // If server provided waitMs -> start countdown. Otherwise show informational notice
             if (data && typeof data.waitMs === 'number') {
@@ -552,8 +549,8 @@ class MultiplayerChess {
         });
 
         io.on('game:opponent_reconnected', (data) => {
-            console.log('✅ game:opponent_reconnected', data);
-            // Clear any countdown
+            console.log('game:opponent_reconnected', data);
+            
             this.clearReconnectCountdown();
 
             if (data && data.cancelled) {
@@ -562,11 +559,11 @@ class MultiplayerChess {
                 if (typeof updateGameStatus === 'function') updateGameStatus('Opponent reconnected — game resumed');
             }
 });  
-        console.log('✅ All socket listeners registered on:', io.id);
+        console.log('All socket listeners registered on:', io.id);
     }
     
     onLoginSuccess(data) {
-        // Update status first
+        
         updateGameStatus(`Welcome, ${data.username}!`);
 
         // Don't force-show lobby if already in a room or game restored
@@ -575,7 +572,7 @@ class MultiplayerChess {
             : null;
 
         if (currentRoom || this.gameStarted) {
-            console.log('⚡ Login success while in-game, keeping current view');
+            console.log('Login success while in-game, keeping current view');
             return;
         }
 
@@ -586,14 +583,14 @@ class MultiplayerChess {
     }
     
     updateOnlineUsers(users) {
-        console.log('📊 Updating online users count:', users.length);
+        console.log('Updating online users count:', users.length);
         
         const onlineCount = document.getElementById('onlineUsers');
         if (onlineCount) {
-            onlineCount.textContent = `👥 Online: ${users.length}`;
-            console.log('✅ Online count updated:', users.length);
+            onlineCount.textContent = `Online: ${users.length}`;
+            console.log('Online count updated:', users.length);
         } else {
-            console.error('❌ onlineUsers element not found!');
+            console.error('onlineUsers element not found!');
         }
         
         const usersContainer = document.getElementById('usersContainer');
@@ -614,7 +611,7 @@ class MultiplayerChess {
     }
     
     onMatchFound(data) {
-        console.log('🎉 Match found with:', data.opponent);
+        console.log('Match found with:', data.opponent);
         this.socket.setCurrentRoom(data.roomId);
         
         // Capture ELO if provided
@@ -632,14 +629,14 @@ class MultiplayerChess {
         updateGameStatus('Match found! Starting game...');
     }
     onRoomCreated(data) {
-        console.log('✅ Room created:', data);
+        console.log('Room created:', data);
         this.socket.setCurrentRoom(data.roomId);
         
         // Show invite friend screen if not visible
         hideAllScreens();
         document.getElementById('inviteFriendScreen').classList.remove('hidden');
         
-        // Hide time selector
+        
         const timeSelectorContainer = document.getElementById('privateRoomTimeSelector');
         if (timeSelectorContainer) {
             timeSelectorContainer.style.display = 'none';
@@ -655,13 +652,13 @@ class MultiplayerChess {
     }
     
     onRoomJoined(data) {
-        console.log('🔗 Joined room:', data.roomId);
+        console.log('Joined room:', data.roomId);
         this.socket.setCurrentRoom(data.roomId);
         showGameScreen();
     }
     
     onOpponentJoined(data) {
-        console.log('👥 Opponent joined:', data.opponent);
+        console.log('Opponent joined:', data.opponent);
         this.opponentName = data.opponent.username;
         
         // Capture ELO if provided
@@ -682,13 +679,13 @@ class MultiplayerChess {
     }
     
     onOpponentLeft(data) {
-        console.log('👋 Opponent left');
+        console.log('Opponent left');
         
         // Only show alert if game hasn't ended normally (checkmate, resign, draw, timeout)
         // If gameOver is already true from normal game end, don't show disconnect alert
         if (!this.gameOver) {
             // Opponent disconnected unexpectedly during the game
-            document.getElementById('winnerText').textContent = 'Opponent disconnected. You win! 🏆';
+            document.getElementById('winnerText').textContent = 'Opponent disconnected. You win!';
             document.getElementById('gameOverOverlay').classList.remove('hidden');
             this.gameOver = true;
             this.gameStarted = false;
@@ -699,7 +696,7 @@ class MultiplayerChess {
     }
     
     onGameStart(data) {
-        console.log('🎮 Game started!', data);
+        console.log('Game started!', data);
 
         this.playerColor = data.color;
         this.opponentName = data.opponent.username;
@@ -729,7 +726,7 @@ class MultiplayerChess {
         if (data.timeControl) {
             this.playerTime = data.timeControl.initial;
             this.opponentTime = data.timeControl.initial;
-            console.log(`⏱️ Timer set to: ${data.timeControl.initial}s`);
+            console.log(`Timer set to: ${data.timeControl.initial}s`);
         } else {
             this.playerTime = 300;
             this.opponentTime = 300;
@@ -786,7 +783,7 @@ class MultiplayerChess {
             currentTurnEl.style.color = this.isMyTurn ? '#4ade80' : '#f8fafc';
         }
         
-        // Update move count
+        
         const moveCountEl = document.getElementById('moveCount');
         if (moveCountEl) {
             const moveNumber = Math.floor(this.game.history().length / 2) + 1;
@@ -802,7 +799,7 @@ class MultiplayerChess {
             } else if (this.isMyTurn) {
                 const myIcon = this.playerColor === 'white' ? '♔' : '♚';
                 let statusText = `${myIcon} Your turn to move!`;
-                // Add check warning
+                
                 if (this.game.inCheck()) {
                     statusText = `${myIcon} ⚠️ You are in Check!`;
                     turnStatusEl.style.color = '#ef4444';
@@ -826,7 +823,7 @@ class MultiplayerChess {
     }
     
     onOpponentMove(data) {
-        console.log('♟️ Opponent move:', data.move);
+            console.log('Opponent move:', data.move);
         if (data.timers) {
             try {
                 const myId = this.socket.getUserId();
@@ -1247,7 +1244,7 @@ class MultiplayerChess {
 
             }
         } catch (error) {
-            console.log('❌ Invalid move');
+            console.log('Invalid move');
         }
         
         // Clear selection on invalid move too
@@ -1561,14 +1558,14 @@ class MultiplayerChess {
         // Ensure cached refs exist and are current
         this.chessboardContainerEl = this.chessboardContainerEl || document.getElementById('chessboardContainer');
         if (!this.chessboardContainerEl) {
-            console.warn('⚠️ chessboard container not found');
+            console.warn('chessboard container not found');
             return;
         }
 
         // Re-find info bars in container to avoid stale references
         const infoBars = Array.from(this.chessboardContainerEl.querySelectorAll('.player-info'));
         if (infoBars.length < 2) {
-            console.warn('⚠️ Not enough player-info elements found');
+            console.warn('Not enough player-info elements found');
             return;
         }
 
@@ -1600,8 +1597,8 @@ class MultiplayerChess {
                 this.chessboardContainerEl.appendChild(bottomEl);
                 bottomEl.classList.add('player-bottom');
             }
-        } catch (err) {
-            console.warn('⚠️ updatePlayerInfoPosition failed:', err);
+            } catch (err) {
+            console.warn('updatePlayerInfoPosition failed:', err);
         }
     }
     flipBoard() {
@@ -1631,21 +1628,21 @@ class MultiplayerChess {
         const bottomRating = bottomBar.querySelector('.player-rating');
         const bottomTimer = bottomBar.querySelector('.player-timer');
 
-        // Swap name
+        
         if (topName && bottomName) {
             const temp = topName.textContent;
             topName.textContent = bottomName.textContent;
             bottomName.textContent = temp;
         }
 
-        // Swap rating
+        
         if (topRating && bottomRating) {
             const temp = topRating.textContent;
             topRating.textContent = bottomRating.textContent;
             bottomRating.textContent = temp;
         }
 
-        // Swap timer
+        
         if (topTimer && bottomTimer) {
             const tempTime = topTimer.textContent;
             const tempLowTime = topTimer.classList.contains('low-time');
@@ -1758,10 +1755,10 @@ class MultiplayerChess {
 
 };
 
-// Global instance
+ 
 let gameInstance = null;
 
-// UI Functions
+ 
 function updateGameStatus(message, game = null) {
     const statusEl = document.getElementById('gameStatus');
     if (!statusEl) return;
@@ -1785,12 +1782,12 @@ function updateGameStatus(message, game = null) {
                 return;
             }
             
-            // Add check warning
+            
             if (game.inCheck()) {
                 message += ' ⚠️ Check!';
             }
         } catch (error) {
-            // Ignore
+            
         }
     }
     
@@ -1846,7 +1843,7 @@ function showRandomMatch() {
     hideAllScreens();
     document.getElementById('randomMatchScreen').classList.remove('hidden');
     
-    // Render time selector
+    
     renderTimeSelector('randomMatchTimeSelector');
     
     updateGameStatus('Select time control and click Find Match');
@@ -1888,7 +1885,7 @@ function showInviteFriend() {
 function cancelInvite() {
     window.socketClient.leaveRoom();
     
-    // Reset UI state
+    
     const roomCodeSection = document.getElementById('roomCodeSection');
     if (roomCodeSection) {
         roomCodeSection.classList.add('hidden');
@@ -1942,7 +1939,7 @@ function joinRoom() {
 function backToLobby() {
     window.socketClient.leaveRoom();
     
-    // Reset search status
+    
     const searchStatus = document.getElementById('searchStatus');
     if (searchStatus) {
         searchStatus.textContent = 'Click button to start searching';
@@ -2050,15 +2047,15 @@ function inviteUser(userId) {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 Initializing Multiplayer Chess...');
+    console.log('Initializing Multiplayer Chess...');
     
-    // Initialize game instance
+    
     gameInstance = new MultiplayerChess();
     window.multiplayerGame = gameInstance;
     // Đợi init hoàn thành
-    console.log('⏳ Initializing game...');
+    console.log('Initializing game...');
     await gameInstance.init();
-    console.log('✅ Game initialized');
+    console.log('Game initialized');
 
     // AUTO-LOGIN nếu đã có user
     document.getElementById('firstStepBtn').onclick = () => {
@@ -2133,7 +2130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     hideAllScreens();
     const user = getCurrentUser();
     if (user && user.username) {
-        console.log('✅ Auto-login as:', user.username);
+        console.log('Auto-login as:', user.username);
         
         // Hiện lobby
         // Let server events decide which screen to show (don't force lobby here)
@@ -2145,13 +2142,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Đợi một chút cho backend xử lý
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        console.log('✅ Login request sent');
+        console.log('Login request sent');
     } else {
         // Nếu chưa login, redirect về trang login
-        console.log('❌ User not logged in, redirecting to login page');
+        console.log('User not logged in, redirecting to login page');
         window.location.href = '/login.html';
         return;
     }
     
-    console.log('✅ Client ready!');
+    console.log('Client ready!');
 });

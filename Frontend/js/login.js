@@ -9,11 +9,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const password = document.getElementById('password').value;
     const messageEl = document.getElementById('message');
     
-    // Clear previous message
     messageEl.textContent = '';
     messageEl.className = 'message';
     
-    // Show loading
     showMessage('Logging in...', 'success');
     
     try {

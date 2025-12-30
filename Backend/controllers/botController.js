@@ -5,7 +5,7 @@ exports.getBestMove = async (req, res) => {
     try {
         const { fen, depth = 5 } = req.body;
         
-        console.log(`🤖 Bot thinking (depth ${depth})...`);
+        console.log(`Bot thinking (depth ${depth})...`);
         
         const game = new Chess(fen);
         const moves = game.moves();
@@ -16,7 +16,7 @@ exports.getBestMove = async (req, res) => {
         
         let bestMove;
         
-        // --- LOGIC XỊN LẤY TỪ SERVER.JS ---
+        
         if (depth <= 2) {
             bestMove = moves[Math.floor(Math.random() * moves.length)];
         } else if (depth <= 5) {
@@ -39,13 +39,13 @@ exports.getBestMove = async (req, res) => {
                 bestMove = moves[Math.floor(Math.random() * moves.length)];
             }
         }
-        // ----------------------------------
+        
         
         const thinkingTime = Math.min(depth * 200, 2000);
         
         setTimeout(() => {
             const evaluation = (Math.random() - 0.5) * 3;
-            console.log(`🎯 Bot chose: ${bestMove}`);
+            console.log(`Bot chose: ${bestMove}`);
             
             res.json({ 
                 bestMove: bestMove,
@@ -55,7 +55,7 @@ exports.getBestMove = async (req, res) => {
         }, thinkingTime);
         
     } catch (error) {
-        console.error('❌ Stockfish API error:', error);
+        console.error('Stockfish API error:', error);
         res.status(400).json({ error: error.message });
     }
 };

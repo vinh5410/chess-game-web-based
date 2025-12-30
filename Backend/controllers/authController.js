@@ -87,7 +87,7 @@ exports.register = async (req, res) => {
                 message: `Click vào link sau để kích hoạt tài khoản: \n\n${verifyUrl}`
             });
             
-            console.log('✅ User registered (pending verify):', username);
+            console.log('User registered (pending verify):', username);
             
             // Trả về phản hồi thành công
             res.status(200).json({ 
@@ -101,12 +101,12 @@ exports.register = async (req, res) => {
             res.status(500).json({ success: false, message: 'Lỗi gửi mail' });
         }
         
-        console.log('✅ User registered:', username);
+        console.log('User registered:', username);
         
         //sendTokenResponse(user, 201, res);
         
     } catch (error) {
-        console.error('❌ Register error:', error);
+        console.error('Register error:', error);
         
         if (error.code === 11000) {
             const field = Object.keys(error.keyPattern)[0];
@@ -197,12 +197,12 @@ exports.login = async (req, res) => {
         user.isOnline = true;
         await user.save({ validateBeforeSave: false });
         
-        console.log('✅ User logged in:', user.username);
+        console.log('User logged in:', user.username);
         
         sendTokenResponse(user, 200, res);
         
     } catch (error) {
-        console.error('❌ Login error:', error);
+        console.error('Login error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
@@ -275,7 +275,7 @@ exports.logout = async (req, res) => {
             req.user.lastSeen = Date.now();
             await req.user.save({ validateBeforeSave: false });
             
-            console.log('👋 User logged out:', req.user.username);
+            console.log('User logged out:', req.user.username);
         }
         
         res.cookie('token', 'none', {
@@ -289,7 +289,7 @@ exports.logout = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Logout error:', error);
+        console.error('Logout error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
@@ -322,7 +322,7 @@ exports.getMe = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Get me error:', error);
+        console.error('Get me error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
@@ -360,7 +360,7 @@ exports.changePassword = async (req, res) => {
         user.password = newPassword;
         await user.save();
         
-        console.log(`✅ Password changed: ${user.username}`);
+        console.log(`Password changed: ${user.username}`);
         
         res.status(200).json({
             success: true,
@@ -368,7 +368,7 @@ exports.changePassword = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Change password error:', error);
+        console.error('Change password error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
@@ -423,14 +423,14 @@ exports.resendVerificationEmail = async (req, res) => {
                 message: `Click vào link sau để kích hoạt tài khoản: \n\n${verifyUrl}\n\nLink này sẽ hết hạn sau 24 giờ.`
             });
 
-            console.log('✅ Verification email resent to:', user.email);
+            console.log('Verification email resent to:', user.email);
 
             res.status(200).json({
                 success: true,
                 message: 'Verification email sent successfully! Please check your inbox.'
             });
         } catch (err) {
-            console.error('❌ Send email error:', err);
+            console.error('Send email error:', err);
             res.status(500).json({
                 success: false,
                 message: 'Failed to send verification email. Please try again later.'
@@ -438,7 +438,7 @@ exports.resendVerificationEmail = async (req, res) => {
         }
 
     } catch (error) {
-        console.error('❌ Resend verification error:', error);
+        console.error('Resend verification error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'

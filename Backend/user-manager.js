@@ -14,7 +14,7 @@ class UserManager {
         // But still support reconnect window: if user was recently disconnected, we also allow.
         const existingSet = this.usernames.get(nameKey);
         if (existingSet && existingSet.size > 0) {
-            console.log(`ℹ️ Additional session for username: ${username}`);
+            console.log(`Additional session for username: ${username}`);
             // continue to create new socket entry
         } else {
             // If no existing live session, check disconnectedUsers (reconnect window)
@@ -22,7 +22,7 @@ class UserManager {
             if (disconnectTime && (Date.now() - disconnectTime) < 30000) {
                 // reconnect allowed: clear disconnected timestamp
                 this.disconnectedUsers.delete(nameKey);
-                console.log(`✅ Reconnect allowed for ${username}`);
+                console.log(`Reconnect allowed for ${username}`);
             }
         }
 
@@ -30,12 +30,12 @@ class UserManager {
         let dbRating = 1200;
         try {
             const dbUser = await User.findOne({ username });
-            if (dbUser) {
+                if (dbUser) {
                 dbRating = dbUser.rating;
-                console.log(`📊 Loaded rating for ${username}: ${dbRating}`);
+                console.log(`Loaded rating for ${username}: ${dbRating}`);
             }
         } catch (e) {
-            console.error('❌ Error loading user rating:', e);
+            console.error('Error loading user rating:', e);
         }
 
         const user = {
@@ -47,7 +47,6 @@ class UserManager {
             rating: dbRating
         };
 
-        // store by socket
         this.users.set(socketId, user);
 
         // record in usernames map
@@ -106,7 +105,6 @@ class UserManager {
     }
 
     getOnlineCount() {
-        // count unique usernames
         return this.usernames.size;
     }
 
@@ -140,7 +138,7 @@ class UserManager {
             }
             return 1200;
         } catch (e) {
-            console.error('❌ Error getting user rating:', e);
+            console.error('Error getting user rating:', e);
             return 1200;
         }
     }
@@ -155,9 +153,9 @@ class UserManager {
             user.rating = newRating;
             this.users.set(socketId, user);
 
-            console.log(`✅ Updated rating for ${user.username}: ${newRating} (Saved to DB & Memory)`);
+            console.log(`Updated rating for ${user.username}: ${newRating} (Saved to DB & Memory)`);
         } catch (e) {
-            console.error('❌ Error updating user rating:', e);
+            console.error('Error updating user rating:', e);
         }
     }
 }

@@ -1,4 +1,3 @@
-// Get auth data from localStorage
 function getAuthData() {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
@@ -17,27 +16,23 @@ function getAuthData() {
     }
 }
 
-// Check if user is logged in
 function isLoggedIn() {
     const { isLoggedIn } = getAuthData();
     return isLoggedIn;
 }
 
-// Get current user
 function getCurrentUser() {
     const { user } = getAuthData();
     return user;
 }
 
-// Get auth token
 function getAuthToken() {
     const { token } = getAuthData();
     return token;
 }
 
-// Logout function
 function logout() {
-    // Call logout API
+function logout() {
     fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
@@ -45,11 +40,10 @@ function logout() {
         }
     }).catch(err => console.error('Logout error:', err));
     
-    // Clear localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     
-    // Redirect to login
+    
     window.location.href = '/login.html';
 }
 

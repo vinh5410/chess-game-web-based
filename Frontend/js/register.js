@@ -1,6 +1,5 @@
-// ADD AT THE TOP
 document.addEventListener('DOMContentLoaded', () => {
-    // Redirect if already logged in
+    
     redirectIfLoggedIn();
 });
 
@@ -14,11 +13,10 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const confirmPassword = document.getElementById('confirmPassword').value;
     const messageEl = document.getElementById('message');
     
-    // Clear previous messages
     messageEl.textContent = '';
     messageEl.className = 'message';
     
-    // Validation
+    
     if (!username || !email || !password || !confirmPassword) {
         messageEl.textContent = 'Please fill in all fields';
         messageEl.className = 'message error';
@@ -43,7 +41,6 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
         return;
     }
     
-    // Show loading
     messageEl.textContent = 'Creating account...';
     messageEl.className = 'message success';
     

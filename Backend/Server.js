@@ -10,7 +10,6 @@ const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const botController = require('./controllers/botController');
 const historyRoutes = require('./routes/history');
-// Load env vars
 dotenv.config();
 
 // Validate required environment variables
@@ -46,11 +45,9 @@ const io = socketIO(server, {
 
 const PORT = process.env.PORT || 3000;
 
-// Initialize managers
 const userManager = new UserManager();
 const gameManager = new GameManager(io, userManager);
 
-// Middleware
 app.use(cors({
     origin: '*',
     credentials: true,
@@ -60,10 +57,8 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// Connect to database
 connectDB();
 
-// Serve static files
 app.use(express.static(path.join(__dirname, '../Frontend'), {
     setHeaders: (res, path) => {
         if (path.endsWith('.css')) {
@@ -75,7 +70,6 @@ app.use(express.static(path.join(__dirname, '../Frontend'), {
     }
 }));
 
-// API Routes
 app.get('/api/health', (req, res) => {
     res.json({ 
         status: 'OK', 
@@ -86,15 +80,12 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Auth routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/puzzles', puzzleRoutes);
 app.use('/api/history', historyRoutes);
-// Stockfish API endpoint
 app.post('/api/bot/best-move', botController.getBestMove);
 
-// Socket.IO Connection Handler
 require('./socket/index')(io, userManager, gameManager);
 
 app.get(/^\/assets\/.*$/, (req, res) => {
@@ -107,7 +98,6 @@ app.get('/history', (req, res) => {
 app.get('/history.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../Frontend', 'history.html'));
 });
-// Specific routes (BEFORE catch-all)
 app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, '../Frontend', 'register.html'));
 });
@@ -162,9 +152,9 @@ app.get('*', (req, res) => {
 server.listen(PORT, () => {
     console.log(`
 ╔══════════════════════════════════════════════════════════╗
-║         🎮 CHESS GAME SERVER STARTED 🎮                  ║
+║         CHESS GAME SERVER STARTED                         ║
 ╠══════════════════════════════════════════════════════════╣
-║   Server: http://localhost:${PORT}                       ║
+║   Server: http://localhost:${PORT}                        ║
 ║  Frontend: ${path.join(__dirname, '../Frontend')}     
 ║                                                          ║
 ║  Routes:                                              ║
@@ -175,12 +165,11 @@ server.listen(PORT, () => {
 ║     • Multiplayer:    http://localhost:${PORT}/play-multiplayer.html
 ║     • Health Check:   http://localhost:${PORT}/api/health ║
 ║                                                          ║
-║  🔌 WebSocket: Socket.IO enabled for multiplayer        ║
+║  WebSocket: Socket.IO enabled for multiplayer             ║
 ╚══════════════════════════════════════════════════════════╝
     `);
 });
 
-// Handle unhandled rejections
 process.on('unhandledRejection', (err) => {
     console.error('Unhandled Promise Rejection:', err);
     server.close(() => process.exit(1));

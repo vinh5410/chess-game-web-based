@@ -14,9 +14,9 @@ const IMPORT_LIMIT = 150000;
 
 // Kết nối MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ MongoDB Connected'))
+    .then(() => console.log('MongoDB Connected'))
     .catch(err => {
-        console.error('❌ MongoDB Connection Error:', err);
+        console.error('MongoDB Connection Error:', err);
         process.exit(1);
     });
 
@@ -36,14 +36,14 @@ async function importPuzzles() {
     let batch = [];
     let lineNumber = 0;
 
-    console.log('🚀 Starting puzzle import...');
-    console.log(`⚠️  LIMIT SET TO: ${IMPORT_LIMIT.toLocaleString()} puzzles\n`);
+    console.log('Starting puzzle import...');
+    console.log(`LIMIT SET TO: ${IMPORT_LIMIT.toLocaleString()} puzzles\n`);
 
     // Đường dẫn file (tự động tìm trong folder Backend/data)
     const csvFilePath = path.join(__dirname, '..', 'data', 'lichess_db_puzzle.csv');
 
     if (!fs.existsSync(csvFilePath)) {
-        console.error('❌ File not found:', csvFilePath);
+        console.error('File not found:', csvFilePath);
         process.exit(1);
     }
 
@@ -118,13 +118,12 @@ async function importPuzzles() {
                             count += batch.length;
                             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
                             const rate = (count / elapsed).toFixed(0);
-                            process.stdout.write(`\r✅ Imported ${count.toLocaleString()} / ${IMPORT_LIMIT.toLocaleString()} puzzles... (${rate}/sec)`);
+                            process.stdout.write(`\rImported ${count.toLocaleString()} / ${IMPORT_LIMIT.toLocaleString()} puzzles... (${rate}/sec)`);
 
                             batch = [];
 
-                            // --- KIỂM TRA GIỚI HẠN ---
                             if (count >= IMPORT_LIMIT) {
-                                console.log('\n\n🛑 REACHED LIMIT! Stopping import.');
+                                console.log('\n\nREACHED LIMIT! Stopping import.');
                                 stream.destroy(); // Hủy stream đọc file
                                 finishImport(count, skipped, errors, startTime);
                             } else {
@@ -137,14 +136,14 @@ async function importPuzzles() {
                                 count += inserted;
                                 skipped += (error.writeErrors?.length || 0);
                             } else {
-                                console.error('\n❌ Batch Error:', error.message);
+                                console.error('\nBatch Error:', error.message);
                             }
                             
                             batch = [];
                             
                             // Check limit cả trong trường hợp lỗi
                             if (count >= IMPORT_LIMIT) {
-                                console.log('\n\n🛑 REACHED LIMIT (with errors)! Stopping.');
+                                console.log('\n\nREACHED LIMIT (with errors)! Stopping.');
                                 stream.destroy();
                                 finishImport(count, skipped, errors, startTime);
                             } else {
@@ -173,7 +172,7 @@ async function importPuzzles() {
             }
         })
         .on('error', (error) => {
-            console.error('\n❌ File read error:', error);
+            console.error('\nFile read error:', error);
             mongoose.connection.close();
             process.exit(1);
         });
@@ -184,15 +183,15 @@ function finishImport(count, skipped, errors, startTime) {
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     
     console.log('\n' + '='.repeat(70));
-    console.log('📊 IMPORT SUMMARY');
+    console.log('IMPORT SUMMARY');
     console.log('='.repeat(70));
-    console.log(`   ✅ Successfully imported:  ${count.toLocaleString()} puzzles`);
-    console.log(`   ⚠️  Skipped (duplicates):   ${skipped.toLocaleString()}`);
-    console.log(`   ❌ Errors/Ignored:         ${errors.toLocaleString()}`);
-    console.log(`   ⏱️  Duration:               ${duration}s`);
+    console.log(`   Successfully imported:  ${count.toLocaleString()} puzzles`);
+    console.log(`   Skipped (duplicates):   ${skipped.toLocaleString()}`);
+    console.log(`   Errors/Ignored:         ${errors.toLocaleString()}`);
+    console.log(`   Duration:               ${duration}s`);
     console.log('='.repeat(70) + '\n');
 
-    console.log('👋 Closing database connection...');
+    console.log('Closing database connection...');
     mongoose.connection.close();
     process.exit(0);
 }

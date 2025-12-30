@@ -4,12 +4,12 @@ class ChessCanvasVsBot {
         this.ctx = null;
         this.game = null;
         
-        // Canvas settings
+        
         this.canvasSize = 640;
         this.squareSize = 80;
         this.lastParentWidth = 0;
         
-        // Colors
+        
         this.lightSquareColor = '#f0d9b5';
         this.darkSquareColor = '#b58863';
         this.highlightColor = 'rgba(255, 255, 0, 0.4)';
@@ -17,7 +17,7 @@ class ChessCanvasVsBot {
         this.captureColor = 'rgba(200, 0, 0, 0.6)';
         this.selectedColor = 'rgba(255, 200, 0, 0.6)';
         
-        // Game state
+        
         this.selectedSquare = null;
         this.legalMoves = [];
         this.isFlipped = false;
@@ -29,22 +29,22 @@ class ChessCanvasVsBot {
         this.botDifficulty = 5;
         this.winner = null;
         
-        // Mouse interaction
+        
         this.isDragging = false;
         this.dragPiece = null;
         this.dragStartSquare = null;
         this.mousePos = { x: 0, y: 0 };
         
-        // Piece images
+        
         this.pieceImages = {};
         this.imagesLoaded = false;
         this.playerColor = 'white'; // 'white' or 'black'
         this.selectedPlayerColor = null; // Chosen color before game starts
         
-        // Promotion UI
+        
         this.promotionUI = null;
         
-        // API Cache
+        
         this.apiCache = new Map();
         this.maxCacheSize = 100;
 
@@ -53,7 +53,7 @@ class ChessCanvasVsBot {
         this.playerBottomInfoEl = null;
         this.chessboardContainerEl = null;
         
-        // Render optimization
+        
         this.needsRender = false;
         this.renderScheduled = false;
         
@@ -62,18 +62,18 @@ class ChessCanvasVsBot {
     }
     
     async init() {
-        console.log('🎯 Initializing Canvas Chess Game...');
+        console.log('Initializing Canvas Chess Game...');
         
         // Check Chess.js
         if (typeof window.Chess !== 'function') {
-            console.error('❌ Chess.js not available');
+            console.error('Chess.js not available');
             return false;
         }
         
         // Initialize canvas
         this.canvas = document.getElementById('chessCanvas');
         if (!this.canvas) {
-            console.error('❌ Canvas element not found');
+            console.error('Canvas element not found');
             return false;
         }
         
@@ -104,12 +104,12 @@ class ChessCanvasVsBot {
         // Initial draw
         this.draw();
         
-        console.log('✅ Canvas Chess Game initialized');
+        console.log('Canvas Chess Game initialized');
         return true;
     }
     
     async loadPieceImages() {
-        console.log('🎨 Loading piece images...');
+        console.log('Loading piece images...');
         const pieces = ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP', 'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'];
         const loadPromises = [];
         
@@ -118,7 +118,7 @@ class ChessCanvasVsBot {
             const promise = new Promise((resolve) => {
                 img.onload = () => resolve();
                 img.onerror = () => {
-                    console.warn(`❌ Failed to load ${piece}.png`);
+                    console.warn(`Failed to load ${piece}.png`);
                     resolve();
                 };
             });
@@ -137,7 +137,7 @@ class ChessCanvasVsBot {
         
         await Promise.all(loadPromises);
         this.imagesLoaded = true;
-        console.log('✅ Piece images loaded');
+        console.log('Piece images loaded');
     }
     
     getWikipediaPath(piece) {
@@ -389,14 +389,14 @@ class ChessCanvasVsBot {
                     });
                     
                     if (move) {
-                        console.log('✅ Player move:', move.san);
+                        console.log('Player move:', move.san);
                         this.selectedSquare = null;
                         this.legalMoves = [];
                         if (this.sound) this.sound.playMove(move, this.game);
                         this.onMove(move);
                     }
                 } catch (error) {
-                    console.log('❌ Invalid promotion move');
+                    console.log('Invalid promotion move');
                 }
             }, this.canvas, this.isFlipped);
             return true;
@@ -410,13 +410,13 @@ class ChessCanvasVsBot {
             });
             
             if (move) {
-                console.log('✅ Player move:', move.san);
+                console.log('Player move:', move.san);
                 if (this.sound) this.sound.playMove(move, this.game);
                 this.onMove(move);
                 return true;
             }
         } catch (error) {
-            console.log('❌ Invalid move:', from, 'to', to);
+            console.log('Invalid move:', from, 'to', to);
         }
         return false;
     }
@@ -617,7 +617,7 @@ class ChessCanvasVsBot {
     async makeBotMove() {
         if (this.gameOver || !this.gameStarted) return;
         
-        console.log('🤖 Bot is thinking...');
+        // Bot thinking status (UI handled elsewhere)
         this.isThinking = true;
         this.updateGameStatus('🤖 Bot is thinking...');
         

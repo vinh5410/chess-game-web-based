@@ -2,7 +2,7 @@
 
 class ChessPuzzleGame {
     constructor() {
-        // --- CẤU HÌNH CANVAS ---
+        
         this.canvas = document.getElementById('puzzleCanvas');
         this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
         this.canvasSize = 440; // Match multiplayer size
@@ -18,7 +18,7 @@ class ChessPuzzleGame {
             selected: 'rgba(255, 200, 0, 0.6)'
         };
 
-        // --- TRẠNG THÁI GAME ---
+        
         this.game = new Chess();
         this.currentPuzzle = null;
         this.moveIndex = 0;
@@ -26,7 +26,7 @@ class ChessPuzzleGame {
         this.isUserTurn = false;
         this.isFlipped = false; // Lật bàn cờ nếu người chơi cầm quân Đen
 
-        // --- TƯƠNG TÁC CHUỘT ---
+        
         this.isDragging = false;
         this.dragPiece = null;
         this.dragStartSquare = null;
@@ -34,14 +34,14 @@ class ChessPuzzleGame {
         this.mousePos = { x: 0, y: 0 };
         this.legalMoves = [];
         this.hintSquares = null;
-        // --- HÌNH ẢNH ---
+        
         this.pieceImages = {};
         this.imagesLoaded = false;
 
-        // --- ÂM THANH ---
+        
         this.sound = window.Sound;
 
-        // --- TIMER ---
+        
         this.timerInterval = null;
         this.startTime = null;
 
@@ -67,9 +67,7 @@ class ChessPuzzleGame {
         await this.loadNewPuzzle();
     }
 
-    // ============================================================
     // 1. PHẦN RENDERING & ASSETS (Dùng lại của play-vs-bot)
-    // ============================================================
     
     async loadPieceImages() {
         const pieces = ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP', 'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'];
@@ -221,9 +219,7 @@ class ChessPuzzleGame {
         }
     }
 
-    // ============================================================
     // 2. LOGIC PUZZLE & API (Phần code cũ được tích hợp lại)
-    // ============================================================
 
 // ... code cũ ...
 
@@ -249,10 +245,9 @@ class ChessPuzzleGame {
                 this.game.load(this.currentPuzzle.fen);
                 this.isSolving = true;
 
-                // --- SỬA LẠI LOGIC NÀY ---
                 // Kiểm tra xem Server có gửi initialMove không
                 if (this.currentPuzzle.initialMove) {
-                    // --- HANDLE INITIAL OPPONENT MOVE: show FEN first, pause, then play opponent ---
+                    
                     this.game.load(this.currentPuzzle.fen);
                     this.isSolving = true;
 
@@ -297,7 +292,7 @@ class ChessPuzzleGame {
                     // Fallback cho dữ liệu cũ
                     this.moveIndex = 0;
                 }
-                // --------------------------
+                
 
                 this.isUserTurn = true;
 
@@ -347,12 +342,12 @@ class ChessPuzzleGame {
         console.log('🔍 getHint called, isSolving:', this.isSolving, 'isUserTurn:', this.isUserTurn, 'puzzle:', this.currentPuzzle?.puzzleId);
         
         if (!this.isSolving || !this.isUserTurn) {
-            console.log('❌ Cannot get hint - isSolving:', this.isSolving, 'isUserTurn:', this.isUserTurn);
+              console.log('Cannot get hint - isSolving:', this.isSolving, 'isUserTurn:', this.isUserTurn);
             return;
         }
         
         if (!this.currentPuzzle || !this.currentPuzzle.puzzleId) {
-            console.log('❌ No puzzle loaded');
+              console.log('No puzzle loaded');
             return;
         }
 
@@ -390,7 +385,7 @@ class ChessPuzzleGame {
         console.log('🔍 showSolution called, puzzle:', this.currentPuzzle?.puzzleId);
 
         if (!this.currentPuzzle || !this.currentPuzzle.puzzleId) {
-            console.log('❌ No puzzle loaded');
+                console.log('No puzzle loaded');
             return;
         }
 
@@ -568,9 +563,7 @@ class ChessPuzzleGame {
         });
     }
 
-    // ============================================================
     // 3. UTILS & EVENT HANDLING (Hỗ trợ Timer, Resize, Click)
-    // ============================================================
 
     startTimer() {
         this.stopTimer();

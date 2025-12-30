@@ -8,7 +8,7 @@ class ChessBoardRenderer {
         this.ctx = this.canvas.getContext('2d');
         this.game = new window.Chess();
         
-        // Canvas settings - RESPONSIVE or FIXED
+        
         if (options.fixedSize) {
             this.canvasSize = options.fixedSize;
             this.squareSize = this.canvasSize / 8;
@@ -18,7 +18,7 @@ class ChessBoardRenderer {
         this.canvas.width = this.canvasSize;
         this.canvas.height = this.canvasSize;
         
-        // Colors - use GameConfig if available, else fallback
+        
         const colors = window.GameConfig?.colors || {};
         this.lightSquareColor = colors.lightSquare || '#f0d9b5';
         this.darkSquareColor = colors.darkSquare || '#b58863';
@@ -27,27 +27,27 @@ class ChessBoardRenderer {
         this.captureColor = colors.capture || 'rgba(200, 0, 0, 0.6)';
         this.selectedColor = colors.selected || 'rgba(255, 200, 0, 0.6)';
         
-        // Game state
+        
         this.selectedSquare = null;
         this.legalMoves = [];
         this.isFlipped = false;
         
-        // Mouse/Touch interaction
+        
         this.isDragging = false;
         this.dragPiece = null;
         this.dragStartSquare = null;
         this.mousePos = { x: 0, y: 0 };
         
-        // Touch support
+        
         this.isTouchDevice = 'ontouchstart' in window;
         this.lastTouchTime = 0;
         
-        // Piece images
+        
         this.pieceImages = {};
         this.imagesLoaded = false;
     }
     
-    // ==================== RESPONSIVE SIZING ====================
+    
     
     calculateResponsiveSize() {
         const parent = this.canvas.parentElement;
@@ -84,10 +84,10 @@ class ChessBoardRenderer {
         }
     }
     
-    // ==================== PIECE LOADING ====================
+    
     
     async loadPieceImages() {
-        console.log('🎨 Loading piece images...');
+        console.log('Loading piece images...');
         const pieces = ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP', 'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'];
         const loadPromises = [];
         
@@ -96,7 +96,7 @@ class ChessBoardRenderer {
             const promise = new Promise((resolve) => {
                 img.onload = () => resolve();
                 img.onerror = () => {
-                    console.warn(`⚠️ Failed to load ${piece}.png, using fallback`);
+                    console.warn(`Failed to load ${piece}.png, using fallback`);
                     const cdnUrl = `https://upload.wikimedia.org/wikipedia/commons/${this.getWikipediaPath(piece)}`;
                     img.src = cdnUrl;
                     img.onload = () => resolve();
@@ -111,7 +111,7 @@ class ChessBoardRenderer {
         
         await Promise.all(loadPromises);
         this.imagesLoaded = true;
-        console.log('✅ Piece images loaded');
+        console.log('Piece images loaded');
     }
     
     getWikipediaPath(piece) {
@@ -126,7 +126,7 @@ class ChessBoardRenderer {
         return paths[piece] || '';
     }
     
-    // ==================== COORDINATE CONVERSION ====================
+    
     
     canvasToSquare(x, y) {
         const file = Math.floor(x / this.squareSize);
@@ -147,7 +147,7 @@ class ChessBoardRenderer {
         return { x, y };
     }
     
-    // ==================== DRAWING METHODS ====================
+    
     
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -289,7 +289,7 @@ class ChessBoardRenderer {
         this.drawPiece(this.dragPiece, x, y);
     }
     
-    // ==================== EVENT LISTENERS ====================
+    
     
     setupEventListeners() {
         // Mouse events (desktop)
@@ -308,10 +308,10 @@ class ChessBoardRenderer {
         // Resize handler
         window.addEventListener('resize', this.handleResize.bind(this));
         
-        console.log('✅ Event listeners setup (Mouse + Touch)');
+        console.log('Event listeners setup (Mouse + Touch)');
     }
     
-    // ==================== TEMPLATE METHOD PATTERN ====================
+    
     
     canInteract() {
         return false;
@@ -325,7 +325,7 @@ class ChessBoardRenderer {
         // Override in subclass
     }
     
-    // ==================== MOUSE HANDLERS ====================
+    
     
     onMouseDown(e) {
         if (!this.canInteract()) return;
@@ -411,7 +411,7 @@ class ChessBoardRenderer {
         }
     }
     
-    // ==================== TOUCH HANDLERS (MOBILE) ====================
+    
     
     onTouchStart(e) {
         e.preventDefault(); // Prevent scrolling
@@ -493,7 +493,7 @@ class ChessBoardRenderer {
         return { x, y, square };
     }
     
-    // ==================== MOVE EXECUTION ====================
+    
     
     clearSelection() {
         this.selectedSquare = null;
@@ -522,7 +522,7 @@ class ChessBoardRenderer {
             const move = moves.find(m => m.to === to);
             
             if (!move) {
-                console.log('❌ Illegal move');
+                console.log('Illegal move');
                 return;
             }
             
@@ -538,12 +538,12 @@ class ChessBoardRenderer {
             });
             
             if (result) {
-                console.log('✅ Move executed:', result.san);
+                console.log('Move executed:', result.san);
                 this.draw();
                 this.afterMove(result);
             }
         } catch (error) {
-            console.error('❌ Move error:', error);
+            console.error('Move error:', error);
         }
     }
     

@@ -1,6 +1,5 @@
-// 📁 Frontend/js/utils.js - Shared utilities for all game modes
 class GameUtils {
-    // ==================== DOM HELPERS ====================
+    
     
     static getElement(id) {
         const el = document.getElementById(id);
@@ -65,7 +64,7 @@ class GameUtils {
         if (el) el.innerHTML = html;
     }
     
-    // ==================== TEXT UTILITIES ====================
+    
     
     static escapeHtml(text) {
         const div = document.createElement('div');
@@ -87,7 +86,7 @@ class GameUtils {
         return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
     }
     
-    // ==================== VALIDATION ====================
+    
     
     static validateUsername(username) {
         if (!username || username.trim().length === 0) {
@@ -122,7 +121,7 @@ class GameUtils {
         return { valid: true };
     }
     
-    // ==================== ALERTS & CONFIRMS ====================
+    
     
     static showAlert(message, type = 'info') {
         // Can be enhanced with custom modal later
@@ -138,7 +137,7 @@ class GameUtils {
         this.showAlert(`Error: ${message}`, 'error');
     }
     
-    // ==================== ARRAY UTILITIES ====================
+    
     
     static shuffleArray(array) {
         const shuffled = [...array];
@@ -153,7 +152,7 @@ class GameUtils {
         return array[Math.floor(Math.random() * array.length)];
     }
     
-    // ==================== ASYNC UTILITIES ====================
+    
     
     static async wait(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -171,7 +170,7 @@ class GameUtils {
         };
     }
     
-    // ==================== LOCAL STORAGE ====================
+    
     
     static saveToStorage(key, value) {
         try {
@@ -203,7 +202,7 @@ class GameUtils {
         }
     }
     
-    // ==================== COPY TO CLIPBOARD ====================
+    
     
     static async copyToClipboard(text) {
         try {
@@ -229,13 +228,8 @@ class GameUtils {
     }
 }
 
-// Make available globally
 window.GameUtils = GameUtils;
-console.log('✅ GameUtils loaded');
-
-// =========================
-// SOUND MANAGER
-// =========================
+console.log('GameUtils loaded');
 class SoundManager {
     constructor() {
         this.enabled = true;
@@ -291,14 +285,14 @@ class SoundManager {
             return;
         }
         const audio = this.audioMap[type];
-        console.log('🔊 Playing sound:', type, 'audio exists:', !!audio);
+        console.log('Playing sound:', type, 'audio exists:', !!audio);
         if (audio) {
             try {
                 // Clone to allow overlapping plays
                 const inst = audio.cloneNode();
                 inst.volume = this.volume;
                 inst.play().then(() => {
-                    console.log('🔊 Sound played successfully:', type);
+                    console.log('Sound played successfully:', type);
                 }).catch((err) => {
                     console.warn('🔇 Sound play failed:', type, err.message);
                     this._beep(type);
@@ -308,7 +302,7 @@ class SoundManager {
                 this._beep(type);
             }
         } else {
-            console.log('🔊 No audio, using beep for:', type);
+            console.log('No audio, using beep for:', type);
             this._beep(type);
         }
     }
@@ -319,35 +313,35 @@ class SoundManager {
         const flags = move.flags || '';
         const captured = move.captured;
         
-        console.log('🔊 playMove:', { san, flags, captured });
+        console.log('playMove:', { san, flags, captured });
         
         // Checkmate has highest priority
         if (san.includes('#')) {
-            console.log('🔊 Playing: checkmate');
+            console.log('Playing: checkmate');
             return this.play('checkmate');
         }
-        // Check
+        
         if (san.includes('+')) {
-            console.log('🔊 Playing: check');
+            console.log('Playing: check');
             return this.play('check');
         }
         // Promotion (flag 'p')
         if (flags.includes('p')) {
-            console.log('🔊 Playing: promote');
+            console.log('Playing: promote');
             return this.play('promote');
         }
         // Capture (captured piece exists, or en passant flag 'e')
         if (captured || flags.includes('e')) {
-            console.log('🔊 Playing: capture');
+            console.log('Playing: capture');
             return this.play('capture');
         }
         // Castling (kingside 'k' or queenside 'q')
         if (flags.includes('k') || flags.includes('q')) {
-            console.log('🔊 Playing: castle');
+            console.log('Playing: castle');
             return this.play('castle');
         }
-        // Normal move
-        console.log('🔊 Playing: move');
+        
+        console.log('Playing: move');
         return this.play('move');
     }
 
@@ -374,6 +368,5 @@ class SoundManager {
     }
 }
 
-// Global instance
 window.Sound = new SoundManager();
-console.log('✅ SoundManager loaded');
+console.log('SoundManager loaded');

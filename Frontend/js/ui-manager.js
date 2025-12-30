@@ -1,4 +1,3 @@
-// 📁 Frontend/js/ui-manager.js - Centralized UI state management
 class UIManager {
     constructor() {
         // Screen IDs for multiplayer
@@ -22,7 +21,7 @@ class UIManager {
         this.elementCache = new Map();
     }
     
-    // ==================== ELEMENT CACHING ====================
+    
     
     getElement(id) {
         if (!this.elementCache.has(id)) {
@@ -38,7 +37,7 @@ class UIManager {
         this.elementCache.clear();
     }
     
-    // ==================== SCREEN MANAGEMENT ====================
+    
     
     hideAllScreens(type = 'multiplayer') {
         const screens = type === 'multiplayer' ? this.multiplayerScreens : this.botScreens;
@@ -56,7 +55,7 @@ class UIManager {
         GameUtils.toggleClass(screenId, 'hidden');
     }
     
-    // ==================== GAME STATUS ====================
+    
     
     updateGameStatus(message) {
         GameUtils.setTextContent('gameStatus', message);
@@ -66,7 +65,7 @@ class UIManager {
         this.updateGameStatus('');
     }
     
-    // ==================== ONLINE USERS ====================
+    
     
     updateOnlineCount(count) {
         GameUtils.setTextContent('onlineUsers', `👥 Online: ${count}`);
@@ -95,7 +94,7 @@ class UIManager {
         });
     }
     
-    // ==================== GAME OVER OVERLAY ====================
+    
     
     showGameOver(message) {
         GameUtils.setTextContent('winnerText', message);
@@ -106,7 +105,7 @@ class UIManager {
         GameUtils.addClass('gameOverOverlay', 'hidden');
     }
     
-    // ==================== LOADING STATES ====================
+    
     
     showLoading(containerId, message = 'Loading...') {
         GameUtils.setHTML(containerId, `
@@ -120,13 +119,13 @@ class UIManager {
         GameUtils.setHTML(containerId, '');
     }
     
-    // ==================== TIMER DISPLAY ====================
+    
     
     updateTimer(elementId, seconds) {
         GameUtils.setTextContent(elementId, GameUtils.formatTime(seconds));
     }
     
-    // ==================== PLAYER INFO ====================
+    
     
     updatePlayerInfo(elementId, name, color) {
         GameUtils.setTextContent(elementId, name);
@@ -134,7 +133,7 @@ class UIManager {
         GameUtils.setTextContent(`${elementId.replace('Name', 'Color')}`, colorIcon);
     }
     
-    // ==================== BOT GAME UI ====================
+    
     
     updateBotLevel(level, emoji) {
         GameUtils.setTextContent('botLevelInfo', `Playing vs Bot Level ${level} ${emoji}`);
@@ -156,7 +155,7 @@ class UIManager {
         GameUtils.addClass('chessboardContainer', 'hidden');
     }
     
-    // ==================== ROOM CODE ====================
+    
     
     showRoomCode(code) {
         GameUtils.setValue('roomCodeDisplay', code);
@@ -185,13 +184,13 @@ class UIManager {
         }
     }
     
-    // ==================== SEARCH STATUS ====================
+    
     
     updateSearchStatus(message) {
         GameUtils.setTextContent('searchStatus', message);
     }
     
-    // ==================== CHAT ====================
+    
     
     addChatMessage(username, message, isSelf = false) {
         const chatMessages = this.getElement('chatMessages');
@@ -215,4 +214,4 @@ class UIManager {
 
 // Create global instance
 window.uiManager = new UIManager();
-console.log('✅ UIManager loaded');
+console.log('UIManager loaded');

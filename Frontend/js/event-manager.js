@@ -1,4 +1,3 @@
-// 📁 Frontend/js/event-manager.js - Manage event listeners to prevent memory leaks
 class EventManager {
     constructor() {
         this.listeners = new Map();
@@ -90,7 +89,7 @@ class EventManager {
             });
         });
         this.listeners.clear();
-        console.log('✅ All event listeners cleaned up');
+        console.log('All event listeners cleaned up');
     }
     
     // Helper: Generate unique key
@@ -109,6 +108,5 @@ class EventManager {
     }
 }
 
-// Create global instance
 window.eventManager = new EventManager();
-console.log('✅ EventManager loaded');
+console.log('EventManager loaded');

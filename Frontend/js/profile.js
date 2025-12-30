@@ -215,7 +215,7 @@ async function openReplayModal(game) {
         try {
             replayRenderer = new ChessBoardRenderer('replay-canvas', { fixedSize: 400 });
             await replayRenderer.loadPieceImages();
-            console.log('✅ Replay renderer initialized');
+            console.log('Replay renderer initialized');
         } catch (error) {
             console.error('Failed to initialize replay renderer:', error);
             return;

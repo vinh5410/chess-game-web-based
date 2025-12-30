@@ -4,7 +4,6 @@ const GameHistory = require('./models/GameHistory');
 const User = require('./models/User');
 const { calculateElo } = require('./services/elo/eloCalculator');
 
-// --- GameRoom with server-side timers ---
 class GameRoom {
     constructor(id, type = 'private', timeControl = null) {
         this.id = id;
@@ -23,10 +22,9 @@ class GameRoom {
         this.chatHistory = [];
         this.timeControl = timeControl; // { initial, increment }
         
-        // Timer related (server-side)
-        // timers: socketId -> secondsLeft
+        
         this.timers = {};
-        // Reconnect tracking: socketId -> { timeoutId, disconnectedAt }
+        
         this.disconnectedPlayers = {}; 
         this.lastUpdate = null; // timestamp ms
         this.timerInterval = null; // Node interval reference
@@ -45,7 +43,6 @@ class GameRoom {
         if (this.players.length >= 2) return false;
         this.players.push({ socketId, userId });
         
-        // Assign colors
         if (this.players.length === 1) {
             this.playerColors[socketId] = Math.random() < 0.5 ? 'white' : 'black';
         } else {
@@ -96,7 +93,6 @@ class GameRoom {
     }
     // Start server tick for this room
     startTimers(io, gameManager) {
-        // guard
         if (this.timerInterval) return;
         this.lastUpdate = Date.now();
         this.timerInterval = setInterval(async () => {
@@ -104,7 +100,6 @@ class GameRoom {
             const elapsedSec = Math.floor((now - this.lastUpdate) / 1000);
             if (elapsedSec <= 0) return;
             this.lastUpdate = now;
-            // determine current player socketId
             const currentPlayer = this.players.find(p => this.playerColors[p.socketId] === this.currentTurn);
             if (!currentPlayer) return;
             const curId = currentPlayer.socketId;
@@ -114,30 +109,24 @@ class GameRoom {
                 timers: { ...this.timers },
                 currentTurnSocketId: curId
             });
-            // handle timeout
             if (this.timers[curId] <= 0) {
-                // stop interval
                 clearInterval(this.timerInterval);
                 this.timerInterval = null;
-                // determine winner socketId
                 const winner = this.getOpponent(curId);
-                // emit game over to room
                 io.to(this.id).emit('game:over', {
                     winner: this.playerColors[winner] || null,
                     reason: 'timeout',
                     fen: this.game.fen()
                 });
-                // mark finished
                 this.status = 'finished';
                 this.finishedAt = Date.now();
                 this.winner = winner;
-                // Ensure GameManager handles end-of-game tasks (ELO, history, DB updates)
                 try {
                     if (gameManager && typeof gameManager.endGame === 'function') {
                         await gameManager.endGame(this.id, winner, 'timeout');
                     }
                 } catch (err) {
-                    console.error('❌ Error ending game after timeout:', err);
+                    console.error('Error ending game after timeout:', err);
                 }
             }
         }, 1000);
@@ -291,9 +280,8 @@ class GameManager {
             });
         }
 
-        console.log(`⏳ Started forfeit countdown for disconnected player: room=${roomId}, socket=${socketId}, waitMs=${waitMs}`);
+        console.log(`Started forfeit countdown for disconnected player: room=${roomId}, socket=${socketId}, waitMs=${waitMs}`);
     }  
-    // Matchmaking
     async addToMatchmaking(socketId, userId, timeControl = 300) {
         // Check if already in queue
         const existingIndex = this.matchmakingQueue.findIndex(entry => 
@@ -301,14 +289,14 @@ class GameManager {
         );
         if (existingIndex !== -1) {
             const oldTime = this.matchmakingQueue[existingIndex].timeControl;
-            console.log(`⚠️ Player ${socketId} already in queue, updating time: ${oldTime}s → ${timeControl}s`);
+            console.log(`Player ${socketId} already in queue, updating time: ${oldTime}s → ${timeControl}s`);
             this.matchmakingQueue.splice(existingIndex, 1);
         }
         
         // Add to queue with timeControl
         this.matchmakingQueue.push({ socketId, timeControl });
         
-        console.log(`🎲 Added to queue: ${socketId} with ${timeControl}s. Queue size: ${this.matchmakingQueue.length}`);
+        console.log(`Added to queue: ${socketId} with ${timeControl}s. Queue size: ${this.matchmakingQueue.length}`);
         
         // Try to find match with SAME timeControl
         for (let i = 0; i < this.matchmakingQueue.length; i++) {
@@ -325,7 +313,7 @@ class GameManager {
                 const player1Id = entry1.socketId;
                 const player2Id = entry2.socketId;
                 
-                console.log(`🎉 Potential match: ${player1Id} vs ${player2Id} with ${timeControl}s`);
+                console.log(`Potential match: ${player1Id} vs ${player2Id} with ${timeControl}s`);
                 
                 // Remove both from queue
                 this.matchmakingQueue = this.matchmakingQueue.filter(e => 
@@ -335,7 +323,7 @@ class GameManager {
                 const player1 = this.userManager.getUser(player1Id);
                 const player2 = this.userManager.getUser(player2Id);
                 if (!player1 || !player2) {
-                    console.log(`❌ One player disconnected: player1=${!!player1}, player2=${!!player2}`);
+                    console.log(`One player disconnected: player1=${!!player1}, player2=${!!player2}`);
                     return { matched: false };
                 }
                 
@@ -353,16 +341,14 @@ class GameManager {
                 
                 this.rooms.set(roomId, room);
                 
-                // Update user status
                 this.userManager.setUserInGame(player1Id, true, roomId);
                 this.userManager.setUserInGame(player2Id, true, roomId);
                 
-                console.log(`✅ Match created! Room: ${roomId}`);
+                console.log(`Match created! Room: ${roomId}`);
                 console.log(`   Player 1: ${player1.username} (${player1Id})`);
                 console.log(`   Player 2: ${player2.username} (${player2Id})`);
                 console.log(`   Time Control: ${timeControl}s`);
                 
-                // Notify both players
                 const player1Socket = this.io.sockets.sockets.get(player1Id);
                 const player2Socket = this.io.sockets.sockets.get(player2Id);
                 
@@ -372,7 +358,7 @@ class GameManager {
                         roomId: roomId,
                         opponent: { id: player2Id, username: player2.username }
                     });
-                    console.log(`   ✉️ Sent match_found to ${player1.username}`);
+                    console.log(`   Sent match_found to ${player1.username}`);
                 }
                 
                 if (player2Socket) {
@@ -381,12 +367,12 @@ class GameManager {
                         roomId: roomId,
                         opponent: { id: player1Id, username: player1.username }
                     });
-                    console.log(`   ✉️ Sent match_found to ${player2.username}`);
+                    console.log(`   Sent match_found to ${player2.username}`);
                 }
                 
                 // Start game after short delay
                 setTimeout(() => {
-                    console.log(`🎮 Starting game in room ${roomId}...`);
+                    console.log(`Starting game in room ${roomId}...`);
                     this.startGame(roomId);
                 }, 200);
                 
@@ -399,7 +385,7 @@ class GameManager {
             }
         }
         
-        console.log(`⏳ No match found yet. Waiting in queue...`);
+        console.log(`No match found yet. Waiting in queue...`);
         return { matched: false };
     }
     
@@ -409,7 +395,7 @@ class GameManager {
         );
         if (index > -1) {
             this.matchmakingQueue.splice(index, 1);
-            console.log(`✅ Removed ${socketId} from matchmaking queue`);
+            console.log(`Removed ${socketId} from matchmaking queue`);
             return true; // RETURN SUCCESS
         }
         return false; // NOT IN QUEUE
@@ -419,7 +405,6 @@ class GameManager {
         return this.matchmakingQueue.length;
     }
     
-    // Private rooms
     createPrivateRoom(socketId, userId, timeControl = 300) { 
         const roomId = uuidv4();
         const room = new GameRoom(roomId, 'private', {  
@@ -455,7 +440,7 @@ class GameManager {
             };
         }
        
-        // ✅ FIX: Kiểm tra xem user đã ở trong room chưa
+        // FIX: Kiểm tra xem user đã ở trong room chưa
         if (room.hasPlayer(socketId)) {
             return {
                 success: false,
@@ -490,7 +475,7 @@ class GameManager {
         const room = this.rooms.get(roomId);
         
         if (!room || !room.isFull()) {
-            console.log(`❌ Cannot start game: room=${!!room}, full=${room?.isFull()}`);
+            console.log(`Cannot start game: room=${!!room}, full=${room?.isFull()}`);
             return false;
         }
         
@@ -507,11 +492,10 @@ class GameManager {
         const elo1 = await this.userManager.getUserRating(p1Obj.socketId);
         const elo2 = await this.userManager.getUserRating(p2Obj.socketId);
 
-        // --- LOG YÊU CẦU: HIỆN ELO LÚC VÀO TRẬN ---
-        console.log('\n⚔️  ================ MATCH START ================');
-        console.log(`⚔️  Room: ${roomId}`);
-        console.log(`⚔️  ${p1 ? p1.username : 'Unknown'} (${elo1})  VS  ${p2 ? p2.username : 'Unknown'} (${elo2})`);
-        console.log('⚔️  =============================================\n');
+        console.log('\n=============== MATCH START ===============');
+        console.log(`Room: ${roomId}`);
+        console.log(`${p1 ? p1.username : 'Unknown'} (${elo1})  VS  ${p2 ? p2.username : 'Unknown'} (${elo2})`);
+        console.log('============================================\n');
 
         // Determine which socketId has the current turn
         const currentPlayerObj = room.players.find(p => room.playerColors[p.socketId] === room.currentTurn);
@@ -534,9 +518,8 @@ class GameManager {
             // If remaining is 0, schedule immediate forfeit (this._handleForfeit will run after 0ms)
             this.scheduleForfeit(roomId, currentTurnSocketId, remaining);
         }           
-        console.log(`🎮 Starting game in room ${roomId} with timeControl:`, room.timeControl);
+        console.log(`Starting game in room ${roomId} with timeControl:`, room.timeControl);
         
-        // Notify both players
         room.players.forEach(playerObj => {
             const playerId = playerObj.socketId;
             const player = this.userManager.getUser(playerId);
@@ -565,7 +548,7 @@ class GameManager {
             }
         });
         
-        console.log(`✅ Game started in room ${roomId}`);
+        console.log(`Game started in room ${roomId}`);
         return true;
     }
     
@@ -597,7 +580,7 @@ class GameManager {
     }
     
     async endGame(roomId, winnerId = null, reason = 'unknown') {
-        console.log(`🏁 END GAME: Room ${roomId}, Winner: ${winnerId}, Reason: ${reason}`);
+        console.log(`END GAME: Room ${roomId}, Winner: ${winnerId}, Reason: ${reason}`);
         
         const room = this.rooms.get(roomId);
 
@@ -684,12 +667,12 @@ class GameManager {
                     const sign1 = diff1 >= 0 ? '+' : '';
                     const sign2 = diff2 >= 0 ? '+' : '';
 
-                    console.log('\n📊 ================ ELO UPDATE ================');
-                    console.log(`👤 ${name1}: ${oldR1} -> ${newR1} (${sign1}${diff1})`);
-                    console.log(`👤 ${name2}: ${oldR2} -> ${newR2} (${sign2}${diff2})`);
-                    console.log('📊 ============================================\n');
+                    console.log('\n=============== ELO UPDATE ================');
+                    console.log(`${name1}: ${oldR1} -> ${newR1} (${sign1}${diff1})`);
+                    console.log(`${name2}: ${oldR2} -> ${newR2} (${sign2}${diff2})`);
+                    console.log('============================================\n');
                 } catch (err) {
-                    console.error('❌ Elo persist/update Error:', err);
+                    console.error('Elo persist/update Error:', err);
                 }
                 }
             }
@@ -794,7 +777,7 @@ class GameManager {
                 });
 
                 await gameHistory.save();
-                console.log('✅ Game history saved:', gameHistory._id);
+                console.log('Game history saved:', gameHistory._id);
 
                 // Cập nhật gameIds, gamesPlayed và thống kê thắng/thua/hòa cho 2 người chơi
                 if (white && white.userId) {
@@ -826,12 +809,11 @@ class GameManager {
                     );
                 }
             } catch (err) {
-                console.error('❌ Failed to save game history or update users:', err);
+                console.error('Failed to save game history or update users:', err);
             }
         }
     }
 
-    // --- CÁC HÀM XỬ LÝ CẦU HÒA MỚI ---
     offerDraw(roomId, socketId) {
         const room = this.rooms.get(roomId);
         if (!room || room.status !== 'playing') return;

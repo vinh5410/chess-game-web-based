@@ -1,9 +1,9 @@
 const User = require('../models/User');
 module.exports = (io, userManager, gameManager) => {
     io.on('connection', (socket) => {
-        console.log(` Client connected: ${socket.id}`);
+        console.log(`Client connected: ${socket.id}`);
 
-        // --- AUTH ---
+        
         socket.on('user:login', async ({ username }) => {
             const existingUser = userManager.getUser(socket.id);
             if (existingUser) return; // Đã login rồi
@@ -55,13 +55,13 @@ module.exports = (io, userManager, gameManager) => {
             }
         });
 
-        // --- MATCHMAKING ---
+        
         socket.on('matchmaking:join', (data) => {  //  NHẬN data
             const user = userManager.getUser(socket.id);
             const userId = user?.userId || user?._id; // hoặc trường phù hợp
             if (!user) return socket.emit('room:error', { message: 'Login first' });
             const timeControl = data?.timeControl || 300;  // LẤY timeControl, default 300
-            const result = gameManager.addToMatchmaking(socket.id, userId, timeControl);  // ✅ TRUYỀN timeControl
+            const result = gameManager.addToMatchmaking(socket.id, userId, timeControl);  // TRUYỀN timeControl
             
             if (!result.matched) {
                 socket.emit('matchmaking:waiting', { 
@@ -74,17 +74,17 @@ module.exports = (io, userManager, gameManager) => {
             const removed = gameManager.removeFromMatchmaking(socket.id);
             if (removed) {
                 socket.emit('matchmaking:left'); // EMIT EVENT VỀ CLIENT
-                console.log(`👋 User left matchmaking: ${socket.id}`);
+                console.log(`User left matchmaking: ${socket.id}`);
             }
         });
 
-        // --- PRIVATE ROOM ---
+        
         socket.on('room:create', (data) => {  //  NHẬN data
             const user = userManager.getUser(socket.id);
             if (!user) return socket.emit('room:error', { message: 'Login first' });
             const userId = user.userId || user._id;
             const timeControl = data?.timeControl || 300;  //  LẤY timeControl
-            const room = gameManager.createPrivateRoom(socket.id, userId, timeControl);  // ✅ TRUYỀN timeControl
+            const room = gameManager.createPrivateRoom(socket.id, userId, timeControl);  // TRUYỀN timeControl
             socket.join(room.id);
             socket.emit('room:created', { roomId: room.id, roomCode: room.code });
         });
@@ -110,7 +110,7 @@ module.exports = (io, userManager, gameManager) => {
             }
         });
 
-        // --- GAMEPLAY ---
+        
         socket.on('game:move', async ({ roomId, move }) => {
             const result = gameManager.makeMove(roomId, socket.id, move);
             
@@ -166,7 +166,7 @@ module.exports = (io, userManager, gameManager) => {
                 });
             }
         });
-        // --- DRAW HANDLERS ---
+        
         socket.on('game:offer_draw', ({ roomId }) => {
             gameManager.offerDraw(roomId, socket.id);
         });
@@ -194,7 +194,7 @@ module.exports = (io, userManager, gameManager) => {
             }
         });
 
-        // --- CHAT ---
+        
         socket.on('chat:message', ({ roomId, message }) => {
             const user = userManager.getUser(socket.id);
             if (user) {
@@ -207,7 +207,7 @@ module.exports = (io, userManager, gameManager) => {
             }
         });
 
-        // --- 5. FRIEND SYSTEM & INVITE ---
+        
 
         // A. Xử lý Kết bạn
         socket.on('friend:request', async ({ toUsername }) => {
@@ -287,11 +287,11 @@ module.exports = (io, userManager, gameManager) => {
             console.log(`User ${socket.id} accepted invite to ${roomId}`);
         });
 
-        // --- DISCONNECT ---
+        
         socket.on('disconnect', () => {
             const user = userManager.getUser(socket.id);
             if (user) {
-                console.log(`❌ Disconnected: ${user.username}`);
+                console.log(`Disconnected: ${user.username}`);
                 
                 // Handle disconnect: schedule forfeit if in a playing game
                 // Handle disconnect: schedule forfeit if in a playing game
@@ -317,7 +317,7 @@ module.exports = (io, userManager, gameManager) => {
                     socket.to(roomId).emit('room:opponent_left', { reason: 'left' });
                     socket.leave(roomId);
                     gameManager.removeRoom(roomId);
-                    console.log(`🚪 User ${socket.id} left room ${roomId}`);
+                    console.log(`User ${socket.id} left room ${roomId}`);
                 }
             } catch (e) {
                 console.error('Error handling room:leave', e);

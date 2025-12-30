@@ -11,9 +11,9 @@ const getLeaderboard = async (req, res) => {
             .limit(50)
             .select('username rating avatar gamesPlayed gamesWon gamesLost gamesDraw'); // Chỉ lấy các trường cần thiết
 
-        // --- ĐOẠN NÀY ĐỂ LOG RA TERMINAL CHO BẠN XEM ---
+        
         console.log('\n╔════════════════════════════════════╗');
-        console.log('║       🏆 TOP 5 LEADERBOARD 🏆      ║');
+        console.log('║       TOP 5 LEADERBOARD           ║');
         console.log('╠════════════════════════════════════╣');
         
         if (users.length === 0) {
@@ -27,7 +27,7 @@ const getLeaderboard = async (req, res) => {
             });
         }
         console.log('╚════════════════════════════════════╝\n');
-        // -----------------------------------------------
+        
 
         res.status(200).json({
             success: true,
@@ -35,7 +35,7 @@ const getLeaderboard = async (req, res) => {
             leaderboard: users
         });
     } catch (error) {
-        console.error('❌ Get leaderboard error:', error);
+        console.error('Get leaderboard error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'

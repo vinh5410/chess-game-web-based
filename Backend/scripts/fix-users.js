@@ -5,11 +5,11 @@ const User = require('../models/User');
 
 const fixOldUsers = async () => {
     try {
-        console.log('⏳ Connecting to MongoDB...');
+        console.log('Connecting to MongoDB...');
         await mongoose.connect(process.env.MONGODB_URI);
-        console.log('✅ MongoDB Connected');
+        console.log('MongoDB Connected');
 
-        console.log('⏳ Updating old users...');
+        console.log('Updating old users...');
 
         // Tìm tất cả user mà isVerified là false HOẶC không có trường isVerified
         const result = await User.updateMany(
@@ -27,11 +27,11 @@ const fixOldUsers = async () => {
             }
         );
 
-        console.log(`✅ Success! Updated ${result.modifiedCount} users.`);
-        console.log('🎉 All old accounts can now login.');
+        console.log(`Success! Updated ${result.modifiedCount} users.`);
+        console.log('All old accounts can now login.');
 
     } catch (error) {
-        console.error('❌ Error:', error);
+        console.error('Error:', error);
     } finally {
         mongoose.connection.close();
         process.exit();

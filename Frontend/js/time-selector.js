@@ -6,7 +6,7 @@ let currentContainerId = null;
 function renderTimeSelector(containerId = 'timeOptionsContainer') {
     const container = document.getElementById(containerId);
     if (!container) {
-        console.error('❌ Container not found:', containerId);
+        console.error('Container not found:', containerId);
         return;
     }
     
@@ -36,7 +36,7 @@ function renderTimeSelector(containerId = 'timeOptionsContainer') {
         </div>
     `;
     
-    console.log('✅ Time selector rendered in:', containerId);
+    console.log('Time selector rendered in:', containerId);
 }
 
 function selectTimeControl(seconds) {
