@@ -1,3 +1,5 @@
+let isReady = false;
+
 class MultiplayerChess {
     constructor() {
         this.canvas = null;
@@ -257,6 +259,24 @@ class MultiplayerChess {
         
         // Clear any existing listeners first
         io.removeAllListeners();
+
+        io.on('game:ready_success', () => {
+        // UI cập nhật: Mình đã ready
+        document.getElementById('myReadyStatus').textContent = "READY!";
+        document.getElementById('myReadyStatus').className = "ready-status success";
+        document.getElementById('readyPlayerMe').classList.add('ready');
+        });
+
+        io.on('game:opponent_ready', () => {
+        // UI cập nhật: Đối thủ đã ready
+        document.getElementById('oppReadyStatus').textContent = "READY!";
+        document.getElementById('oppReadyStatus').className = "ready-status success";
+        document.getElementById('readyPlayerOpponent').classList.add('ready');
+        
+        // Nếu mình chưa ready, nhắc nhở
+        const statusText = document.getElementById('readyCountdown');
+        if (statusText) statusText.textContent = "Opponent is waiting for you!";
+        });
         
         io.on('user:login_success', (data) => {
             console.log('Login success:', data);
@@ -614,20 +634,31 @@ class MultiplayerChess {
         console.log('Match found with:', data.opponent);
         this.socket.setCurrentRoom(data.roomId);
         
-        // Capture ELO if provided
-        if (data.opponent && data.opponent.elo) {
-            this.opponentElo = data.opponent.elo;
+        // 1. Cập nhật đầy đủ thông tin đối thủ (Tên, Elo, Avatar)
+        // Để hiển thị lên màn hình Ready
+        if (data.opponent) {
+            this.opponentName = data.opponent.username;
+            this.opponentElo = data.opponent.elo || 1200;
+            
+            // Nếu server gửi avatar thì dùng, không thì tạo avatar mặc định theo tên
+            this.opponentAvatar = data.opponent.avatar || `https://ui-avatars.com/api/?name=${this.opponentName}&background=d4af37&color=0f172a`;
         }
         
-        // Hide game over overlay nếu còn
-        const gameOverOverlay = document.getElementById('gameOverOverlay');
-        if (gameOverOverlay) {
-            gameOverOverlay.classList.add('hidden');
-        }
+        // 2. Ẩn Game Over overlay nếu nó đang hiện từ ván trước
+        // const gameOverOverlay = document.getElementById('gameOverOverlay');
+        // if (gameOverOverlay) {
+        //     gameOverOverlay.classList.add('hidden');
+        // }
         
-        showGameScreen();
-        updateGameStatus('Match found! Starting game...');
+        // 3. THAY ĐỔI QUAN TRỌNG:
+        // Thay vì gọi showGameScreen() (vào thẳng bàn cờ)
+        // Ta gọi hàm hiển thị màn hình Chờ Sẵn Sàng
+        this.showReadyScreenUI();
+        
+        // (Optional) Update status text nếu cần
+        // updateGameStatus('Match found! Please confirm ready.');
     }
+    
     onRoomCreated(data) {
         console.log('Room created:', data);
         this.socket.setCurrentRoom(data.roomId);
@@ -658,24 +689,16 @@ class MultiplayerChess {
     }
     
     onOpponentJoined(data) {
-        console.log('Opponent joined:', data.opponent);
+    console.log('👥 Opponent joined:', data);
+    
+    if (data.opponent) {
         this.opponentName = data.opponent.username;
-        
-        // Capture ELO if provided
-        if (data.opponent && data.opponent.elo) {
-            this.opponentElo = data.opponent.elo;
-        }
-        
-        // Chuyển người tạo room sang game screen
-        showGameScreen();
-        
-        // Hide game over overlay nếu còn
-        const gameOverOverlay = document.getElementById('gameOverOverlay');
-        if (gameOverOverlay) {
-            gameOverOverlay.classList.add('hidden');
-        }
-        
-        updateGameStatus('Opponent joined! Game starting...');
+        this.opponentElo = data.opponent.elo || 1200;
+        this.opponentAvatar = data.opponent.avatar || `https://ui-avatars.com/api/?name=${this.opponentName}&background=d4af37&color=0f172a`;
+    }
+
+    // --- THAY ĐỔI Ở ĐÂY: Gọi Ready Screen ---
+    this.showReadyScreenUI();
     }
     
     onOpponentLeft(data) {
@@ -694,9 +717,41 @@ class MultiplayerChess {
         // If game already over normally, just log it silently
         updateGameStatus('Opponent left the game');
     }
+
+    showReadyScreenUI() {
+    hideAllScreens();
+    document.getElementById('readyScreen').classList.remove('hidden');
+    
+    // Reset UI states
+    const btn = document.getElementById('btnReady');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> I AM READY';
+    }
+    
+    document.getElementById('myReadyStatus').textContent = "Not Ready";
+    document.getElementById('myReadyStatus').className = "ready-status pending";
+    document.getElementById('readyPlayerMe').classList.remove('ready');
+    
+    document.getElementById('oppReadyStatus').textContent = "Waiting...";
+    document.getElementById('oppReadyStatus').className = "ready-status pending";
+    document.getElementById('readyPlayerOpponent').classList.remove('ready');
+    
+    document.getElementById('readyCountdown').textContent = "Waiting for players...";
+
+    // Update Names/Avatars
+    const myName = this.socket.getUsername() || 'You';
+    document.getElementById('myReadyName').textContent = myName;
+    document.getElementById('myReadyAvatar').src = this.playerAvatar;
+    
+    document.getElementById('oppReadyName').textContent = this.opponentName || 'Opponent';
+    document.getElementById('oppReadyAvatar').src = this.opponentAvatar;
+    }
     
     onGameStart(data) {
         console.log('Game started!', data);
+
+        showGameScreen();
 
         this.playerColor = data.color;
         this.opponentName = data.opponent.username;
@@ -1800,6 +1855,7 @@ function hideAllScreens() {
     document.getElementById('inviteFriendScreen').classList.add('hidden');
     document.getElementById('joinRoomScreen').classList.add('hidden');
     document.getElementById('gameScreen').classList.add('hidden');
+    document.getElementById('readyScreen').classList.add('hidden');
     
     // Show main header when not in game
     const mainHeader = document.getElementById('mainHeader');
@@ -2150,5 +2206,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    console.log('Client ready!');
+    console.log('✅ Client ready!');
 });
+
+function sendReadySignal() {
+    const btn = document.getElementById('btnReady');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Waiting...';
+    }
+    
+    // Emit event lên server
+    window.socketClient.socket.emit('game:declare_ready', { 
+        roomId: window.socketClient.getCurrentRoom() 
+    });
+}

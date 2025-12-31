@@ -102,15 +102,18 @@ module.exports = (io, userManager, gameManager) => {
                 const creatorId = result.room.players[0]?.socketId;
                 io.to(creatorId).emit('room:opponent_joined', { 
                     opponent: { id: user.id, username: user.username } 
-                });
-                
-                gameManager.startGame(result.room.id);
+                });               
             } else {
                 socket.emit('room:error', { message: result.message });
             }
         });
 
-        
+        socket.on('game:declare_ready', ({ roomId }) => {
+            console.log(`📩 Received ready from ${socket.id} for room ${roomId}`);
+            gameManager.handlePlayerReady(roomId, socket.id);
+        });
+
+        // --- GAMEPLAY ---
         socket.on('game:move', async ({ roomId, move }) => {
             const result = gameManager.makeMove(roomId, socket.id, move);
             
@@ -177,7 +180,9 @@ module.exports = (io, userManager, gameManager) => {
 
         socket.on('game:decline_draw', ({ roomId }) => {
             gameManager.declineDraw(roomId, socket.id);
-        });        socket.on('game:resign', async ({ roomId }) => {
+        });        
+        
+        socket.on('game:resign', async ({ roomId }) => {
             const room = gameManager.getRoom(roomId);
             if (room) {
                 // Logic: Tìm người còn lại là người thắng
