@@ -52,7 +52,6 @@ const userPuzzleSchema = new mongoose.Schema({
     }
 });
 
-userPuzzleSchema.index({ userId: 1 });
 userPuzzleSchema.index({ puzzleRating: -1 });
 
 module.exports = mongoose.model('UserPuzzle', userPuzzleSchema);
