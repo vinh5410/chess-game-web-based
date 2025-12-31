@@ -32,7 +32,6 @@ function getAuthToken() {
 }
 
 function logout() {
-function logout() {
     fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
@@ -42,7 +41,6 @@ function logout() {
     
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    
     
     window.location.href = '/login.html';
 }
@@ -73,23 +71,15 @@ function updateNavbar() {
     const userAvatar = document.getElementById('user-avatar');
     
     if (isLoggedIn && user) {
-        // Hide login/register buttons
         if (authButtons) authButtons.style.display = 'none';
-        
-        // Show user menu
         if (userMenu) userMenu.style.display = 'flex';
         if (usernameDisplay) usernameDisplay.textContent = user.username;
-        
-        // Set avatar with fallback to default
         if (userAvatar) {
             const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=d4af37&color=0f172a`;
             userAvatar.src = user.avatar || defaultAvatar;
         }
     } else {
-        // Show login/register buttons
         if (authButtons) authButtons.style.display = 'flex';
-        
-        // Hide user menu
         if (userMenu) userMenu.style.display = 'none';
     }
 }
@@ -98,7 +88,6 @@ function updateNavbar() {
 document.addEventListener('DOMContentLoaded', () => {
     updateNavbar();
     
-    // Logout button handler
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
@@ -107,35 +96,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Dropdown toggle for mobile/desktop
     const userInfo = document.querySelector('.user-info');
     const dropdown = document.querySelector('.dropdown');
     const dropdownMenu = document.querySelector('.dropdown-menu');
     
     if (userInfo && dropdownMenu) {
-        // Click handler for mobile
         userInfo.addEventListener('click', (e) => {
             e.stopPropagation();
-            
-            // On mobile (width <= 768px), toggle show class
             if (window.innerWidth <= 768) {
                 dropdownMenu.classList.toggle('show');
             }
         });
         
-        // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.dropdown')) {
                 dropdownMenu.classList.remove('show');
             }
         });
         
-        // Prevent dropdown from closing when clicking inside menu
         dropdownMenu.addEventListener('click', (e) => {
             e.stopPropagation();
         });
         
-        // Desktop: Keep dropdown open when hovering
         if (dropdown) {
             let hoverTimeout;
             
@@ -160,11 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         setTimeout(() => {
                             dropdownMenu.style.display = 'none';
                         }, 200);
-                    }, 100); // 100ms delay before closing
+                    }, 100);
                 }
             });
             
-            // Keep menu open when hovering over it
             dropdownMenu.addEventListener('mouseenter', () => {
                 clearTimeout(hoverTimeout);
             });
@@ -182,30 +163,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+    } else {
+        console.log('Auth elements not found:', { authIconTrigger: userInfo, dropdownMenu });
     }
-    
-    // Auth icon trigger for mobile (when not logged in)
+
     const authIconTrigger = document.querySelector('.auth-icon-trigger');
     const authDropdown = document.querySelector('.auth-dropdown');
     
     if (authIconTrigger && authDropdown) {
-        console.log('Auth icon trigger found, setting up click handler');
         authIconTrigger.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             if (window.innerWidth <= 768) {
-                console.log('Auth icon clicked, toggling dropdown');
                 authDropdown.classList.toggle('show');
             }
         });
         
-        // Close auth dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#auth-buttons')) {
                 authDropdown.classList.remove('show');
             }
         });
-        // Hide dropdown if resizing to desktop
         const syncAuthDropdown = () => {
             if (window.innerWidth > 768) {
                 authDropdown.classList.remove('show');
@@ -213,10 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         syncAuthDropdown();
         window.addEventListener('resize', () => {
-            // lightweight debounce via requestAnimationFrame
             window.requestAnimationFrame(syncAuthDropdown);
         });
-
     } else {
         console.log('Auth elements not found:', { authIconTrigger, authDropdown });
     }
