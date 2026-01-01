@@ -1,5 +1,6 @@
 async function fetchUserHistory(userId) {
-    const res = await fetch(`/api/history/user/${userId}`);
+    // using absolute API URL
+    const res = await fetch(`https://chess-game-web-based.onrender.com/api/history/user/${userId}`);
     const data = await res.json();
     if (data.success) {
         renderHistoryList(data.games);
@@ -39,7 +40,8 @@ function renderHistoryList(games) {
 }
 
 async function viewGameDetail(gameId) {
-    const res = await fetch(`/api/history/game/${gameId}`);
+    // using absolute API URL
+    const res = await fetch(`https://chess-game-web-based.onrender.com/api/history/game/${gameId}`);
     const data = await res.json();
     if (data.success) {
         document.getElementById('replayArea').style.display = '';
@@ -51,7 +53,7 @@ let chessBoardRenderer = null;
 
 function replayGame(game) {
     if (!chessBoardRenderer) {
-        chessBoardRenderer = new ChessBoardRenderer('chessCanvas');
+        chessBoardRenderer = new ChessBoardRenderer('chessCanvas', {isFlipped: false });
         chessBoardRenderer.loadPieceImages().then(() => {
             replayGame(game);
         });

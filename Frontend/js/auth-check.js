@@ -32,7 +32,8 @@ function getAuthToken() {
 }
 
 function logout() {
-    fetch('/api/auth/logout', {
+    // using absolute API URL
+    fetch(`https://chess-game-web-based.onrender.com/api/auth/logout`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${getAuthToken()}`

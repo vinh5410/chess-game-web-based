@@ -1,3 +1,5 @@
+console.log('🔍 window.APP_CONFIG:', window.APP_CONFIG);
+console.log('🔍 API_BASE:', window.APP_CONFIG?.API_BASE);
 document.addEventListener('DOMContentLoaded', () => {
     // Redirect if already logged in
     redirectIfLoggedIn();
@@ -15,7 +17,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     showMessage('Logging in...', 'success');
     
     try {
-        const response = await fetch('/api/auth/login', {
+        // using absolute API URL
+        const response = await fetch(`https://chess-game-web-based.onrender.com/api/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

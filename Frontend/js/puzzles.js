@@ -183,24 +183,19 @@ class ChessPuzzleGame {
 
     drawPieces() {
         const board = this.game.board();
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                // Logic vẽ đảo ngược nếu bàn cờ bị lật (isFlipped)
-                const rankIdx = this.isFlipped ? (7 - r) : r;
-                const fileIdx = this.isFlipped ? (7 - c) : c;
-                
-                const piece = board[rankIdx][fileIdx]; // Lấy quân cờ từ dữ liệu
+        
+        for (let rank = 0; rank < 8; rank++) {
+            for (let file = 0; file < 8; file++) {
+                const piece = board[rank][file];
                 if (!piece) continue;
-
-                // Tính toán tọa độ vẽ
-                // Lưu ý: Canvas vẽ từ trên xuống (rank 0 visual là rank 8 chess nếu không flip)
-                // Ta vẽ theo grid r, c của vòng lặp
-                const squareStr = this.canvasToSquare(c * this.squareSize, r * this.squareSize);
-
-                // Không vẽ quân đang bị kéo (để vẽ nó ở vị trí chuột)
-                if (this.isDragging && this.dragStartSquare === squareStr) continue;
-
-                this.drawSinglePiece(piece, c * this.squareSize, r * this.squareSize);
+                
+                const actualRank = 7 - rank;
+                const square = String.fromCharCode(97 + file) + (actualRank + 1);
+                
+                if (this.isDragging && this.dragStartSquare === square) continue;
+                
+                const pos = this.squareToCanvas(square);
+                this.drawSinglePiece(piece, pos.x, pos.y);
             }
         }
     }
@@ -233,7 +228,8 @@ class ChessPuzzleGame {
             const rating = document.getElementById('puzzle-rating').innerText || 1200;
             const token = localStorage.getItem('token');
             
-            const res = await fetch(`/api/puzzles/random?userRating=${rating}`, {
+            // using absolute API URL
+            const res = await fetch(`https://chess-game-web-based.onrender.com/api/puzzles/random?userRating=${rating}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -354,8 +350,9 @@ class ChessPuzzleGame {
         const token = localStorage.getItem('token');
         try {
             // Gọi API lấy gợi ý (Backend đã có route này)
-            const url = `/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`;
-            console.log('📡 Fetching hint:', url);
+            // using absolute API URL
+            const url = `https://chess-game-web-based.onrender.com/api/puzzles/${this.currentPuzzle.puzzleId}/hint?moveIndex=${this.moveIndex}`;
+            console.log('Fetching hint:', url);
             
             const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -382,7 +379,7 @@ class ChessPuzzleGame {
     }
 
     async showSolution() {
-        console.log('🔍 showSolution called, puzzle:', this.currentPuzzle?.puzzleId);
+        console.log('showSolution called, puzzle:', this.currentPuzzle?.puzzleId);
 
         if (!this.currentPuzzle || !this.currentPuzzle.puzzleId) {
                 console.log('No puzzle loaded');
@@ -397,7 +394,8 @@ class ChessPuzzleGame {
 
         const token = localStorage.getItem('token');
         const fromIndex = Math.max(0, this.moveIndex || 0);
-        const solutionUrl = `/api/puzzles/${this.currentPuzzle.puzzleId}/solution?fromIndex=${fromIndex}`;
+        // using absolute API URL
+        const solutionUrl = `https://chess-game-web-based.onrender.com/api/puzzles/${this.currentPuzzle.puzzleId}/solution?fromIndex=${fromIndex}`;
 
         // Disable buttons while replaying
         const solutionBtn = document.getElementById('solution-btn');
@@ -475,7 +473,8 @@ class ChessPuzzleGame {
         
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/puzzles/verify', {
+            // using absolute API URL
+            const res = await fetch(`https://chess-game-web-based.onrender.com/api/puzzles/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
@@ -545,7 +544,8 @@ class ChessPuzzleGame {
         const timeTaken = Math.floor((Date.now() - this.startTime) / 1000);
         const token = localStorage.getItem('token');
 
-        await fetch('/api/puzzles/submit', {
+        // using absolute API URL
+        await fetch(`https://chess-game-web-based.onrender.com/api/puzzles/submit`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
@@ -861,7 +861,8 @@ class ChessPuzzleGame {
         // Code cũ để lấy stats
         const token = localStorage.getItem('token');
         if(!token) return;
-        const res = await fetch('/api/puzzles/stats', { headers: { 'Authorization': `Bearer ${token}` }});
+        // using absolute API URL
+        const res = await fetch(`https://chess-game-web-based.onrender.com/api/puzzles/stats`, { headers: { 'Authorization': `Bearer ${token}` }});
         const data = await res.json();
         if(data.success) {
             document.getElementById('puzzles-solved').innerText = data.stats.puzzlesSolved;

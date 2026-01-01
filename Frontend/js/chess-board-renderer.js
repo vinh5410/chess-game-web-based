@@ -30,7 +30,7 @@ class ChessBoardRenderer {
         
         this.selectedSquare = null;
         this.legalMoves = [];
-        this.isFlipped = false;
+        this.isFlipped = !!options.isFlipped;
         
         
         this.isDragging = false;
@@ -129,27 +129,32 @@ class ChessBoardRenderer {
     
     
     canvasToSquare(x, y) {
-        const file = Math.floor(x / this.squareSize);
-        const rank = this.isFlipped ? Math.floor(y / this.squareSize) : 7 - Math.floor(y / this.squareSize);
-        
-        if (file < 0 || file > 7 || rank < 0 || rank > 7) return null;
-        
-        return String.fromCharCode(97 + file) + (rank + 1);
+        // file index (0..7) — flip horizontally when board is flipped
+        let fileIdx = Math.floor(x / this.squareSize);
+        if (this.isFlipped) fileIdx = 7 - fileIdx;
+
+        // rank index (0..7) — when not flipped top y is rank 8, when flipped top y is rank 1
+        const yIdx = Math.floor(y / this.squareSize);
+        const rankIdx = this.isFlipped ? yIdx : 7 - yIdx;
+
+        if (fileIdx < 0 || fileIdx > 7 || rankIdx < 0 || rankIdx > 7) return null;
+        return String.fromCharCode(97 + fileIdx) + (rankIdx + 1);
     }
-    
     squareToCanvas(square) {
-        const file = square.charCodeAt(0) - 97;
-        const rank = parseInt(square[1]) - 1;
-        
-        const x = file * this.squareSize;
+        const file = square.charCodeAt(0) - 97; // 0..7
+        const rank = parseInt(square[1], 10) - 1; // 0..7
+
+        // x: flip horizontally if board flipped
+        const x = this.isFlipped ? (7 - file) * this.squareSize : file * this.squareSize;
+        // y: flip vertically if not flipped
         const y = this.isFlipped ? rank * this.squareSize : (7 - rank) * this.squareSize;
-        
+
         return { x, y };
     }
-    
-    
+        
     
     draw() {
+        console.log('Renderer:', this.canvas.id, 'FEN=', this.game.fen(), 'isFlipped=', this.isFlipped);
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
         this.drawBoard();
@@ -160,14 +165,26 @@ class ChessBoardRenderer {
     }
     
     drawBoard() {
-        for (let rank = 0; rank < 8; rank++) {
-            for (let file = 0; file < 8; file++) {
-                const isLight = (rank + file) % 2 === 0;
+        // Draw squares in visual order (left→right, top→bottom)
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                // get a sample point inside this visual square and map to logical square
+                const sampleX = c * this.squareSize + this.squareSize * 0.5;
+                const sampleY = r * this.squareSize + this.squareSize * 0.5;
+                const sq = this.canvasToSquare(sampleX, sampleY);
+                // If mapping failed, fall back to checkerboard pattern
+                let isLight;
+                if (sq) {
+                    const file = sq.charCodeAt(0) - 97;
+                    const rank = parseInt(sq[1], 10) - 1;
+                    isLight = ((file + rank) % 2 === 0);
+                } else {
+                    isLight = ((r + c) % 2 === 0);
+                }
+
                 this.ctx.fillStyle = isLight ? this.lightSquareColor : this.darkSquareColor;
-                
-                const x = file * this.squareSize;
-                const y = rank * this.squareSize;
-                
+                const x = c * this.squareSize;
+                const y = r * this.squareSize;
                 this.ctx.fillRect(x, y, this.squareSize, this.squareSize);
             }
         }

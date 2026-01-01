@@ -305,7 +305,8 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
             
             try {
-                const response = await fetch('/api/auth/resend-verification', {
+                // using absolute API URL
+                const response = await fetch(`https://chess-game-web-based.onrender.com/api/auth/resend-verification`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -336,5 +337,6 @@
             }
         });
     </script>
+    <script src="/js/app-config.js"></script>
 </body>
 </html>

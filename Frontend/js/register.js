@@ -45,7 +45,8 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     messageEl.className = 'message success';
     
     try {
-        const response = await fetch('/api/auth/register', {
+        // using absolute API URL
+        const response = await fetch(`https://chess-game-web-based.onrender.com/api/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

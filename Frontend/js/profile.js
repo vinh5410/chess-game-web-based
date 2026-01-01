@@ -24,7 +24,8 @@ let currentMoveIndex = 0;
 
 async function loadProfile(userId) {
     try {
-        const response = await fetch(`/api/users/profile/${userId}`, {
+        // using absolute API URL
+        const response = await fetch(`https://chess-game-web-based.onrender.com/api/users/profile/${userId}`, {
             headers: {
                 'Authorization': `Bearer ${getAuthToken()}`
             }
@@ -94,7 +95,8 @@ async function loadHistory(userId, username) {
     const body = document.getElementById('history-body');
     
     try {
-        const response = await fetch(`/api/history/user/${userId}`);
+        // using absolute API URL
+        const response = await fetch(`https://chess-game-web-based.onrender.com/api/history/user/${userId}`);
         const data = await response.json();
         
         if (data.success && data.games && data.games.length > 0) {
@@ -189,7 +191,8 @@ function renderHistory(games, currentUsername) {
 // Game Replay Functions
 async function viewGameReplay(gameId) {
     try {
-        const response = await fetch(`/api/history/game/${gameId}`);
+        // using absolute API URL
+        const response = await fetch(`https://chess-game-web-based.onrender.com/api/history/game/${gameId}`);
         const data = await response.json();
         
         if (data.success && data.game) {

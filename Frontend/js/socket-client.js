@@ -7,9 +7,7 @@ class SocketClient {
         this.currentRoom = null;
         this.isLoggedIn = false;
         this.eventHandlers = new Map();
-        
-        // Server URL - Change this to your server address
-        this.serverUrl = window.location.origin;
+        this.serverUrl = (window.APP_CONFIG && window.APP_CONFIG.SOCKET_SERVER) ? window.APP_CONFIG.SOCKET_SERVER : 'https://chess-game-web-based.onrender.com';
     }
     
     connect() {

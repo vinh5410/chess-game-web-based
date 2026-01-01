@@ -1320,21 +1320,39 @@ class MultiplayerChess {
     }
     
     canvasToSquare(x, y) {
-        const file = Math.floor(x / this.squareSize);
-        const rank = this.isFlipped ? Math.floor(y / this.squareSize) : 7 - Math.floor(y / this.squareSize);
-        
-        if (file < 0 || file > 7 || rank < 0 || rank > 7) return null;
-        
-        return String.fromCharCode(97 + file) + (rank + 1);
+        // Normalize coordinates: callers sometimes pass backing pixels (canvas.width),
+        // sometimes CSS pixels (clientX - rect.left). Convert to CSS pixels.
+        const cssSize = this.canvasSize || Math.min(this.canvas.clientWidth, this.canvas.clientHeight);
+        const backingW = this.canvas.width || (cssSize);
+        const scale = backingW / (cssSize || 1);
+
+        // If x/y are in backing pixels (scale > 1), convert them back to CSS pixels.
+        if (scale && Math.abs(scale - 1) > 0.01) {
+            // Heuristic: if coordinate larger than cssSize, assume backing pixels
+            if (x > cssSize * 1.5) x = x / scale;
+            if (y > cssSize * 1.5) y = y / scale;
+        }
+
+        // file index (0..7) — flip horizontally when board is flipped
+        let fileIdx = Math.floor(x / this.squareSize);
+        if (this.isFlipped) fileIdx = 7 - fileIdx;
+
+        // rank index (0..7)
+        const yIdx = Math.floor(y / this.squareSize);
+        const rankIdx = this.isFlipped ? yIdx : 7 - yIdx;
+
+        if (fileIdx < 0 || fileIdx > 7 || rankIdx < 0 || rankIdx > 7) return null;
+        return String.fromCharCode(97 + fileIdx) + (rankIdx + 1);
     }
-    
+
     squareToCanvas(square) {
         const file = square.charCodeAt(0) - 97;
-        const rank = parseInt(square[1]) - 1;
-        
-        const x = file * this.squareSize;
+        const rank = parseInt(square[1], 10) - 1;
+
+        // Return CSS-pixel coords (consistent with drawing/scaling)
+        const x = this.isFlipped ? (7 - file) * this.squareSize : file * this.squareSize;
         const y = this.isFlipped ? rank * this.squareSize : (7 - rank) * this.squareSize;
-        
+
         return { x, y };
     }
     
@@ -1487,16 +1505,19 @@ class MultiplayerChess {
         
         for (let rank = 0; rank < 8; rank++) {
             for (let file = 0; file < 8; file++) {
-                const boardRank = this.isFlipped ? 7 - rank : rank;
-                const piece = board[boardRank][file];
+                const piece = board[rank][file];
                 if (!piece) continue;
                 
-                const squareRank = this.isFlipped ? rank + 1 : 8 - rank;
-                const square = String.fromCharCode(97 + file) + squareRank;
+                // board[0] = rank 8, board[7] = rank 1 in Chess.js
+                const actualRank = 7 - rank;
+                const square = String.fromCharCode(97 + file) + (actualRank + 1);
                 
+                // Skip dragged piece
                 if (this.isDragging && this.dragStartSquare === square) continue;
                 
-                this.drawPiece(piece, file * this.squareSize, rank * this.squareSize);
+                // Use squareToCanvas to get correct visual position (handles isFlipped)
+                const pos = this.squareToCanvas(square);
+                this.drawPiece(piece, pos.x, pos.y);
             }
         }
     }
