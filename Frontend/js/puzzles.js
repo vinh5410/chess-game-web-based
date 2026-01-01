@@ -371,7 +371,7 @@ class ChessPuzzleGame {
                 this.draw();
                 
                 // Trừ điểm hoặc ghi nhận đã dùng hint (tuỳ logic game của bạn)
-                this.showFeedback('incorrect', 'Hint revealed! Try to move.'); // Dùng style incorrect để cảnh báo
+                this.showFeedback('incorrect', '💡 Hint revealed! Try to move.'); // Dùng style incorrect để cảnh báo
             }
         } catch (error) {
             console.error('Hint error:', error);
@@ -407,7 +407,7 @@ class ChessPuzzleGame {
             const res = await fetch(solutionUrl, { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (!data.success || !Array.isArray(data.moves) || data.moves.length === 0) {
-                this.showFeedback('incorrect', 'Solution not available.');
+                this.showFeedback('incorrect', '❌ Solution not available.');
                 return;
             }
 
@@ -438,10 +438,10 @@ class ChessPuzzleGame {
             // advance local moveIndex to end-of-solution
             this.moveIndex = fromIndex + data.moves.length;
 
-            this.showFeedback('incorrect', 'Solution shown. You failed this puzzle.');
+            this.showFeedback('incorrect', '❌ Solution shown. You failed this puzzle.');
         } catch (err) {
             console.error('Show solution error:', err);
-            this.showFeedback('incorrect', 'Error showing solution.');
+            this.showFeedback('incorrect', '❌ Error showing solution.');
         } finally {
             if (solutionBtn) solutionBtn.disabled = false;
             if (hintBtn) hintBtn.disabled = false;
@@ -501,7 +501,7 @@ class ChessPuzzleGame {
                 }
             } else {
                 // SAI
-                this.showFeedback('incorrect', 'Wrong move! Try again.');
+                this.showFeedback('incorrect', '❌ Wrong move! Try again.');
                 this.submitResult(false);
                 setTimeout(() => {
                     this.game.undo(); // Undo nước đi sai
@@ -532,7 +532,7 @@ class ChessPuzzleGame {
     puzzleSolved() {
         this.isSolving = false;
         this.stopTimer();
-        this.showFeedback('correct', 'Puzzle Solved!');
+        this.showFeedback('correct', '✅ Puzzle Solved!');
         this.submitResult(true);
     }
 
