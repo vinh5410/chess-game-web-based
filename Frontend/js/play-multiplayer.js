@@ -335,9 +335,9 @@ class MultiplayerChess {
         io.on('matchmaking:waiting', (data) => {
             console.log('Waiting for match...', data);
             const statusEl = document.getElementById('searchStatus');
-            if (statusEl) {
-                statusEl.textContent = `Searching... (${data.queue} players in queue)`;
-            }
+            //if (statusEl) {
+              //  statusEl.textContent = `Searching... (${data.queue} players in queue)`;
+            //}
         });
         
         io.on('room:created', (data) => {
