@@ -7,6 +7,11 @@ const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
+const mongoSanitize = require('express-mongo-sanitize');
+const helmet = require('helmet');
+const xss = require('xss-clean');
+const rateLimit = require('express-rate-limit');
+const hpp = require('hpp');
 const connectDB = require('./config/db');
 const botController = require('./controllers/botController');
 const historyRoutes = require('./routes/history');
@@ -48,14 +53,51 @@ const PORT = process.env.PORT || 3000;
 const userManager = new UserManager();
 const gameManager = new GameManager(io, userManager);
 
+// --- SECURITY MIDDLEWARES ---
+// 1. Set Security HTTP Headers (Allow Render & Localhost)
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.socket.io", "https://cdnjs.cloudflare.com"], // Allow Socket.IO & CDNJS
+            scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick)
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+            imgSrc: ["'self'", "data:", "https:", "https://ui-avatars.com"],
+        },
+    },
+    crossOriginEmbedderPolicy: false
+}));
+
+// 2. Rate Limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again in 15 minutes'
+});
+app.use('/api', limiter);
+
 app.use(cors({
     origin: '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+
+// 3. Body Parser with limit
+app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
+
+// 4. Data Sanitization against NoSQL Query Injection
+app.use(mongoSanitize());
+
+// 5. Data Sanitization against XSS
+app.use(xss());
+
+// 6. Prevent Parameter Pollution
+app.use(hpp());
+// ----------------------------
 
 connectDB();
 

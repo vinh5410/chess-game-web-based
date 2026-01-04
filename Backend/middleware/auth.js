@@ -44,3 +44,23 @@ exports.protect = async (req, res, next) => {
         });
     }
 };
+
+// Middleware: Prevent IDOR (Only owner can access)
+exports.restrictToOwner = (req, res, next) => {
+    // Check if user is logged in
+    if (!req.user) {
+        return res.status(401).json({ message: 'You are not logged in' });
+    }
+
+    // Check if requested ID matches logged-in user ID
+    // Assumes route parameter is :id or :userId
+    const requestedId = req.params.id || req.params.userId;
+    
+    if (requestedId && req.user._id.toString() !== requestedId) {
+        return res.status(403).json({ 
+            success: false,
+            message: 'You do not have permission to perform this action on another user.' 
+        });
+    }
+    next();
+};
