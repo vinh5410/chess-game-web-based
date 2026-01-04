@@ -285,7 +285,11 @@ class MultiplayerChess {
         
         io.on('user:login_error', (data) => {
             console.error('Login error:', data);
-            alert(data.message || 'Login failed');
+            showNotification({
+                title: 'Lỗi đăng nhập',
+                message: data.message || 'Đăng nhập thất bại',
+                type: 'error'
+            });
         });
         
         io.on('users:update', (data) => {
@@ -348,7 +352,11 @@ class MultiplayerChess {
         
         io.on('room:error', (data) => {
             console.error('Room error:', data);
-            alert(data.message || 'Room error');
+            showNotification({
+                title: 'Lỗi phòng chơi',
+                message: data.message || 'Lỗi phòng chơi',
+                type: 'error'
+            });
         });
         
         io.on('room:opponent_joined', (data) => {
@@ -404,7 +412,11 @@ class MultiplayerChess {
         });        
         io.on('game:invalid_move', (data) => {
             console.error('Invalid move:', data);
-            alert('Invalid move!');
+            showNotification({
+                title: 'Nước đi không hợp lệ',
+                message: 'Nước đi không hợp lệ!',
+                type: 'error'
+            });
         });
         
         io.on('game:over', (data) => {
@@ -1902,8 +1914,14 @@ function showGameScreen() {
 function login() {
     const user = getCurrentUser();
     if (!user || !user.username) {
-        alert('Please login first');
-        window.location.href = '/login.html';
+        showNotification({
+            title: 'Yêu cầu đăng nhập',
+            message: 'Vui lòng đăng nhập trước',
+            type: 'warning',
+            onClose: () => {
+                window.location.href = '/login.html';
+            }
+        });
         return;
     }
     
@@ -2001,12 +2019,20 @@ function joinRoom() {
     const roomCode = roomCodeInput.value.trim().toUpperCase();
     
     if (!roomCode) {
-        alert('Please enter room code');
+        showNotification({
+            title: 'Vui lòng nhập mã phòng',
+            message: 'Vui lòng nhập mã phòng để tham gia',
+            type: 'warning'
+        });
         return;
     }
     
     if (roomCode.length !== 6) {
-        alert('Room code must be 6 characters');
+        showNotification({
+            title: 'Mã phòng không hợp lệ',
+            message: 'Mã phòng phải có 6 ký tự',
+            type: 'error'
+        });
         return;
     }
     
@@ -2082,7 +2108,11 @@ function sendMessage() {
     if (!message) return;
     
     if (message.length > 200) {
-        alert('Message too long (max 200 characters)');
+        showNotification({
+            title: 'Tin nhắn quá dài',
+            message: 'Tin nhắn không được vượt quá 200 ký tự',
+            type: 'warning'
+        });
         return;
     }
     
@@ -2119,7 +2149,11 @@ function escapeHtml(text) {
 }
 
 function inviteUser(userId) {
-    alert('Direct invitation feature coming soon!');
+    showNotification({
+        title: 'Sắp ra mắt',
+        message: 'Tính năng lời mời trực tiếp sẽ ra mắt sớm!',
+        type: 'info'
+    });
 }
 
 // Initialize when DOM is ready

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification System Demo</title>
+    <link rel="stylesheet" href="./styles/basic.css">
+    <link rel="stylesheet" href="./styles/play-multiplayer.css">
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="bg-blur"></div>
+
+    <div style="padding: 40px; text-align: center; color: #fff;">
+        <h1>Notification System Demo</h1>
+        <p style="margin-bottom: 30px; color: #b0bcc8;">Click buttons to test different notification types</p>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+            <button onclick="testInfo()" style="padding: 10px 20px; background: #64c8ff; color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Info Notification
+            </button>
+            <button onclick="testSuccess()" style="padding: 10px 20px; background: #64ff96; color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Success Notification
+            </button>
+            <button onclick="testError()" style="padding: 10px 20px; background: #ff6464; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Error Notification
+            </button>
+            <button onclick="testWarning()" style="padding: 10px 20px; background: #ffc864; color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Warning Notification
+            </button>
+            <button onclick="testConfirm()" style="padding: 10px 20px; background: #8b5cf6; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Confirm Dialog
+            </button>
+            <button onclick="testCustom()" style="padding: 10px 20px; background: #6366f1; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Custom Buttons
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationOverlay" class="notification-overlay">
+        <div class="notification-modal" id="notificationModal">
+            <div class="notification-icon" id="notificationIcon">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <div class="notification-title" id="notificationTitle">Thông báo</div>
+            <div class="notification-message" id="notificationMessage">Thông báo từ hệ thống</div>
+            <div class="notification-buttons" id="notificationButtons">
+                <button class="notification-btn notification-btn-primary" onclick="closeNotification()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="/js/notification.js"></script>
+
+    <script>
+        function testInfo() {
+            showNotification({
+                title: 'Thông tin',
+                message: 'Đây là thông báo thông tin. Bạn có thể sử dụng loại này để hiển thị các thông tin chung.',
+                type: 'info'
+            });
+        }
+
+        function testSuccess() {
+            showNotification({
+                title: 'Thành công!',
+                message: 'Hành động của bạn đã được thực hiện thành công.',
+                type: 'success'
+            });
+        }
+
+        function testError() {
+            showNotification({
+                title: 'Lỗi xảy ra',
+                message: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại.',
+                type: 'error'
+            });
+        }
+
+        function testWarning() {
+            showNotification({
+                title: 'Cảnh báo',
+                message: 'Hãy chắc chắn về hành động này trước khi tiếp tục.',
+                type: 'warning'
+            });
+        }
+
+        function testConfirm() {
+            if (notificationManager) {
+                notificationManager.confirm(
+                    'Xác nhận',
+                    'Bạn có chắc chắn muốn tiếp tục không?',
+                    () => {
+                        showNotification({
+                            title: 'Đã xác nhận',
+                            message: 'Bạn đã nhấn nút Xác nhận',
+                            type: 'success'
+                        });
+                    },
+                    () => {
+                        showNotification({
+                            title: 'Đã hủy',
+                            message: 'Bạn đã hủy hành động này',
+                            type: 'info'
+                        });
+                    }
+                );
+            }
+        }
+
+        function testCustom() {
+            showNotification({
+                title: 'Chọn hành động',
+                message: 'Bạn muốn làm gì?',
+                type: 'info',
+                buttons: [
+                    { text: 'Hủy bỏ', onClick: () => console.log('Cancelled'), primary: false },
+                    { text: 'Lưu', onClick: () => console.log('Saved'), primary: true }
+                ]
+            });
+        }
+    </script>
+</body>
+</html>

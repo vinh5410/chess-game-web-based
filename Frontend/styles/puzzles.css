@@ -361,14 +361,17 @@ body {
 }
 
 .feedback.correct {
-    background: linear-gradient(135deg, rgba(74, 222, 128, 0.2), rgba(34, 197, 94, 0.2));
-    border: 1px solid rgba(74, 222, 128, 0.5);
+    background: linear-gradient(135deg, rgba(34,197,94,0.18), rgba(22,163,74,0.18));
+    border: 1px solid rgba(34,197,94,0.45);
+    color: #86efac;
 }
 
 .feedback.incorrect {
-    background: linear-gradient(135deg, rgba(248, 113, 113, 0.2), rgba(239, 68, 68, 0.2));
-    border: 1px solid rgba(248, 113, 113, 0.5);
+    background: linear-gradient(135deg, rgba(239,68,68,0.18), rgba(185,28,28,0.18));
+    border: 1px solid rgba(239,68,68,0.45);
+    color: #fca5a5;
 }
+
 
 .feedback-icon {
     font-size: 1.5rem;

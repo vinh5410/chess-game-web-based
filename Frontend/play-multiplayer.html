@@ -693,7 +693,23 @@
             }
         }
     </script>
+
+    <!-- Notification Modal -->
+    <div id="notificationOverlay" class="notification-overlay">
+        <div class="notification-modal" id="notificationModal">
+            <div class="notification-icon" id="notificationIcon">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <div class="notification-title" id="notificationTitle">Thông báo</div>
+            <div class="notification-message" id="notificationMessage">Thông báo từ hệ thống</div>
+            <div class="notification-buttons" id="notificationButtons">
+                <button class="notification-btn notification-btn-primary" onclick="closeNotification()">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/app-config.js"></script>
+    <script src="/js/notification.js"></script>
 </body>
 </html>
 
