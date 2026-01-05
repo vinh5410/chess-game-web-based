@@ -71,9 +71,14 @@ exports.updateProfile = async (req, res) => {
             user.username = username;
         }
         
-        // Allow avatar to be set to empty string (remove avatar)
+        // Allow avatar to be set; if rỗng thì về avatar mặc định
         if (avatar !== undefined) {
-            user.avatar = avatar || '';
+            const trimmed = typeof avatar === 'string' ? avatar.trim() : '';
+            if (!trimmed) {
+                user.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&size=128`;
+            } else {
+                user.avatar = trimmed;
+            }
         }
         
         await user.save();
