@@ -13,6 +13,8 @@
     
     <link rel="stylesheet" href="./styles/login.css">
     <link rel="shortcut icon" type="image/x-icon" href="./assets/favicon.ico">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
 </head>
 <body>
     
@@ -80,13 +82,39 @@
                 <div class="auth-links">
                     Already have an account? <a href="login.html">Log In here</a>
                 </div>
+
+                <div class="divider" style="margin: 20px 0; position: relative; text-align: center;">
+                    <hr style="border: 0; border-top: 1px solid #334155; position: absolute; top: 50%; width: 100%; z-index: 0;">
+                    <span style="background: #1e293b; padding: 0 10px; color: #94a3b8; position: relative; z-index: 1; font-size: 0.9rem;">OR</span>
+                </div>
+
+                <div class="social-login" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div id="g_id_onload"
+                         data-client_id="502191640572-mkcgl076l0bkbn27j90t3hmbnsb8gmj0.apps.googleusercontent.com"
+                         data-callback="handleCredentialResponse"
+                         data-auto_prompt="false">
+                    </div>
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-size="large"
+                         data-theme="outline"
+                         data-text="signup_with"
+                         data-shape="rectangular"
+                         data-logo_alignment="left"
+                         data-width="100%">
+                    </div>
+                    
+                    <button type="button" class="social-btn facebook-btn" onclick="fbLogin()" style="background: #1877f2; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; font-size: 14px; transition: background 0.2s;">
+                        <i class="fa-brands fa-facebook-f" style="font-size: 16px;"></i> Sign up with Facebook
+                    </button>
+                </div>
             </div>
         </section>
     </main>
     
     <script src="/js/app-config.js"></script>
     <script src="./js/auth-check.js"></script>
-    
+    <script src="./js/social-auth.js"></script>
     <script src="./js/register.js"></script>
 </body>
 </html>

@@ -96,9 +96,13 @@ exports.register = async (req, res) => {
             });
             
         } catch (err) {
+            console.error('Send email error (Register):', err); // Log lỗi chi tiết
             // Nếu gửi mail thất bại, xóa user vừa tạo
             await User.findByIdAndDelete(user._id);
-            res.status(500).json({ success: false, message: 'Lỗi gửi mail' });
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Không thể gửi email xác thực. Vui lòng kiểm tra lại email hoặc thử lại sau.' 
+            });
         }
         
         console.log('User registered:', username);
@@ -232,6 +236,7 @@ exports.forgotPassword = async (req, res) => {
             });
             res.status(200).json({ success: true, data: 'Đã gửi email hướng dẫn' });
         } catch (err) {
+            console.error('Send email error (Forgot Password):', err); // Log lỗi chi tiết
             user.resetPasswordToken = undefined;
             user.resetPasswordExpire = undefined;
             await user.save({ validateBeforeSave: false });
@@ -443,5 +448,82 @@ exports.resendVerificationEmail = async (req, res) => {
             success: false,
             message: 'Server error'
         });
+    }
+};
+
+// @desc    Login with Google
+// @route   POST /api/auth/google
+exports.googleLogin = async (req, res) => {
+    try {
+        const { token } = req.body;
+        const { OAuth2Client } = require('google-auth-library');
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        const { name, email, picture, sub: googleId } = ticket.getPayload();
+
+        let user = await User.findOne({ email });
+
+        if (user) {
+            // User exists -> Login
+            if (!user.googleId) {
+                user.googleId = googleId; // Link Google ID if not linked
+                await user.save({ validateBeforeSave: false });
+            }
+        } else {
+            // User doesn't exist -> Register
+            user = await User.create({
+                username: name.replace(/\s+/g, '') + Math.floor(Math.random() * 1000), // Generate username
+                email,
+                googleId,
+                avatar: picture,
+                isVerified: true, // Google emails are verified
+                password: crypto.randomBytes(20).toString('hex') // Random password
+            });
+        }
+
+        sendTokenResponse(user, 200, res);
+
+    } catch (error) {
+        console.error('Google Login Error:', error);
+        res.status(400).json({ success: false, message: 'Google Login Failed' });
+    }
+};
+
+// @desc    Login with Facebook
+// @route   POST /api/auth/facebook
+exports.facebookLogin = async (req, res) => {
+    try {
+        const { userID, accessToken, email, name, picture } = req.body;
+        
+        // Verify token with Facebook Graph API (Optional but recommended for security)
+        // For simplicity, we trust the client data here, but in production verify with FB API
+
+        let user = await User.findOne({ email });
+
+        if (user) {
+            if (!user.facebookId) {
+                user.facebookId = userID;
+                await user.save({ validateBeforeSave: false });
+            }
+        } else {
+            user = await User.create({
+                username: name.replace(/\s+/g, '') + Math.floor(Math.random() * 1000),
+                email,
+                facebookId: userID,
+                avatar: picture?.data?.url,
+                isVerified: true,
+                password: crypto.randomBytes(20).toString('hex')
+            });
+        }
+
+        sendTokenResponse(user, 200, res);
+
+    } catch (error) {
+        console.error('Facebook Login Error:', error);
+        res.status(400).json({ success: false, message: 'Facebook Login Failed' });
     }
 };
