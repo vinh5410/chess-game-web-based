@@ -46,8 +46,8 @@ async function loadProfile(userId) {
 }
 
 function displayProfile(user) {
-    // Profile header
-    document.getElementById('profile-avatar').src = user.avatar;
+    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=d4af37&color=0f172a`;
+    document.getElementById('profile-avatar').src = user.avatar || defaultAvatar;
     
     // Set username and title
     const usernameEl = document.getElementById('profile-username');
