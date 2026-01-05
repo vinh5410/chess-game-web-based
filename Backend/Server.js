@@ -40,6 +40,7 @@ const userRoutes = require('./routes/user');
 const puzzleRoutes = require('./routes/puzzle');
 const app = express();
 const server = http.createServer(app);
+app.set('trust proxy', 1);
 const io = socketIO(server, {
     cors: {
         origin: '*',
