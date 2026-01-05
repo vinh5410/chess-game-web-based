@@ -70,7 +70,9 @@ app.use(helmet({
         },
     },
     crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false // Disable COOP to fix Google Sign-In blank popup issue
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+    referrerPolicy: { policy: "no-referrer-when-downgrade" }
 }));
 
 // 2. Rate Limiting
