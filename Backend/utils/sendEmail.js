@@ -2,11 +2,14 @@ const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
     // Dùng Gmail
+    // Cấu hình chi tiết thay vì dùng service: 'gmail' để ổn định hơn
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.googlemail.com',
+        port: 465,
+        secure: true,
         auth: {
-            user: process.env.SMTP_EMAIL,   // Email của bạn
-            pass: process.env.SMTP_PASSWORD // Mật khẩu ứng dụng (App Password)
+            user: process.env.SMTP_EMAIL,
+            pass: process.env.SMTP_PASSWORD
         }
     });
 

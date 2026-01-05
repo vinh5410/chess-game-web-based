@@ -59,15 +59,17 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.socket.io", "https://cdnjs.cloudflare.com"], // Allow Socket.IO & CDNJS
+            connectSrc: ["'self'", "ws:", "wss:", "http:", "https:", "https://accounts.google.com", "https://www.googleapis.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.socket.io", "https://cdnjs.cloudflare.com", "https://accounts.google.com", "https://g.notify.usercontent.com", "https://connect.facebook.net"], // Allow Google & Facebook Scripts
             scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick)
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com", "https://accounts.google.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
-            imgSrc: ["'self'", "data:", "https:", "https://ui-avatars.com"],
+            imgSrc: ["'self'", "data:", "https:", "https://ui-avatars.com", "https://lh3.googleusercontent.com", "https://platform-lookaside.fbsbx.com"],
+            frameSrc: ["'self'", "https://accounts.google.com", "https://www.facebook.com", "https://web.facebook.com"], // Allow Google & Facebook Frames
         },
     },
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" } // Allow Google Popups
 }));
 
 // 2. Rate Limiting
