@@ -697,7 +697,8 @@ class MultiplayerChess {
     onRoomJoined(data) {
         console.log('Joined room:', data.roomId);
         this.socket.setCurrentRoom(data.roomId);
-        showGameScreen();
+        this.showReadyScreenUI();
+        updateGameStatus('Joined room. Please confirm ready.');
     }
     
     onOpponentJoined(data) {

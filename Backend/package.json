@@ -9,6 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "resend": "^4.0.0",
     "bcryptjs": "^3.0.3",
     "chess.js": "^1.4.0",
     "cookie-parser": "^1.4.7",
