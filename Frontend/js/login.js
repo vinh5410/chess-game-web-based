@@ -17,14 +17,13 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     showMessage('Logging in...', 'success');
     
     try {
-        // using absolute API URL
-        const response = await fetch(`https://chess-game-web-based.onrender.com/api/auth/login`, {
+        const response = await fetch(`${window.APP_CONFIG.API_BASE}/api/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ email, password }),
-            credentials: 'include'
+            credentials: 'include' // để browser nhận/gửi cookie cross-site
         });
         
         const data = await response.json();
