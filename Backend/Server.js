@@ -70,9 +70,7 @@ app.use(helmet({
         },
     },
     crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false,
-    crossOriginResourcePolicy: false,
-    referrerPolicy: { policy: "no-referrer-when-downgrade" }
+    crossOriginOpenerPolicy: false // Disable COOP to fix Google Sign-In blank popup issue
 }));
 
 // 2. Rate Limiting
@@ -84,7 +82,7 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 app.use(cors({
-    origin: '*',
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
