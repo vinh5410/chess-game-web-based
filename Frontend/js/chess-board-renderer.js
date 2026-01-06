@@ -8,15 +8,25 @@ class ChessBoardRenderer {
         this.ctx = this.canvas.getContext('2d');
         this.game = new window.Chess();
         
-        
+        // Get initial size from container (same as PvP/PvE)
+        const container = this.canvas.parentElement;
         if (options.fixedSize) {
             this.canvasSize = options.fixedSize;
-            this.squareSize = this.canvasSize / 8;
+        } else if (container) {
+            this.canvasSize = Math.max(280, container.clientWidth);
         } else {
-            this.calculateResponsiveSize();
+            this.canvasSize = 640;
         }
-        this.canvas.width = this.canvasSize;
-        this.canvas.height = this.canvasSize;
+        this.squareSize = this.canvasSize / 8;
+        this._lastCssSize = this.canvasSize;
+        
+        // Apply DPR-aware sizing for crisp rendering (same as PvP/PvE)
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        this.canvas.style.width = this.canvasSize + 'px';
+        this.canvas.style.height = this.canvasSize + 'px';
+        this.canvas.width = Math.floor(this.canvasSize * dpr);
+        this.canvas.height = Math.floor(this.canvasSize * dpr);
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         
         
         const colors = window.GameConfig?.colors || {};
@@ -52,19 +62,16 @@ class ChessBoardRenderer {
     calculateResponsiveSize() {
         const parent = this.canvas.parentElement;
         if (parent) {
-            // Get available width
-            const parentWidth = parent.clientWidth;
-            const padding = window.innerWidth <= 480 ? 20 : 40;
+            // Simply use the container's CSS width - same as PvP/PvE
+            const cssSize = parent.clientWidth;
             
-            // Max 640px, min 280px for very small screens
-            const maxSize = 640;
+            // Fallback minimum size
             const minSize = 280;
-            const availableSize = parentWidth - padding;
             
-            this.canvasSize = Math.max(minSize, Math.min(maxSize, availableSize));
+            this.canvasSize = Math.max(minSize, cssSize);
             this.squareSize = this.canvasSize / 8;
             
-            console.log(`📱 Canvas size calculated: ${this.canvasSize}px (parent: ${parentWidth}px)`);
+            console.log(`📱 Canvas size: ${this.canvasSize}px`);
         } else {
             // Fallback
             this.canvasSize = 640;
@@ -72,16 +79,31 @@ class ChessBoardRenderer {
         }
     }
     
-    handleResize() {
-        const oldSize = this.canvasSize;
-        this.calculateResponsiveSize();
+    handleResize(force = false) {
+        const container = this.canvas.parentElement;
+        if (!container) return;
         
-        if (oldSize !== this.canvasSize) {
-            this.canvas.width = this.canvasSize;
-            this.canvas.height = this.canvasSize;
-            console.log(`🔄 Canvas resized: ${oldSize}px → ${this.canvasSize}px`);
-            this.draw();
-        }
+        const cssSize = container.clientWidth;
+        
+        // Skip if size hasn't changed significantly
+        if (!force && this._lastCssSize && Math.abs(cssSize - this._lastCssSize) < 10) return;
+        this._lastCssSize = cssSize;
+        
+        // Update canvas size
+        this.canvasSize = Math.max(280, cssSize);
+        this.squareSize = this.canvasSize / 8;
+        
+        // High-DPI crispness: scale backing store by devicePixelRatio
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        
+        this.canvas.style.width = this.canvasSize + 'px';
+        this.canvas.style.height = this.canvasSize + 'px';
+        this.canvas.width = Math.floor(this.canvasSize * dpr);
+        this.canvas.height = Math.floor(this.canvasSize * dpr);
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        
+        console.log(`🔄 Canvas resized: ${this.canvasSize}px (DPR: ${dpr})`);
+        this.draw();
     }
     
     

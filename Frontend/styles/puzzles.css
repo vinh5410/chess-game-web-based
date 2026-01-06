@@ -274,10 +274,10 @@ body {
     z-index: 10;
 }
 
-/* Board square wrapper - viewport based sizing like PvP */
+/* Board square wrapper - same as PvP/PvE */
 .board-square {
-    width: calc(100svh - var(--nav-height, 70px) - var(--player-bars-total) - 20px);
-    max-width: 100%;
+    /* Size by viewport width or available height minus bars */
+    width: min(100vw, calc(100svh - var(--nav-height, 70px) - var(--player-bars-total)));
     aspect-ratio: 1 / 1;
     margin: 0 auto;
     display: block;
@@ -285,8 +285,7 @@ body {
 
 /* Timer Bar */
 .puzzle-timer-bar {
-    width: calc(100svh - var(--nav-height, 70px) - var(--player-bars-total) - 20px);
-    max-width: 100%;
+    width: min(100vw, calc(100svh - var(--nav-height, 70px) - var(--player-bars-total)));
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
@@ -296,6 +295,7 @@ body {
     gap: 12px;
     height: var(--player-bar-height, 50px);
     box-sizing: border-box;
+    margin: 0 auto;
 }
 
 .timer-icon {
@@ -322,7 +322,7 @@ body {
     font-family: 'Roboto Mono', monospace;
 }
 
-/* Canvas */
+/* Canvas - same as PvP/PvE */
 .chessboard-container canvas,
 #puzzleCanvas {
     display: block;
@@ -335,8 +335,7 @@ body {
 
 /* Feedback */
 .feedback {
-    width: calc(100svh - var(--nav-height, 70px) - var(--player-bars-total) - 20px);
-    max-width: 100%;
+    width: min(100vw, calc(100svh - var(--nav-height, 70px) - var(--player-bars-total)));
     padding: 0 15px;
     border-radius: 8px;
     display: flex;
@@ -347,6 +346,7 @@ body {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     animation: slideDown 0.3s ease;
+    margin: 0 auto;
 }
 
 @keyframes slideDown {
@@ -634,8 +634,8 @@ body {
     .board-square,
     .puzzle-timer-bar,
     .feedback {
-        width: calc(100vw - 16px) !important;
-        max-width: none !important;
+        width: calc(100vw - 16px);
+        max-width: none;
     }
     
     .puzzle-timer-bar {
@@ -658,8 +658,8 @@ body {
     }
 
     #puzzleCanvas {
-        width: 100% !important;
-        height: 100% !important;
+        width: 100%;
+        height: 100%;
     }
     
     .feedback {

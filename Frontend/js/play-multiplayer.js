@@ -1186,10 +1186,9 @@ class MultiplayerChess {
                 if (!this.touchMoved) {
                     this.touchMoved = true;
                     const rect = this.canvas.getBoundingClientRect();
-                    const scaleX = this.canvas.width / rect.width;
-                    const scaleY = this.canvas.height / rect.height;
-                    const x = (this.touchStartPos.x - rect.left) * scaleX;
-                    const y = (this.touchStartPos.y - rect.top) * scaleY;
+                    // Use CSS pixel coordinates (no DPR scaling needed - context handles it)
+                    const x = this.touchStartPos.x - rect.left;
+                    const y = this.touchStartPos.y - rect.top;
                     const sq = this.canvasToSquare(x, y);
                     
                     if (sq) {
@@ -1207,11 +1206,10 @@ class MultiplayerChess {
                 
                 if (this.isDragging) {
                     const rect = this.canvas.getBoundingClientRect();
-                    const scaleX = this.canvas.width / rect.width;
-                    const scaleY = this.canvas.height / rect.height;
+                    // Use CSS pixel coordinates (no DPR scaling needed)
                     this.mousePos = { 
-                        x: (touch.clientX - rect.left) * scaleX, 
-                        y: (touch.clientY - rect.top) * scaleY 
+                        x: touch.clientX - rect.left, 
+                        y: touch.clientY - rect.top 
                     };
                     this.draw();
                 }
@@ -1225,13 +1223,12 @@ class MultiplayerChess {
         const touch = e.changedTouches[0];
         
         const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (touch.clientX - rect.left) * scaleX;
-        const y = (touch.clientY - rect.top) * scaleY;
+        // Use CSS pixel coordinates (no DPR scaling needed - context handles it)
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
         
         console.log('Touch end - rect:', rect.top, rect.left, rect.width, rect.height);
-        console.log('Touch end - calculated:', x, y, 'scale:', scaleX, scaleY);
+        console.log('Touch end - calculated:', x, y);
         
         if (this.touchMoved && this.isDragging) {
             // Was dragging - complete the move
