@@ -358,8 +358,8 @@ class GameManager {
                 this.userManager.setUserInGame(player2Id, true, roomId);
                 
                 console.log(`Match created! Room: ${roomId}`);
-                console.log(`   Player 1: ${player1.username} (${player1Id})`);
-                console.log(`   Player 2: ${player2.username} (${player2Id})`);
+                console.log(`   Player 1: ${player1.username} (${player1Id}), Avatar: ${player1Db?.avatar ? 'YES' : 'NO'}`);
+                console.log(`   Player 2: ${player2.username} (${player2Id}), Avatar: ${player2Db?.avatar ? 'YES' : 'NO'}`);
                 console.log(`   Time Control: ${timeControl}s`);
                 
                 const player1Socket = this.io.sockets.sockets.get(player1Id);
@@ -367,20 +367,34 @@ class GameManager {
                 
                 if (player1Socket) {
                     player1Socket.join(roomId);
+                    const p2Avatar = player2Db?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(player2.username)}&background=d4af37&color=0f172a`;
+                    console.log(`   Sending avatar for ${player2.username}: ${p2Avatar}`);
                     player1Socket.emit('matchmaking:match_found', {
                         roomId: roomId,
-                        opponent: { id: player2Id, username: player2.username }
+                        opponent: { 
+                            id: player2Id, 
+                            username: player2.username,
+                            elo: player2Db?.rating || 1200,
+                            avatar: p2Avatar
+                        }
                     });
-                    console.log(`   Sent match_found to ${player1.username}`);
+                    console.log(`   Sent match_found to ${player1.username} with opponent avatar`);
                 }
                 
                 if (player2Socket) {
                     player2Socket.join(roomId);
+                    const p1Avatar = player1Db?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(player1.username)}&background=d4af37&color=0f172a`;
+                    console.log(`   Sending avatar for ${player1.username}: ${p1Avatar}`);
                     player2Socket.emit('matchmaking:match_found', {
                         roomId: roomId,
-                        opponent: { id: player1Id, username: player1.username }
+                        opponent: { 
+                            id: player1Id, 
+                            username: player1.username,
+                            elo: player1Db?.rating || 1200,
+                            avatar: p1Avatar
+                        }
                     });
-                    console.log(`   Sent match_found to ${player2.username}`);
+                    console.log(`   Sent match_found to ${player2.username} with opponent avatar`);
                 }
                 
                 // Start game after short delay
@@ -527,6 +541,12 @@ class GameManager {
         // Lấy Elo hiện tại
         const elo1 = await this.userManager.getUserRating(p1Obj.socketId);
         const elo2 = await this.userManager.getUserRating(p2Obj.socketId);
+        
+        // Lấy avatar từ DB (với default fallback)
+        const p1Db = await User.findOne({ username: p1?.username });
+        const p2Db = await User.findOne({ username: p2?.username });
+        const avatar1 = p1Db?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(p1?.username || 'P1')}&background=d4af37&color=0f172a`;
+        const avatar2 = p2Db?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(p2?.username || 'P2')}&background=d4af37&color=0f172a`;
 
         console.log('\n=============== MATCH START ===============');
         console.log(`Room: ${roomId}`);
@@ -562,9 +582,11 @@ class GameManager {
             const opponentObj = room.players.find(p => p.socketId !== playerId);
             const opponent = this.userManager.getUser(opponentObj?.socketId);
 
-            // Gửi kèm Elo của đối thủ xuống client luôn
+            // Gửi kèm Elo và Avatar của đối thủ xuống client
             const opponentElo = (opponentObj.socketId === p1Obj.socketId) ? elo1 : elo2;
+            const opponentAvatar = (opponentObj.socketId === p1Obj.socketId) ? avatar1 : avatar2;
             const myElo = (playerId === p1Obj.socketId) ? elo1 : elo2;
+            const myAvatar = (playerId === p1Obj.socketId) ? avatar1 : avatar2;
 
             const socket = this.io.sockets.sockets.get(playerId);
             if (socket) {
@@ -575,9 +597,11 @@ class GameManager {
                         id: opponent?.id,
                         username: opponent?.username,
                         color: room.getPlayerColor(opponentObj?.socketId),
-                        elo: opponentElo // Gửi Elo xuống FE
+                        elo: opponentElo,
+                        avatar: opponentAvatar // Gửi Avatar xuống FE
                     },
-                    playerElo: myElo, // Gửi Elo của chính mình
+                    playerElo: myElo,
+                    playerAvatar: myAvatar, // Gửi Avatar của chính mình
                     timeControl: room.timeControl,
                     fen: room.game.fen()
                 });
@@ -1013,13 +1037,15 @@ class GameManager {
 
             let playerElo = 1200;
             let playerName = this.userManager.getUser(newSocketId)?.username || null;
+            let playerAvatar = null;
             try {
-                // Prefer DB rating/username if userId available on playerObj
+                // Prefer DB rating/username/avatar if userId available on playerObj
                 if (playerObj && playerObj.userId) {
-                    const dbPlayer = await User.findById(playerObj.userId).select('rating username').lean();
+                    const dbPlayer = await User.findById(playerObj.userId).select('rating username avatar').lean();
                     if (dbPlayer) {
                         if (typeof dbPlayer.rating === 'number') playerElo = dbPlayer.rating;
                         if (dbPlayer.username) playerName = dbPlayer.username;
+                        if (dbPlayer.avatar) playerAvatar = dbPlayer.avatar;
                     }
                 }
             } catch (e) {
@@ -1039,6 +1065,7 @@ class GameManager {
             const opponentObj = room.players.find(p => p.socketId !== newSocketId);
             let opponentName = null;
             let opponentElo = 1200;
+            let opponentAvatar = null;
 
             // Try to get opponent from memory first
             const opponentUserMem = opponentObj ? this.userManager.getUser(opponentObj.socketId) : null;
@@ -1047,16 +1074,18 @@ class GameManager {
             // Prefer DB lookup when possible (userId), otherwise try by username, otherwise fallback to memory getter
             try {
                 if (opponentObj && opponentObj.userId) {
-                    const dbOpp = await User.findById(opponentObj.userId).select('username rating').lean();
+                    const dbOpp = await User.findById(opponentObj.userId).select('username rating avatar').lean();
                     if (dbOpp) {
                         if (dbOpp.username) opponentName = opponentName || dbOpp.username;
                         if (typeof dbOpp.rating === 'number') opponentElo = dbOpp.rating;
+                        if (dbOpp.avatar) opponentAvatar = dbOpp.avatar;
                     }
                 } else if (opponentUserMem && opponentUserMem.username) {
-                    const dbOpp = await User.findOne({ username: opponentUserMem.username }).select('username rating').lean();
+                    const dbOpp = await User.findOne({ username: opponentUserMem.username }).select('username rating avatar').lean();
                     if (dbOpp) {
                         if (dbOpp.username) opponentName = opponentName || dbOpp.username;
                         if (typeof dbOpp.rating === 'number') opponentElo = dbOpp.rating;
+                        if (dbOpp.avatar) opponentAvatar = dbOpp.avatar;
                     }
                 } else if (opponentObj && opponentObj.socketId) {
                     // last resort: use userManager which may fetch DB if user still in memory
@@ -1081,10 +1110,16 @@ class GameManager {
                     id: opponentObj ? opponentObj.socketId : null,
                     username: opponentName || null,
                     color: opponentObj ? room.getPlayerColor(opponentObj.socketId) : null,
-                    elo: typeof opponentElo === 'number' ? opponentElo : null
+                    elo: typeof opponentElo === 'number' ? opponentElo : null,
+                    avatar: opponentAvatar || (opponentName
+                        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(opponentName)}&background=d4af37&color=0f172a`
+                        : null)
                 },
                 playerElo: typeof playerElo === 'number' ? playerElo : null,
-                playerUsername: playerName || null
+                playerUsername: playerName || null,
+                playerAvatar: playerAvatar || (playerName
+                    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(playerName)}&background=d4af37&color=0f172a`
+                    : null)
             });
 
                 // Notify opponent that player reconnected

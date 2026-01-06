@@ -57,10 +57,12 @@ module.exports = (io, userManager, gameManager) => {
 
         
         socket.on('matchmaking:join', (data) => {  //  NHẬN data
+            console.log('>>> matchmaking:join received from:', socket.id);
             const user = userManager.getUser(socket.id);
             const userId = user?.userId || user?._id; // hoặc trường phù hợp
             if (!user) return socket.emit('room:error', { message: 'Login first' });
             const timeControl = data?.timeControl || 300;  // LẤY timeControl, default 300
+            console.log(`>>> User ${user.username} joining matchmaking with timeControl: ${timeControl}`);
             const result = gameManager.addToMatchmaking(socket.id, userId, timeControl);  // TRUYỀN timeControl
             
             if (!result.matched) {
@@ -89,7 +91,7 @@ module.exports = (io, userManager, gameManager) => {
             socket.emit('room:created', { roomId: room.id, roomCode: room.code });
         });
 
-        socket.on('room:join', ({ roomCode }) => {
+        socket.on('room:join', async ({ roomCode }) => {
             const user = userManager.getUser(socket.id);
             if (!user) return socket.emit('room:error', { message: 'Login first' });
             const userId = user.userId || user._id;
@@ -98,11 +100,26 @@ module.exports = (io, userManager, gameManager) => {
                 socket.join(result.room.id);
                 socket.emit('room:joined', { roomId: result.room.id, roomCode: result.room.code });
                 
-                // Báo cho chủ phòng
+                // Báo cho chủ phòng kèm đầy đủ thông tin đối thủ (username, elo, avatar)
                 const creatorId = result.room.players[0]?.socketId;
-                io.to(creatorId).emit('room:opponent_joined', { 
-                    opponent: { id: user.id, username: user.username } 
-                });               
+
+                let opponentPayload = { id: user.id, username: user.username };
+                try {
+                    const dbUser = await User.findOne({ username: user.username }).lean();
+                    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=d4af37&color=0f172a`;
+                    opponentPayload.elo = (dbUser && typeof dbUser.rating === 'number')
+                        ? dbUser.rating
+                        : (typeof user.rating === 'number' ? user.rating : 1200);
+                    opponentPayload.avatar = (dbUser && dbUser.avatar) ? dbUser.avatar : defaultAvatar;
+                } catch (e) {
+                    console.warn('Could not load opponent profile for room:join:', e.message || e);
+                }
+
+                if (creatorId) {
+                    io.to(creatorId).emit('room:opponent_joined', { 
+                        opponent: opponentPayload
+                    });
+                }
             } else {
                 socket.emit('room:error', { message: result.message });
             }

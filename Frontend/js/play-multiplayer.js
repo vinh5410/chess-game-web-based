@@ -663,6 +663,7 @@ class MultiplayerChess {
     
     onMatchFound(data) {
         console.log('Match found with:', data.opponent);
+        console.log('Opponent avatar from server:', data.opponent?.avatar);
         this.socket.setCurrentRoom(data.roomId);
         
         // Đánh dấu đây là random match
@@ -675,7 +676,9 @@ class MultiplayerChess {
             this.opponentElo = data.opponent.elo || 1200;
             
             // Nếu server gửi avatar thì dùng, không thì tạo avatar mặc định theo tên
-            this.opponentAvatar = data.opponent.avatar || `https://ui-avatars.com/api/?name=${this.opponentName}&background=d4af37&color=0f172a`;
+            const defaultOpponentAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.opponentName)}&background=d4af37&color=0f172a`;
+            this.opponentAvatar = data.opponent.avatar || defaultOpponentAvatar;
+            console.log('Set opponentAvatar to:', this.opponentAvatar);
         }
         
         // 2. Ẩn Game Over overlay nếu nó đang hiện từ ván trước
@@ -817,9 +820,14 @@ class MultiplayerChess {
             this.playerElo = data.playerElo;
         }
 
-        // Capture avatars if provided
-        if (data.opponent && data.opponent.avatar) {
-            this.opponentAvatar = data.opponent.avatar;
+        // Capture avatars if provided - với default fallback
+        console.log('Game start data - opponent avatar:', data.opponent?.avatar);
+        console.log('Game start data - player avatar:', data.playerAvatar);
+        
+        if (data.opponent) {
+            const defaultOppAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.opponent.username || 'O')}&background=d4af37&color=0f172a`;
+            this.opponentAvatar = data.opponent.avatar || defaultOppAvatar;
+            console.log('Set opponentAvatar in game:start to:', this.opponentAvatar);
         }
         if (data.playerAvatar) {
             this.playerAvatar = data.playerAvatar;
@@ -903,7 +911,7 @@ class MultiplayerChess {
                 const myIcon = this.playerColor === 'white' ? '♔' : '♚';
                 let statusText = `${myIcon} Your turn to move!`;
                 
-                if (this.game.inCheck()) {
+                if (this.game.isCheck && this.game.isCheck()) {
                     statusText = `${myIcon} ⚠️ You are in Check!`;
                     turnStatusEl.style.color = '#ef4444';
                 } else {
@@ -914,7 +922,7 @@ class MultiplayerChess {
                 const oppIcon = this.playerColor === 'white' ? '♚' : '♔';
                 let statusText = `${oppIcon} Waiting for opponent...`;
                 // Check if opponent is in check
-                if (this.game.inCheck()) {
+                if (this.game.isCheck && this.game.isCheck()) {
                     statusText = `${oppIcon} ⚠️ Opponent in Check!`;
                     turnStatusEl.style.color = '#fbbf24';
                 } else {
@@ -1832,6 +1840,9 @@ class MultiplayerChess {
         };
 
         // Always: player at bottom, opponent at top
+        console.log('updatePlayerInfoDisplay - playerAvatar:', this.playerAvatar);
+        console.log('updatePlayerInfoDisplay - opponentAvatar:', this.opponentAvatar);
+        
         if (bottomName) bottomName.textContent = myName;
         if (bottomRating) bottomRating.textContent = myElo;
         if (bottomAvatar) bottomAvatar.src = this.playerAvatar;
@@ -1842,7 +1853,10 @@ class MultiplayerChess {
 
         if (topName) topName.textContent = oppName;
         if (topRating) topRating.textContent = oppElo;
-        if (topAvatar) topAvatar.src = this.opponentAvatar;
+        if (topAvatar) {
+            topAvatar.src = this.opponentAvatar;
+            console.log('Set topAvatar.src to:', this.opponentAvatar);
+        }
         if (topTimer) {
             topTimer.textContent = formatTime(this.opponentTime || 0);
             topTimer.classList.toggle('low-time', (this.opponentTime || 0) <= 30);
@@ -1927,7 +1941,7 @@ function updateGameStatus(message, game = null) {
             }
             
             
-            if (game.inCheck()) {
+            if (game.isCheck && game.isCheck()) {
                 message += ' ⚠️ Check!';
             }
         } catch (error) {
