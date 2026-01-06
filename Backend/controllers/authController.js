@@ -13,14 +13,13 @@ const generateToken = (id) => {
 // Send token response
 const sendTokenResponse = (user, statusCode, res) => {
     const token = generateToken(user._id);
-    
-    const isProduction = process.env.NODE_ENV === 'production';
+
 
     const options = {
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         httpOnly: true,
-        secure: isProduction ? true : false,
-        sameSite: isProduction ? 'none' : 'lax'
+        secure: true,
+        sameSite: 'none'
     };
     
     res.status(statusCode)
