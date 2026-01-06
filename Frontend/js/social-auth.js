@@ -4,7 +4,8 @@ async function handleCredentialResponse(response) {
         const res = await fetch(`${window.APP_CONFIG.API_BASE}/api/auth/google`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: response.credential })
+            body: JSON.stringify({ token: response.credential }),
+            credentials: 'include'
         });
         const data = await res.json();
         if (data.success) {
@@ -48,7 +49,8 @@ function fbLogin() {
                             email: profile.email,
                             name: profile.name,
                             picture: profile.picture
-                        })
+                        }),
+                        credentials: 'include'
                     });
                     const data = await res.json();
                     if (data.success) {

@@ -155,12 +155,18 @@
     </div>
 
     <script src="./libs/chess.js/dist/cjs/chess.js"></script>
+    <script>
+        if (typeof Chess !== 'undefined') {
+            window.Chess = Chess;
+        }
+    </script>
     <script src="/js/app-config.js"></script>
     <script src="./js/components/loader.js"></script>
     <script src="./js/auth-check.js"></script>
     <script src="./js/navbar.js"></script>
     <script src="./js/utils.js"></script>
     <script src="./js/puzzle-renderer.js"></script>
+    <script src="./js/chess-board-renderer.js"></script>
     <script src="./js/puzzles.js"></script>
 </body>
 </html>

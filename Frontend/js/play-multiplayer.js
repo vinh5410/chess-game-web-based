@@ -258,7 +258,7 @@ class MultiplayerChess {
         console.log('Socket.IO instance found:', io.id);
         
         // Clear any existing listeners first
-        io.removeAllListeners();
+        //io.removeAllListeners();
 
         io.on('game:ready_success', () => {
         // UI cập nhật: Mình đã ready
@@ -424,10 +424,10 @@ class MultiplayerChess {
             this.onGameOver(data);
         });
         
-        io.on('game:draw_offer', (data) => {
-            console.log('Draw offer received');
-            this.onDrawOffer(data);
-        });
+        //io.on('game:draw_offered', (data) => {
+          //  console.log('Draw offer received');
+            //this.onDrawOffer(data);
+        //});
         
         io.on('game:draw_accepted', (data) => {
             console.log('Draw accepted');
@@ -765,7 +765,10 @@ class MultiplayerChess {
         console.log('Game started!', data);
 
         showGameScreen();
-
+        if (typeof this.resetChat === 'function') {
+            this.resetChat();
+            this.addSystemMessage(`New game vs ${data.opponent?.username || 'opponent'} started.`);
+        }
         this.playerColor = data.color;
         this.opponentName = data.opponent.username;
         this.isMyTurn = (data.color === 'white');
@@ -962,8 +965,13 @@ class MultiplayerChess {
     }
     
     onDrawOffer(data) {
-        // Show draw request modal instead of browser confirm
-        document.getElementById('drawOfferText').textContent = `${data.from} offers a draw. Accept?`;
+        const fromName =
+            (data && data.from) ||
+            this.opponentName ||
+            'Opponent';
+
+        document.getElementById('drawOfferText').textContent =
+            `${fromName} offers a draw. Accept?`;
         document.getElementById('drawRequestModal').classList.remove('hidden');
     }
     
@@ -1027,7 +1035,22 @@ class MultiplayerChess {
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-    
+    resetChat() {
+        const chatMessages = document.getElementById('chatMessages');
+        if (!chatMessages) return;
+
+        // Xóa toàn bộ tin nhắn cũ
+        chatMessages.innerHTML = '';
+
+        // Thêm lại hộp welcome mặc định
+        const welcome = document.createElement('div');
+        welcome.className = 'chat-welcome';
+        welcome.innerHTML = `
+            <i class="fa-solid fa-shield-halved"></i>
+            <p>Chat with your opponent. Be respectful!</p>
+        `;
+        chatMessages.appendChild(welcome);
+    }    
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;

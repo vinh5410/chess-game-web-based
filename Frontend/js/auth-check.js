@@ -37,7 +37,8 @@ function logout() {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${getAuthToken()}`
-        }
+        },
+        credentials: 'include'
     }).catch(err => console.error('Logout error:', err));
     
     localStorage.removeItem('token');
