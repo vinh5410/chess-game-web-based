@@ -126,17 +126,15 @@ class SocketClient {
     
     offerDraw() {
         console.log('🤝 Offering draw');
-        this.socket.emit('game:draw_offer', { roomId: this.currentRoom });
+        this.socket.emit('game:offer_draw', { roomId: this.currentRoom }); // đổi draw_offer -> offer_draw
     }
-    
+
     respondDraw(accept) {
         console.log('🤝 Responding to draw:', accept);
-        this.socket.emit('game:draw_response', {
-            roomId: this.currentRoom,
-            accept: accept
-        });
+        const event = accept ? 'game:accept_draw' : 'game:decline_draw';
+        this.socket.emit(event, { roomId: this.currentRoom }); // bỏ game:draw_response
     }
-    
+        
     resign() {
         console.log('Resigning');
         this.socket.emit('game:resign', { roomId: this.currentRoom });

@@ -46,12 +46,13 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     
     try {
         // using absolute API URL
-        const response = await fetch(`https://chess-game-web-based.onrender.com/api/auth/register`, {
+        const response = await fetch(`${window.APP_CONFIG.API_BASE}/api/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username, email, password })
+            body: JSON.stringify({ username, email, password }),
+            credentials: 'include'
         });
         
         const data = await response.json();

@@ -5,11 +5,14 @@ class ChessPuzzleGame {
         
         this.canvas = document.getElementById('puzzleCanvas');
         this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
-        this.canvasSize = 440; // Match multiplayer size
-        this.squareSize = 55;  // 440 / 8
-        this.lastParentWidth = 0; // Track width to prevent resize on scroll
-        
-        // Màu sắc bàn cờ
+        this.canvasSize = 440; // Match multiplayer size (will be overridden by renderer)
+        this.squareSize = 55;  // 440 / 8 (will be overridden by renderer)
+        this.lastParentWidth = 0; // Track width to prevent resize on scroll (kept for compatibility)
+
+        // Renderer dùng chung cho việc vẽ bàn cờ và quân cờ
+        this.board = null;
+
+        // Màu sắc bổ sung cho overlay (last move, hint ...)
         this.colors = {
             light: '#f0d9b5',
             dark: '#b58863',
@@ -34,9 +37,6 @@ class ChessPuzzleGame {
         this.mousePos = { x: 0, y: 0 };
         this.legalMoves = [];
         this.hintSquares = null;
-        
-        this.pieceImages = {};
-        this.imagesLoaded = false;
 
         
         this.sound = window.Sound;
@@ -55,162 +55,78 @@ class ChessPuzzleGame {
             return;
         }
 
-        // 1. Load Hình ảnh quân cờ (Quan trọng để hiển thị)
-        await this.loadPieceImages();
-        
-        // 2. Gắn sự kiện chuột
+        // 1. Khởi tạo renderer dùng chung cho việc vẽ bàn cờ
+        if (typeof ChessBoardRenderer === 'function') {
+            this.board = new ChessBoardRenderer('puzzleCanvas', { isFlipped: this.isFlipped });
+
+            // Renderer dùng game nội bộ của ChessPuzzleGame
+            this.board.game = this.game;
+
+            // 1.1. Load hình ảnh quân cờ qua renderer
+            await this.board.loadPieceImages();
+
+            // Không dùng event listener mặc định của renderer, vì puzzle có logic riêng
+            // nên ta chỉ tận dụng phần vẽ bàn cờ.
+        } else {
+            console.warn('ChessBoardRenderer not found, fallback to legacy drawing');
+        }
+
+        // 2. Gắn sự kiện chuột / touch và các nút điều khiển
         this.setupEventListeners();
-        
-        // 3. Load thông tin người dùng và Puzzle đầu tiên
+
+        // 3. Resize ban đầu & load thông tin
         this.handleResize();
         await this.loadUserStats();
         await this.loadNewPuzzle();
     }
 
-    // 1. PHẦN RENDERING & ASSETS (Dùng lại của play-vs-bot)
-    
-    async loadPieceImages() {
-        const pieces = ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP', 'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'];
-        const promises = pieces.map(p => new Promise(resolve => {
-            const img = new Image();
-            img.onload = () => resolve();
-            img.onerror = () => {
-                // Fallback nếu ảnh lỗi (dùng Wikimedia)
-                const map = {'wP':'4/45/Chess_plt45.svg','wN':'7/70/Chess_nlt45.svg','wB':'b/b1/Chess_blt45.svg','wR':'7/72/Chess_rlt45.svg','wQ':'1/15/Chess_qlt45.svg','wK':'4/42/Chess_klt45.svg','bP':'c/c7/Chess_pdt45.svg','bN':'e/ef/Chess_ndt45.svg','bB':'9/98/Chess_bdt45.svg','bR':'f/ff/Chess_rdt45.svg','bQ':'4/47/Chess_qdt45.svg','bK':'f/f0/Chess_kdt45.svg'};
-                img.src = `https://upload.wikimedia.org/wikipedia/commons/${map[p]}`;
-                resolve();
-            };
-            img.src = `./assets/pieces/${p}.png`;
-            this.pieceImages[p] = img;
-        }));
-        await Promise.all(promises);
-        this.imagesLoaded = true;
-        this.draw();
-    }
-
     draw() {
-        if (!this.ctx) return;
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        this.drawBoard();
-        this.drawCoordinates();
-        this.drawHighlights();
-        this.drawPieces(); // Vẽ quân cờ đang đứng yên
-        this.drawDragPiece(); // Vẽ quân cờ đang bị kéo (nếu có)
+        if (!this.board) return;
+
+        // Đồng bộ trạng thái game và tương tác sang renderer
+        this.board.game = this.game;
+        this.board.isFlipped = this.isFlipped;
+        this.board.selectedSquare = this.selectedSquare;
+        this.board.legalMoves = this.legalMoves;
+        this.board.isDragging = this.isDragging;
+        this.board.dragPiece = this.dragPiece;
+        this.board.dragStartSquare = this.dragStartSquare;
+        this.board.mousePos = this.mousePos;
+
+        // Vẽ phần cơ bản (bàn cờ, quân cờ, selection, legal moves ...)
+        this.board.draw();
+
+        // Vẽ thêm overlay riêng cho puzzle (last move, hint ...)
+        this.drawPuzzleOverlays();
     }
 
-    drawBoard() {
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                const isLight = (r + c) % 2 === 0;
-                this.ctx.fillStyle = isLight ? this.colors.light : this.colors.dark;
-                this.ctx.fillRect(c * this.squareSize, r * this.squareSize, this.squareSize, this.squareSize);
-            }
-        }
-    }
+    // Vẽ các overlay riêng cho chế độ puzzle (nước đi cuối, gợi ý)
+    drawPuzzleOverlays() {
+        if (!this.board || !this.board.ctx) return;
+        const ctx = this.board.ctx;
+        const squareSize = this.board.squareSize;
 
-    drawCoordinates() {
-        const fontSize = Math.max(12, Math.floor(this.squareSize / 5));
-        this.ctx.font = `bold ${fontSize}px Arial`;
-        this.ctx.textBaseline = 'bottom';
-        
-        // Draw letters (a-h)
-        for (let file = 0; file < 8; file++) {
-            const letter = this.isFlipped 
-                ? String.fromCharCode(104 - file)
-                : String.fromCharCode(97 + file);
-            const x = file * this.squareSize + 2;
-            const y = 8 * this.squareSize - 2;
-            const isDark = (file + 7) % 2 === 0;
-            this.ctx.fillStyle = isDark ? this.colors.dark : this.colors.light;
-            this.ctx.fillText(letter, x, y);
-        }
-        
-        // Draw numbers (1-8)
-        this.ctx.textBaseline = 'top';
-        for (let rank = 0; rank < 8; rank++) {
-            const num = this.isFlipped ? (rank + 1) : (8 - rank);
-            const x = this.canvas.width - fontSize + 2;
-            const y = rank * this.squareSize + 2;
-            const isDark = (7 + rank) % 2 === 0;
-            this.ctx.fillStyle = isDark ? this.colors.dark : this.colors.light;
-            this.ctx.fillText(num, x, y);
-        }
-    }
-
-    drawHighlights() {
-        // Highlight nước đi vừa đi (Last Move)
+        // Highlight nước đi cuối cùng
         const history = this.game.history({ verbose: true });
         if (history.length > 0) {
             const last = history[history.length - 1];
             [last.from, last.to].forEach(sq => {
                 const pos = this.squareToCanvas(sq);
-                this.ctx.fillStyle = "rgba(155, 199, 0, 0.41)";
-                this.ctx.fillRect(pos.x, pos.y, this.squareSize, this.squareSize);
+                ctx.fillStyle = 'rgba(155, 199, 0, 0.41)';
+                ctx.fillRect(pos.x, pos.y, squareSize, squareSize);
             });
         }
 
-        // Highlight ô đang chọn
-        if (this.selectedSquare) {
-            const pos = this.squareToCanvas(this.selectedSquare);
-            this.ctx.fillStyle = this.colors.selected;
-            this.ctx.fillRect(pos.x, pos.y, this.squareSize, this.squareSize);
-        }
-
-        // Highlight các nước đi hợp lệ (Gợi ý chấm tròn)
-        this.legalMoves.forEach(m => {
-            const pos = this.squareToCanvas(m.to);
-            this.ctx.fillStyle = this.colors.move;
-            this.ctx.beginPath();
-            this.ctx.arc(pos.x + this.squareSize/2, pos.y + this.squareSize/2, 12, 0, 2*Math.PI);
-            this.ctx.fill();
-        });
+        // Highlight gợi ý (hint)
         if (this.hintSquares) {
             const fromPos = this.squareToCanvas(this.hintSquares.from);
             const toPos = this.squareToCanvas(this.hintSquares.to);
 
-            // Vẽ viền xanh lá đậm quanh ô đi và ô đến
-            this.ctx.lineWidth = 4;
-            this.ctx.strokeStyle = "rgba(0, 255, 0, 0.8)"; 
-            
-            this.ctx.strokeRect(fromPos.x, fromPos.y, this.squareSize, this.squareSize);
-            this.ctx.strokeRect(toPos.x, toPos.y, this.squareSize, this.squareSize);
-            
-            // Reset line width
-            this.ctx.lineWidth = 1; 
-        }        
-    }
-
-    drawPieces() {
-        const board = this.game.board();
-        
-        for (let rank = 0; rank < 8; rank++) {
-            for (let file = 0; file < 8; file++) {
-                const piece = board[rank][file];
-                if (!piece) continue;
-                
-                const actualRank = 7 - rank;
-                const square = String.fromCharCode(97 + file) + (actualRank + 1);
-                
-                if (this.isDragging && this.dragStartSquare === square) continue;
-                
-                const pos = this.squareToCanvas(square);
-                this.drawSinglePiece(piece, pos.x, pos.y);
-            }
-        }
-    }
-
-    drawSinglePiece(piece, x, y) {
-        const key = piece.color + piece.type.toUpperCase(); // vd: 'wK', 'bP'
-        if (this.imagesLoaded && this.pieceImages[key]) {
-            this.ctx.drawImage(this.pieceImages[key], x + 5, y + 5, this.squareSize - 10, this.squareSize - 10);
-        }
-    }
-
-    drawDragPiece() {
-        if (this.isDragging && this.dragPiece) {
-            // Vẽ quân cờ ngay tại vị trí chuột
-            this.drawSinglePiece(this.dragPiece, this.mousePos.x - this.squareSize/2, this.mousePos.y - this.squareSize/2);
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
+            ctx.strokeRect(fromPos.x, fromPos.y, squareSize, squareSize);
+            ctx.strokeRect(toPos.x, toPos.y, squareSize, squareSize);
+            ctx.lineWidth = 1;
         }
     }
 
@@ -582,24 +498,31 @@ class ChessPuzzleGame {
 
     // Chuyển đổi tọa độ Canvas <-> Ô cờ (quan trọng cho Drag/Drop)
     canvasToSquare(x, y) {
+        if (this.board) {
+            // Dùng mapping đã được chuẩn hóa của ChessBoardRenderer
+            this.board.isFlipped = this.isFlipped;
+            return this.board.canvasToSquare(x, y);
+        }
+
+        // Fallback cũ nếu renderer không có
         const c = Math.floor(x / this.squareSize);
         const r = Math.floor(y / this.squareSize);
-        
-        // Nếu lật bàn cờ thì tính lại
         const file = this.isFlipped ? (7 - c) : c;
         const rank = this.isFlipped ? r : (7 - r);
-
         if (file < 0 || file > 7 || rank < 0 || rank > 7) return null;
         return String.fromCharCode(97 + file) + (rank + 1);
     }
 
     squareToCanvas(square) {
+        if (this.board) {
+            this.board.isFlipped = this.isFlipped;
+            return this.board.squareToCanvas(square);
+        }
+
         const file = square.charCodeAt(0) - 97;
         const rank = parseInt(square[1]) - 1;
-
         const c = this.isFlipped ? (7 - file) : file;
         const r = this.isFlipped ? rank : (7 - rank);
-
         return { x: c * this.squareSize, y: r * this.squareSize };
     }
 
@@ -792,43 +715,38 @@ class ChessPuzzleGame {
     }
 
     handleResize(force = false) {
-        const boardSquare = this.canvas.parentElement;
-        if (!boardSquare) return;
-        
-        // Use getBoundingClientRect for accurate size (like PvP)
-        const rect = boardSquare.getBoundingClientRect();
-        const containerSize = Math.min(rect.width, rect.height);
-        
-        // If element not visible, retry later
-        if (containerSize < 50) {
-            setTimeout(() => this.handleResize(true), 100);
-            return;
+        if (this.board) {
+            this.board.handleResize(force);
+            // Đồng bộ lại kích thước cho các hàm fallback nếu cần
+            this.canvasSize = this.board.canvasSize;
+            this.squareSize = this.board.squareSize;
+        } else if (this.canvas && this.ctx) {
+            // Fallback logic cũ nếu ChessBoardRenderer không tồn tại
+            const boardSquare = this.canvas.parentElement;
+            if (!boardSquare) return;
+
+            const rect = boardSquare.getBoundingClientRect();
+            const containerSize = Math.min(rect.width, rect.height);
+            if (containerSize < 50) {
+                setTimeout(() => this.handleResize(true), 100);
+                return;
+            }
+
+            const sizeDiff = Math.abs(containerSize - this.lastParentWidth);
+            if (!force && sizeDiff < 20) return;
+            this.lastParentWidth = containerSize;
+
+            const dpr = window.devicePixelRatio || 1;
+            const size = Math.floor(containerSize);
+            this.canvas.style.width = size + 'px';
+            this.canvas.style.height = size + 'px';
+            this.canvas.width = size * dpr;
+            this.canvas.height = size * dpr;
+            this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            this.canvasSize = size;
+            this.squareSize = size / 8;
         }
-        
-        // Only resize if size changed significantly or forced
-        const sizeDiff = Math.abs(containerSize - this.lastParentWidth);
-        if (!force && sizeDiff < 20) return;
-        this.lastParentWidth = containerSize;
-        
-        // DPR-aware canvas sizing (like PvP)
-        const dpr = window.devicePixelRatio || 1;
-        const size = Math.floor(containerSize);
-        
-        // Set display size
-        this.canvas.style.width = size + 'px';
-        this.canvas.style.height = size + 'px';
-        
-        // Set actual canvas resolution
-        this.canvas.width = size * dpr;
-        this.canvas.height = size * dpr;
-        
-        // Scale context for DPR
-        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        
-        // Update internal sizes
-        this.canvasSize = size;
-        this.squareSize = size / 8;
-        
+
         this.draw();
     }
 

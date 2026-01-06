@@ -649,8 +649,8 @@
                     const html = `
                         <div>Opponent offers a draw</div>
                         <div class="chat-actions">
-                            <button class="chat-btn chat-btn-yes" onclick="acceptDraw(this)">Accept</button>
-                            <button class="chat-btn chat-btn-no" onclick="declineDraw(this)">Decline</button>
+                            <button class="chat-btn chat-btn-yes" onclick="acceptDrawFromChat(this)">Accept</button>
+                            <button class="chat-btn chat-btn-no" onclick="declineDrawFromChat(this)">Decline</button>
                         </div>
                     `;
                     addSystemMessage(html);
@@ -672,8 +672,8 @@
         });
 
         // 4. Chấp nhận hòa
-        function acceptDraw(btn) {
-            if(btn) btn.closest('.chat-system-message').remove();
+        function acceptDrawFromChat(btn) {
+            if (btn) btn.closest('.chat-system-message').remove();
             const socket = window.socketClient?.socket;
             const roomId = window.socketClient?.getCurrentRoom();
             if (socket && roomId) {
@@ -682,8 +682,8 @@
         }
 
         // 5. Từ chối hòa
-        function declineDraw(btn) {
-            if(btn) {
+        function declineDrawFromChat(btn) {
+            if (btn) {
                 const container = btn.closest('.chat-system-message');
                 container.innerHTML = "<i>You declined the draw.</i>";
             }
