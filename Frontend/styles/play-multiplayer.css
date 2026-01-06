@@ -319,6 +319,17 @@ body {
     box-shadow: 0 4px 12px rgba(46, 204, 113, 0.35);
 }
 
+.action-btn.warning {
+    background: linear-gradient(135deg, #f39c12, #e74c3c);
+    color: white;
+    box-shadow: 0 2px 6px rgba(243, 156, 18, 0.25);
+}
+
+.action-btn.warning:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.35);
+}
+
 /* =========================================
    JOIN FORM
    ========================================= */

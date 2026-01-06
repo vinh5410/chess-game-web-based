@@ -1,4 +1,7 @@
 let isReady = false;
+let isRandomMatch = false; // Track nếu đang ở chế độ random match
+let readyCountdownInterval = null; // Countdown timer cho ready screen
+let currentTimeControl = null; // Lưu time control hiện tại để tìm lại
 
 class MultiplayerChess {
     constructor() {
@@ -646,6 +649,9 @@ class MultiplayerChess {
         console.log('Match found with:', data.opponent);
         this.socket.setCurrentRoom(data.roomId);
         
+        // Đánh dấu đây là random match
+        isRandomMatch = true;
+        
         // 1. Cập nhật đầy đủ thông tin đối thủ (Tên, Elo, Avatar)
         // Để hiển thị lên màn hình Ready
         if (data.opponent) {
@@ -666,6 +672,9 @@ class MultiplayerChess {
         // Thay vì gọi showGameScreen() (vào thẳng bàn cờ)
         // Ta gọi hàm hiển thị màn hình Chờ Sẵn Sàng
         this.showReadyScreenUI();
+        
+        // 4. Bắt đầu countdown 10 giây cho random match
+        startReadyCountdown();
         
         // (Optional) Update status text nếu cần
         // updateGameStatus('Match found! Please confirm ready.');
@@ -697,6 +706,7 @@ class MultiplayerChess {
     onRoomJoined(data) {
         console.log('Joined room:', data.roomId);
         this.socket.setCurrentRoom(data.roomId);
+        isRandomMatch = false; // Không phải random match
         this.showReadyScreenUI();
         updateGameStatus('Joined room. Please confirm ready.');
     }
@@ -710,6 +720,9 @@ class MultiplayerChess {
         this.opponentAvatar = data.opponent.avatar || `https://ui-avatars.com/api/?name=${this.opponentName}&background=d4af37&color=0f172a`;
     }
 
+    // Đây là private room, không phải random match
+    isRandomMatch = false;
+    
     // --- THAY ĐỔI Ở ĐÂY: Gọi Ready Screen ---
     this.showReadyScreenUI();
     }
@@ -763,6 +776,9 @@ class MultiplayerChess {
     
     onGameStart(data) {
         console.log('Game started!', data);
+        
+        // Clear ready countdown khi game bắt đầu
+        clearReadyCountdown();
 
         showGameScreen();
         if (typeof this.resetChat === 'function') {
@@ -1962,6 +1978,13 @@ function showRandomMatch() {
     hideAllScreens();
     document.getElementById('randomMatchScreen').classList.remove('hidden');
     
+    // Reset các nút về trạng thái ban đầu
+    const findMatchBtn = document.getElementById('findMatchBtn');
+    const backFromRandomBtn = document.getElementById('backFromRandomBtn');
+    const cancelSearchBtn = document.getElementById('cancelSearchBtn');
+    if (findMatchBtn) findMatchBtn.classList.remove('hidden');
+    if (backFromRandomBtn) backFromRandomBtn.classList.remove('hidden');
+    if (cancelSearchBtn) cancelSearchBtn.classList.add('hidden');
     
     renderTimeSelector('randomMatchTimeSelector');
     
@@ -1970,13 +1993,115 @@ function showRandomMatch() {
 
 function startRandomSearch() {
     const timeControl = getSelectedTimeControl();
+    currentTimeControl = timeControl; // Lưu lại để tìm lại khi timeout
     document.getElementById('searchStatus').textContent = 'Searching for opponent...';
+    
+    // Ẩn nút Find Match và Back, hiện nút Cancel Search
+    document.getElementById('findMatchBtn').classList.add('hidden');
+    document.getElementById('backFromRandomBtn').classList.add('hidden');
+    document.getElementById('cancelSearchBtn').classList.remove('hidden');
+    
     window.socketClient.findRandomMatch(timeControl);
 }
 
 function cancelSearch() {
     window.socketClient.cancelRandomMatch();
-    backToLobby();
+    
+    // Reset lại UI: hiện nút Find Match và Back, ẩn nút Cancel Search
+    document.getElementById('findMatchBtn').classList.remove('hidden');
+    document.getElementById('backFromRandomBtn').classList.remove('hidden');
+    document.getElementById('cancelSearchBtn').classList.add('hidden');
+    document.getElementById('searchStatus').textContent = 'Search cancelled';
+    
+    // Có thể quay lại lobby hoặc ở lại màn hình Random Match
+    // backToLobby(); // Bỏ comment nếu muốn tự động quay về lobby
+}
+
+// ============================================
+// READY COUNTDOWN FUNCTIONS (10 giây timeout)
+// ============================================
+
+function startReadyCountdown() {
+    // Chỉ áp dụng cho random match
+    if (!isRandomMatch) return;
+    
+    // Clear countdown cũ nếu có
+    clearReadyCountdown();
+    
+    let countdown = 10;
+    const statusEl = document.getElementById('readyCountdown');
+    
+    // Cập nhật UI ngay lập tức
+    if (statusEl) {
+        statusEl.textContent = `Time to accept: ${countdown}s`;
+        statusEl.style.color = '#f39c12';
+    }
+    
+    readyCountdownInterval = setInterval(() => {
+        countdown--;
+        
+        if (statusEl) {
+            if (countdown <= 3) {
+                statusEl.style.color = '#e74c3c';
+            }
+            statusEl.textContent = `Time to accept: ${countdown}s`;
+        }
+        
+        if (countdown <= 0) {
+            handleReadyTimeout();
+        }
+    }, 1000);
+}
+
+function clearReadyCountdown() {
+    if (readyCountdownInterval) {
+        clearInterval(readyCountdownInterval);
+        readyCountdownInterval = null;
+    }
+}
+
+function handleReadyTimeout() {
+    clearReadyCountdown();
+    
+    // Kiểm tra xem mình đã ready chưa
+    const myReadyStatus = document.getElementById('myReadyStatus');
+    const amIReady = myReadyStatus && myReadyStatus.textContent === 'READY!';
+    
+    // Rời phòng hiện tại
+    window.socketClient.leaveRoom();
+    
+    if (amIReady) {
+        // Mình đã ready -> Tự động tìm trận mới
+        showNotification({
+            title: 'Opponent not ready',
+            message: 'Finding new match...',
+            type: 'info'
+        });
+        
+        // Quay lại màn hình random match và tự động tìm lại
+        showRandomMatch();
+        
+        // Delay một chút rồi tự động tìm lại
+        setTimeout(() => {
+            if (currentTimeControl) {
+                document.getElementById('searchStatus').textContent = 'Finding new opponent...';
+                document.getElementById('findMatchBtn').classList.add('hidden');
+                document.getElementById('backFromRandomBtn').classList.add('hidden');
+                document.getElementById('cancelSearchBtn').classList.remove('hidden');
+                window.socketClient.findRandomMatch(currentTimeControl);
+            }
+        }, 500);
+    } else {
+        // Mình chưa ready -> Quay về màn hình chọn time
+        showNotification({
+            title: 'Match cancelled',
+            message: 'You did not accept in time',
+            type: 'warning'
+        });
+        
+        showRandomMatch();
+        document.getElementById('searchStatus').textContent = 'Click Find Match to search again';
+    }
 }
 
 function showInviteFriend() {
@@ -2064,8 +2189,21 @@ function joinRoom() {
 }
 
 function backToLobby() {
+    // Clear ready countdown nếu có
+    clearReadyCountdown();
+    
     window.socketClient.leaveRoom();
     
+    // Reset random match flags
+    isRandomMatch = false;
+    
+    // Reset UI buttons for random match screen
+    const findMatchBtn = document.getElementById('findMatchBtn');
+    const backFromRandomBtn = document.getElementById('backFromRandomBtn');
+    const cancelSearchBtn = document.getElementById('cancelSearchBtn');
+    if (findMatchBtn) findMatchBtn.classList.remove('hidden');
+    if (backFromRandomBtn) backFromRandomBtn.classList.remove('hidden');
+    if (cancelSearchBtn) cancelSearchBtn.classList.add('hidden');
     
     const searchStatus = document.getElementById('searchStatus');
     if (searchStatus) {

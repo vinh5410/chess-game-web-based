@@ -151,8 +151,9 @@ async function handleProfileUpdate(e) {
     messageEl.className = 'message success';
     
     try {
-        // using absolute API URL
-        const response = await fetch(`https://chess-game-web-based.onrender.com/api/users/profile`, {
+        // using API config
+        const apiBase = window.APP_CONFIG?.API_BASE || 'http://localhost:3000';
+        const response = await fetch(`${apiBase}/api/users/profile`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -203,8 +204,9 @@ async function handlePasswordChange(e) {
     messageEl.className = 'message success';
     
     try {
-        // using absolute API URL
-        const response = await fetch(`https://chess-game-web-based.onrender.com/api/auth/password`, {
+        // using API config
+        const apiBase = window.APP_CONFIG?.API_BASE || 'http://localhost:3000';
+        const response = await fetch(`${apiBase}/api/auth/password`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

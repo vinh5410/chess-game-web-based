@@ -83,10 +83,13 @@
             <p id="searchStatus" class="status-text">Click button to start searching</p>
             
             <div class="action-buttons">
-                <button class="action-btn primary" onclick="startRandomSearch()">
+                <button id="findMatchBtn" class="action-btn primary" onclick="startRandomSearch()">
                     <i class="fa-solid fa-magnifying-glass"></i> Find Match
                 </button>
-                <button class="action-btn danger" onclick="backToLobby()">
+                <button id="cancelSearchBtn" class="action-btn warning hidden" onclick="cancelSearch()">
+                    <i class="fa-solid fa-xmark"></i> Cancel Search
+                </button>
+                <button id="backFromRandomBtn" class="action-btn danger" onclick="backToLobby()">
                     <i class="fa-solid fa-arrow-left"></i> Back
                 </button>
             </div>
