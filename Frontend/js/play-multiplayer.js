@@ -107,6 +107,14 @@ class MultiplayerChess {
     async init() {
         console.log('Initializing Multiplayer Chess...');
         
+        // Load player avatar từ user đăng nhập
+        const user = getCurrentUser();
+        if (user) {
+            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=d4af37&color=0f172a`;
+            this.playerAvatar = user.avatar || defaultAvatar;
+            this.playerElo = user.elo || 1200;
+        }
+        
         if (typeof window.Chess !== 'function') {
             console.error('Chess.js not available');
             return false;
@@ -600,6 +608,14 @@ class MultiplayerChess {
     onLoginSuccess(data) {
         
         updateGameStatus(`Welcome, ${data.username}!`);
+        
+        // Load avatar từ localStorage
+        const user = getCurrentUser();
+        if (user) {
+            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}&background=d4af37&color=0f172a`;
+            this.playerAvatar = user.avatar || defaultAvatar;
+            this.playerElo = user.elo || 1200;
+        }
 
         // Don't force-show lobby if already in a room or game restored
         const currentRoom = this.socket && typeof this.socket.getCurrentRoom === 'function'
