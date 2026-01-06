@@ -21,12 +21,11 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: function() { return !this.googleId && !this.facebookId; }, // Password not required if social login
+        required: function() { return !this.googleId; }, // Password not required if social login
         minlength: [6, 'Password must be at least 6 characters'],
         select: false
     },
     googleId: { type: String },
-    facebookId: { type: String },
 
     isVerified: { type: Boolean, default: false },
     verificationToken: String, // Token kích hoạt tài khoản

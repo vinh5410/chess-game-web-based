@@ -493,38 +493,3 @@ exports.googleLogin = async (req, res) => {
         res.status(400).json({ success: false, message: 'Google Login Failed' });
     }
 };
-
-// @desc    Login with Facebook
-// @route   POST /api/auth/facebook
-exports.facebookLogin = async (req, res) => {
-    try {
-        const { userID, accessToken, email, name, picture } = req.body;
-        
-        // Verify token with Facebook Graph API (Optional but recommended for security)
-        // For simplicity, we trust the client data here, but in production verify with FB API
-
-        let user = await User.findOne({ email });
-
-        if (user) {
-            if (!user.facebookId) {
-                user.facebookId = userID;
-                await user.save({ validateBeforeSave: false });
-            }
-        } else {
-            user = await User.create({
-                username: name.replace(/\s+/g, '') + Math.floor(Math.random() * 1000),
-                email,
-                facebookId: userID,
-                avatar: picture?.data?.url,
-                isVerified: true,
-                password: crypto.randomBytes(20).toString('hex')
-            });
-        }
-
-        sendTokenResponse(user, 200, res);
-
-    } catch (error) {
-        console.error('Facebook Login Error:', error);
-        res.status(400).json({ success: false, message: 'Facebook Login Failed' });
-    }
-};

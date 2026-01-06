@@ -10,8 +10,7 @@ const {
     forgotPassword,
     resetPassword,
     resendVerificationEmail,
-    googleLogin,
-    facebookLogin
+    googleLogin
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
@@ -19,7 +18,6 @@ router.post('/register', register);
 router.get('/verify/:token', verifyAccount);
 router.post('/login', login);
 router.post('/google', googleLogin);
-router.post('/facebook', facebookLogin);
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/password', protect, changePassword); // NEW
